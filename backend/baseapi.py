@@ -7,8 +7,10 @@ import networkx as nx
 from collections import Counter
 import pandas as pd
 import matplotlib.patches as mpatches
+import time
 import math
 import hashlib
+import pickle
 
 colors = []
 
@@ -54,7 +56,9 @@ def self_replace(*arg_names):
 
 class BaseAPI(VKAPI):
     @staticmethod
-    def get_color(i):
+    def get_color(i, size=None):
+        if size == 1:
+            return '#000000'
         if i == 0:
             return '#000000'
         if i - 1 >= len(colors):
@@ -92,8 +96,9 @@ class BaseAPI(VKAPI):
             return Counter(result)
         return list(result)
 
-    def show_weighted_graph(self, graph, node_color='b', color_patches=None, save_path=None):
-        # print('weighted')
+    def show_weighted_graph(self, graph, sizes=False, node_color='b',
+                            color_patches=None, save_path=None):
+        from groups_pool import GroupsPool
         def value_to_color(x):
             x = 1 - x
             x = math.sqrt(x)
@@ -116,56 +121,67 @@ class BaseAPI(VKAPI):
         weights[weights > max_] = max_
         weights -= min_
         weights *= 1 / (max(weights))
-        # weights += 0.2
         weights[weights > 1] = 1
-        # edge_colors = [value_to_color(i) for i in weights]
-        # print(edge_colors)
-        pos = nx.spring_layout(graph)
-        plt.figure(figsize=(8, 8))
-        nx.draw_networkx_nodes(graph, pos,
-                               node_size=30, node_color=node_color)
-        arcs = nx.draw_networkx_edges(graph, pos,
-                                      edgelist=graph.edges, alpha=1, width=weights, edge_color='#000000')
-        # for i, arc in enumerate(arcs):
-        #     arc.set_alpha(weights[i])
+        node_sizes = 50
+        if isinstance(self, GroupsPool) and sizes:
+            groups_dict = self.dict_from_dicts(self.groups_base_data(), 'id')
 
+            def get_node_size(members_count):
+                return members_count ** (1/2.7)
+                # return math.log(members_count) * 5
+
+            node_sizes = [get_node_size(groups_dict[id].get('members_count', 1))
+                          for id in graph.nodes]
+
+        pos = nx.spring_layout(graph)
+        plt.figure(figsize=(10, 10))
+        nx.draw_networkx_nodes(graph, pos, node_shape='o',
+                               node_size=node_sizes,
+                               node_color=node_color, with_labels=True)
+        nx.draw_networkx_edges(graph, pos,
+                               edgelist=graph.edges, alpha=1, width=weights, edge_color='#000000')
         plt.axis('off')
         if color_patches:
             plt.legend(handles=color_patches)
 
-        if save_path:
-            plt.savefig(save_path, dpi=1200)
+        if not save_path:
+            save_path = f'data/weighted_graph_{int(time.time())}.svg'
+        plt.savefig(save_path, dpi=1200)
         plt.show()
 
     @self_replace('graph')
-    def show_graph(self, graph=None, node_color='r', color_patches=None, save_path=None):
+    def show_graph(self, graph=None, node_color='r', sizes=False, color_patches=None, save_path=None):
         if not graph.edges:
             return
 
         if 'weight' in next(iter(graph.edges(data=True)))[2]:
-            self.show_weighted_graph(graph,
+            self.show_weighted_graph(graph, sizes=sizes,
                                      node_color=node_color, color_patches=color_patches, save_path=save_path)
             return
 
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=(10, 10))
         options = {
             'node_color': node_color,
-            'node_size': 50,
             'width': 1,
             'with_labels': False,
-            'font_size': 8
+            'font_size': 8,
+            'node_size': 50
         }
 
         nx.draw(graph, **options)
         if color_patches:
             plt.legend(handles=color_patches)
 
-        if save_path:
-            plt.savefig(save_path, dpi=1200)
+        if not save_path:
+            save_path = f'data/graph_{int(time.time())}.svg'
+        plt.savefig(save_path, dpi=1200)
         plt.show()
 
+    def __del__(self):
+        self.save_memory()
+
     @self_replace('graph')
-    def color_graph(self, graph=None, pools=None, save_path=None, **kwargs):
+    def color_graph(self, graph=None, sizes=False, pools=None, save_path=None, **kwargs):
         if not pools:
             pools = self.pools(**kwargs)
         color_pool = \
@@ -177,7 +193,7 @@ class BaseAPI(VKAPI):
                                 zip(
                                     pool.nodes,
                                     [
-                                        (bapi.get_color(i + 1), pool)
+                                        (bapi.get_color(i + 1, len(pool.nodes)), pool)
                                     ] * pool.size))
                             for i, pool in enumerate(pools)
                         ], []
@@ -195,7 +211,7 @@ class BaseAPI(VKAPI):
             patch = mpatches.Patch(color=col, label=color_pool_dict[col].name)
             color_patches.append(patch)
 
-        self.show_graph(node_color=node_colors, color_patches=color_patches, save_path=save_path)
+        self.show_graph(node_color=node_colors, sizes=sizes, color_patches=color_patches, save_path=save_path)
 
     @self_replace('graph')
     def get_k_neighbors_nodes(self, graph, k=0):
@@ -206,17 +222,27 @@ class BaseAPI(VKAPI):
 
         return result
 
+    def print(self):
+        print(self.print_data)
+
     @self_replace('graph')
     def pools(self, graph=None, algorithm='local_moving'):
-        communities = self.communities_from_graph(graph, algorithm)
+        main_user = None
+        if hasattr(self, 'main_user'):
+            main_user = self.main_user
+        communities = self.communities_from_graph(graph, algorithm, remove_node=main_user)
         pools = [self.__class__(pool) for pool in communities]
         return pools
 
     @classmethod
-    def communities_from_graph(cls, graph, algorithm):
+    def communities_from_graph(cls, graph_, algorithm, remove_node=None):
 
-        if not graph.number_of_nodes() or not graph.number_of_edges():
+        if not graph_.number_of_nodes() or not graph_.number_of_edges():
             return []
+
+        graph = graph_.copy()
+        if remove_node:
+            graph.remove_node(remove_node)
 
         def algorithm_local_moving():
             edges = np.array(graph.edges)
@@ -260,8 +286,8 @@ class BaseAPI(VKAPI):
             partition = community.best_partition(graph)
             clusters = dict()
             for node, cls_ in partition.items():
-                clusters[cls] = clusters.get(cls_, []) + [node]
-            return clusters.values()
+                clusters[cls_] = clusters.get(cls_, []) + [node]
+            return list(clusters.values())
 
         if algorithm == 'local_moving':
             communities = algorithm_local_moving()
@@ -272,6 +298,9 @@ class BaseAPI(VKAPI):
         else:
             raise ValueError(f'Algorithm "{algorithm}" does not available')
 
+        if remove_node:
+            communities.append([remove_node])
+
         res = sorted(communities, key=lambda x: -len(x))
 
         return res
@@ -280,14 +309,14 @@ class BaseAPI(VKAPI):
         return hash((*sorted(self.nodes),))
 
     @once_property
-    def id(self):
+    def hash(self):
         obj_id = hashlib.sha1(str(self.__hash__()).encode('UTF-8')).hexdigest()[-3:]
         self.set_obj(obj_id, self)
         return obj_id
 
     @once_property
     def name(self):
-        return f'{self.short_info} id: {self.id} size: {self.size}'
+        return f'{self.short_info} size: {self.size} id: {self.hash}'
 
 
 bapi = BaseAPI()

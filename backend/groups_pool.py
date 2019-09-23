@@ -1,63 +1,64 @@
 from baseapi import BaseAPI, once_property
 from collections import Counter
-import math
 import numpy as np
 import networkx as nx
+from vkgroup import VKGroup
 
 
 class GroupsPool(BaseAPI):
-    def __init__(self, groups_list=None, groups_counter=None):
-        # print(groups_list, groups_counter)
+    def __init__(self, groups=None, most_common=None):
+        if not groups:
+            raise Exception('Try create empty groups pool')
         super().__init__()
-        if not groups_list is None:
-            self.groups = list(groups_list)
-            self.counter = Counter(groups_list)
-        elif not groups_counter is None:
-            self.counter = groups_counter
-            self.groups = list(groups_counter)
-        self.nodes = self.groups
-        self.size = len(self.groups)
 
-    @classmethod
-    def from_counter(cls, counter):
-        # print(list(counter))
-        return GroupsPool(groups_counter=counter)
+        if isinstance(groups, Counter):
+            if most_common:
+                groups = Counter(dict(groups.most_common(most_common)))
+            self.counter = groups
+            self.nodes = list([item for item, count in groups.most_common()])
+        elif isinstance(groups, list) or isinstance(groups, set):
+            groups = list(set(groups))
+            if most_common:
+                groups = groups[:most_common]
+
+            def get_group_id(group):
+                if isinstance(group, VKGroup):
+                    return group.id
+                return VKGroup(group).id
+            self.nodes = [get_group_id(group) for group in groups]
+            self.counter = Counter(self.nodes)
+
+        self.size = len(self.nodes)
+
+    def __add__(self, other):
+        return GroupsPool(self.counter + other.counter)
+
+    @once_property
+    def groups(self):
+        return [VKGroup(group_id) for group_id in self.nodes]
 
     def split_components(self):
-        return sorted([GroupsPool(comp) for comp in nx.connected_components(self.graph)], key=lambda x: -len(x.groups))
+        return sorted([GroupsPool(comp) for comp in nx.connected_components(self.graph)],
+                      key=lambda x: -len(x.groups))
 
     @once_property
-    def groups_data(self):
-        return self.groups_base_data(one_by_one=True)
-
-    def groups_base_data(self, one_by_one=False):
-        return self.get_groups_data(self.groups, one_by_one=one_by_one)
-
-    def most_common(self, amount):
-        return [i[0] for i in self.counter.most_common(amount)]
-
-    def from_most_common(self, amount):
-        return GroupsPool(self.most_common(amount))
-
-    def type(self, type_name):
-        return [group for group in self.groups_data if group['type'] == type_name]
+    def short_data(self):
+        return self.get_groups_data(self.nodes, one_by_one=False)
 
     @once_property
-    def type_page(self):
-        return self.type('page')
+    def full_data(self):
+        return self.get_groups_data(self.nodes, one_by_one=True)
 
-    @once_property
-    def type_group(self):
-        return self.type('group')
+    def from_most_common(self, amount=50):
+        return GroupsPool(Counter(dict(self.counter.most_common(amount))))
 
-    @once_property
-    def type_event(self):
-        return self.type('event')
+    def select_type(self, type_name):
+        return GroupsPool([group for group in self.short_data if group['type'] == type_name])
 
     @once_property
     def graph(self):
         g = nx.Graph()
-        groups = self.groups
+        groups = self.nodes
         for i in groups:
             g.add_node(i)
             for j in groups:
@@ -68,82 +69,91 @@ class GroupsPool(BaseAPI):
         return g
 
     @once_property
-    def graph_links(self):
-        groups_data = self.groups_data
-
-        # urls = sum([gr_data['links']['url'].split('/')[-1] for gr_data in groups_data if 'links' in gr_data], [])
+    def links_graph(self):
+        groups_data = self.full_data
         groups_names_dict = self.dict_from_dicts(groups_data, 'name')
-        G = nx.Graph()
+        g = nx.Graph()
         for group_name, group_data in groups_names_dict.items():
-            G.add_node(group_data['id'])
+            g.add_node(group_data['id'])
             if 'links' in group_data:
                 for link in group_data['links']:
                     link_name = link['name']
                     link_group = groups_names_dict.get(link_name, None)
 
                     if link_group:
-                        G.add_edge(group_data['id'], link_group['id'])
-        return G
+                        g.add_edge(group_data['id'], link_group['id'])
+        return g
 
-    def print(self, amount=None):
-        groups = self.groups_data
-        if amount:
+    def print(self, amount=None, shuffle=False):
+        groups = self.groups.copy()
+        self.short_data
+        if shuffle and amount:
             np.random.shuffle(groups)
 
         for group in groups[:amount]:
-            print(f"{group['name']} {group['id']} https://vk.com/{group['screen_name']}")
+            if self.counter[group.id] > 1:
+                group.print(self.counter[group.id])
+            else:
+                group.print()
+
+    def get_members(self, each_amount=1000):
+        from community_pool import Community
+        return Community(sum([group.get_members(each_amount) for group in self.groups], []))
 
     @once_property
     def short_info(self):
+        import re
+        from app_data import most_frequent_english_words, most_frequent_russian_words
+        names = ' '.join([group['name'] for group in self.short_data]).lower()
+        names = re.sub(r'[!@#$"\'.?,”()\-*+:;|/\\]', ' ', names)
+        frequent_words = Counter(names.split()).most_common()
+        if frequent_words:
+            word, count = frequent_words[0]
+            i = 0
+            while word in most_frequent_english_words + most_frequent_russian_words \
+                    and i < len(frequent_words):
+                word, count = frequent_words[i]
+                i += 1
+
+            if self.size > 10:
+                if count >= self.size / 5:
+                    return word
+            elif self.size >= 2:
+                if count >= 2:
+                    return word
+            if self.size == 1:
+                return word
+
         activity = self.params['groups_pages_activity'].most_common(1)
         if activity:
             return activity[0]
-        return 'NO Property'
-
+        return 'None'
 
     @once_property
     def params(self):
-
-        groups_list = self.groups_data
         params = {}
-        groups_ = self.type_group
-        groups_len = len(groups_)
-        pages_ = self.type_page
-        pages_len = len(pages_)
-        events_ = self.type_event
-        events_len = len(events_)
-        size = len(groups_list)
+        groups_list = self.nodes
+        params['size'] = self.size
+        params['age_limits'] = self.list_from_dicts(groups_list, 'age_limits', counter=True)
+        params['city'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'city'),
+                                              'title', counter=True)
+        params['country'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'country'),
+                                                 'title', counter=True)
+        params['has_photo'] = self.list_from_dicts(groups_list, 'has_photo', counter=True)
+        params['main_section'] = self.list_from_dicts(groups_list, 'main_section',
+                                                      counter=True, ignore_zero=True)
+        params['place'] = self.list_from_dicts(groups_list, 'title', counter=True)
+        params['verified'] = self.list_from_dicts(groups_list, 'verified', counter=True)
 
-        params['groups_age_limits'] = self.list_from_dicts(groups_list, 'age_limits', counter=True)
-        params['groups_city'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'city'),
-                                                     'title', counter=True)
-        params['groups_country'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'country'),
-                                                        'title', counter=True)
-        params['groups_has_photo'] = self.list_from_dicts(groups_list, 'has_photo', counter=True)
-        params['groups_main_section'] = self.list_from_dicts(groups_list, 'main_section',
-                                                             counter=True, ignore_zero=True)
-        params['groups_place'] = self.list_from_dicts(groups_list, 'title', counter=True)
-        params['groups_verified'] = self.list_from_dicts(groups_list, 'verified', counter=True)
+        type_groups = self.select_type('group')
+        type_pages = self.select_type('page')
+        type_event = self.select_type('event')
 
-        params['groups_groups_amount'] = groups_len
-        params['groups_groups_fr'] = groups_len / size
-        params['groups_pages_amount'] = pages_len
-        params['groups_pages_fr'] = pages_len / size
-        params['groups_events_amount'] = events_len
-        params['groups_events_fr'] = events_len / size
-        if not groups_len: groups_len = 1
+        params['type_groups_count'] = type_groups.size
+        params['type_pages_count'] = type_pages.size
+        params['type_events_count'] = type_event.size
 
-        params['groups_pages_activity'] = self.list_from_dicts(pages_, 'activity', counter=True)
-
-        try:
-            params['groups_pages_activity_first_fr'] = \
-                params['groups_pages_activity'].most_common(1)[1] / len(pages_)
-        except: params['groups_pages_activity_first_fr'] = 0
-
-        params['groups_groups_activity'] = self.list_from_dicts(groups_, 'activity', counter=True)
-        params['groups_groups_activity_open'] = params['groups_groups_activity']['Открытая группа']
-        params['groups_groups_activity_open_fr'] = params['groups_groups_activity_open'] / groups_len
-        params['groups_groups_activity_close'] = params['groups_groups_activity']['Закрытая группа']
-        params['groups_groups_activity_close_fr'] = params['groups_groups_activity_close'] / groups_len
+        params['pages_activity'] = self.list_from_dicts(type_pages, 'activity', counter=True)
+        params['groups_activity'] = self.list_from_dicts(type_groups, 'activity', counter=True)
 
         return params

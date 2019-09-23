@@ -1,5 +1,6 @@
 import vk
 import time
+import pickle
 import math
 # vk app client_id 7091370
 # service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
@@ -71,12 +72,55 @@ users_groups_ = {}
 screen_names_ = {}
 groups_members_ = {}
 
+objects_to_save = [
+    'users_data_',
+    'users_friends_',
+    'groups_data_',
+    'users_groups_',
+    'screen_names_',
+    'groups_members_',
+]
+
 
 class VKAPI:
     def __init__(self, verbose=1):
         self.verbose = verbose
         self.api_user = api
         self.api_app = api_app
+
+    @staticmethod
+    def save_memory(file_name=None):
+        if not file_name:
+            try:
+                with open('data/last_memory_dump.info', 'r') as f:
+                    file_name = f.read()
+            except:
+                file_name = f'{str(int(time.time()))}_memory_dump'
+
+        with open('data/last_memory_dump.info', 'w') as f:
+            f.write(file_name)
+        for name in objects_to_save:
+            curr_file_name = f'{file_name}_{name}'
+            with open('data/' + curr_file_name, 'wb') as f:
+                pickle.dump(globals()[name], f)
+
+    @staticmethod
+    def load_memory(file_name=None):
+        try:
+            if not file_name:
+                with open('data/last_memory_dump.info', 'r') as f:
+                    file_name = f.read()
+            for name in objects_to_save:
+                curr_file_name = f'{file_name}_{name}'
+                with open('data/' + curr_file_name, 'rb') as f:
+                    try:
+                        obj = pickle.load(f)
+                        globals()[name] = obj
+                    except EOFError:
+                        pass
+
+        except FileNotFoundError:
+            pass
 
     def get_users(self, vk_ids, full=False):
         global users_data_
@@ -87,8 +131,6 @@ class VKAPI:
         if to_save:
             fields = []
             if full:
-
-
                 fields = [
                     'photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
                     'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
@@ -140,6 +182,8 @@ class VKAPI:
             return []
 
         def execute_25(items):
+            if not items:
+                return []
             method = item_string.split('.')[1]
             if method in service_token_methods and len(items) == 1:
                 code_str = item_string % items[0]
@@ -194,7 +238,7 @@ class VKAPI:
                   'main_section', 'members_count', 'place', 'public_date_label',
                   'trending', 'verified', 'wall', 'links']
         fields_string = ','.join(fields)
-        if one_by_one:
+        if one_by_one and len(group_ids) > 1:
             return self.execute_query(
                 'API.groups.getById({"fields": "' + fields_string + '", "group_id":%d})[0]',
                 group_ids,
@@ -202,7 +246,9 @@ class VKAPI:
             )
         new_items_ids = [item for item in group_ids if item not in groups_data_]
         # print(new_items_ids)
-        new_items = api.groups.getById(group_ids=new_items_ids, fields=fields)
+        new_items = []
+        if new_items_ids:
+            new_items = api.groups.getById(group_ids=new_items_ids, fields=fields)
         # print(new_items)
         for id, item in zip(new_items_ids, new_items):
             groups_data_[id] = item
@@ -223,17 +269,21 @@ class VKAPI:
                     if item['type'] == 'profile']
         return search_result['items']
 
-    def get_group_members(self, group_id, offset=0, amount=1000, items=True):
+    def get_group_members(self, group_id, offset=0, amount=1000):
         # return self.execute_query('API.groups.getMembers({group_id=%d, offset=%d})', )
         if amount <= 1000:
             t = (group_id, offset)
             if t in groups_members_:
                 return groups_members_[t]
-            res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
+            try:
+                res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
+            except Exception as e:
+                if e.code == 15:
+                    res = {'items': [], 'count': 0}
+                else:
+                    raise e
             groups_members_[t] = res
-            if items:
-                return res['items']
-            return res
+            return res['items']
         else:
             items = self.get_group_members(group_id, offset, 1000)
             if len(items) < 1000:
