@@ -3,13 +3,17 @@ from collections import Counter
 import numpy as np
 import networkx as nx
 from vkgroup import VKGroup
+import math
 
 
 class GroupsPool(BaseAPI):
     def __init__(self, groups=None, most_common=None):
-        if not groups:
-            raise Exception('Try create empty groups pool')
         super().__init__()
+        if not groups:
+            self.counter = Counter()
+            self.nodes = []
+            self.size = 0
+            return
 
         if isinstance(groups, Counter):
             if most_common:
@@ -20,12 +24,11 @@ class GroupsPool(BaseAPI):
             groups = list(set(groups))
             if most_common:
                 groups = groups[:most_common]
-
-            def get_group_id(group):
-                if isinstance(group, VKGroup):
-                    return group.id
-                return VKGroup(group).id
-            self.nodes = [get_group_id(group) for group in groups]
+            if groups:
+                if isinstance(groups[0], VKGroup):
+                    self.nodes = [group.id for group in groups]
+                elif isinstance(groups[0], int):
+                    self.nodes = groups
             self.counter = Counter(self.nodes)
 
         self.size = len(self.nodes)
@@ -49,11 +52,11 @@ class GroupsPool(BaseAPI):
     def full_data(self):
         return self.get_groups_data(self.nodes, one_by_one=True)
 
-    def from_most_common(self, amount=50):
+    def common(self, amount=50):
         return GroupsPool(Counter(dict(self.counter.most_common(amount))))
 
     def select_type(self, type_name):
-        return GroupsPool([group for group in self.short_data if group['type'] == type_name])
+        return GroupsPool([group['id'] for group in self.short_data if group['type'] == type_name])
 
     @once_property
     def graph(self):
@@ -91,7 +94,7 @@ class GroupsPool(BaseAPI):
             np.random.shuffle(groups)
 
         for group in groups[:amount]:
-            if self.counter[group.id] > 1:
+            if self.counter[group.id] != 1:
                 group.print(self.counter[group.id])
             else:
                 group.print()
@@ -124,15 +127,40 @@ class GroupsPool(BaseAPI):
             if self.size == 1:
                 return word
 
-        activity = self.params['groups_pages_activity'].most_common(1)
+        activity = self.params['pages_activity'].most_common(1)
         if activity:
             return activity[0]
         return 'None'
 
+    def reverse(self):
+        return self.order('reverse')
+
+    def order(self, order_type='smart'):
+        if order_type == 'smart':
+            return GroupsPool(
+                Counter(
+                    dict(
+                        [(group.id, self.counter[group.id] / math.log(group.data['members_count']))
+                         for group in self.groups]
+                    )
+                )
+            )
+        if order_type == 'popular':
+            return GroupsPool(
+                Counter(
+                    dict(
+                        [(group.id, group.data['members_count'])
+                         for group in self.groups]
+                    )
+                )
+            )
+        if order_type == 'reverse':
+            return GroupsPool(self.nodes[::-1])
+
     @once_property
     def params(self):
         params = {}
-        groups_list = self.nodes
+        groups_list = self.short_data
         params['size'] = self.size
         params['age_limits'] = self.list_from_dicts(groups_list, 'age_limits', counter=True)
         params['city'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'city'),
@@ -153,7 +181,7 @@ class GroupsPool(BaseAPI):
         params['type_pages_count'] = type_pages.size
         params['type_events_count'] = type_event.size
 
-        params['pages_activity'] = self.list_from_dicts(type_pages, 'activity', counter=True)
-        params['groups_activity'] = self.list_from_dicts(type_groups, 'activity', counter=True)
+        params['pages_activity'] = self.list_from_dicts(type_pages.short_data, 'activity', counter=True)
+        params['groups_activity'] = self.list_from_dicts(type_groups.short_data, 'activity', counter=True)
 
         return params

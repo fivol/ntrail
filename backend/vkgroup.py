@@ -5,18 +5,13 @@ class VKGroup(BaseAPI):
     def __init__(self, group):
         super().__init__()
         self.screen_name = None
-        self.id = None
         if isinstance(group, str):
-            try:
-                self.id = int(group)
-            except:
-                name = group.split('/')[-1]
-                self.screen_name = name
-                self.id = self.resolve_screen_name(name)['object_id']
-        elif isinstance(group, int):
-            self.id = group
+            name = group.split('/')[-1]
+            self.screen_name = name
+            self.id = self.resolve_screen_name(name)['object_id']
         else:
-            raise TypeError('Wrong group type: {}'.format(type(group)))
+            self.id = int(group)
+
         assert self.id
 
     @once_property
@@ -29,7 +24,9 @@ class VKGroup(BaseAPI):
         return Community(members)
 
     def print(self, additional=''):
-        print(f"{self.data['name']}    https://vk.com/{self.data['screen_name']} {additional}")
+        name = self.data['name']
+        name += ' ' * max(30 - len(name), 2)
+        print(f"{name} https://vk.com/{self.data['screen_name']} {additional}")
 
     def __hash__(self):
         return hash(self.id)

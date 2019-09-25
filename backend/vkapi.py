@@ -1,7 +1,9 @@
+from baseapi import timeit
 import vk
 import time
 import pickle
 import math
+import os
 # vk app client_id 7091370
 # service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
 # my user access_token 5bfaab47e81d46f1a1484571b5116939a4b142eb3253b715fa6af897018fd6662e7c41ada3ac04a63ed61
@@ -90,37 +92,35 @@ class VKAPI:
 
     @staticmethod
     def save_memory(file_name=None):
-        if not file_name:
-            try:
-                with open('data/last_memory_dump.info', 'r') as f:
-                    file_name = f.read()
-            except:
-                file_name = f'{str(int(time.time()))}_memory_dump'
+        try:
+            with open('data/0last_memory_dump.info', 'r') as f:
+                file_name = f.read()
+        except FileNotFoundError:
+            file_name = f'0{str(int(time.time()))}_memory_dump'
+            with open('data/0last_memory_dump.info', 'w') as f:
+                f.write(file_name)
 
-        with open('data/last_memory_dump.info', 'w') as f:
-            f.write(file_name)
         for name in objects_to_save:
             curr_file_name = f'{file_name}_{name}'
             with open('data/' + curr_file_name, 'wb') as f:
                 pickle.dump(globals()[name], f)
 
+        print('memory saved')
+
     @staticmethod
-    def load_memory(file_name=None):
+    def load_memory():
         try:
-            if not file_name:
-                with open('data/last_memory_dump.info', 'r') as f:
-                    file_name = f.read()
-            for name in objects_to_save:
-                curr_file_name = f'{file_name}_{name}'
-                with open('data/' + curr_file_name, 'rb') as f:
-                    try:
+            with open('data/0last_memory_dump.info', 'r') as f:
+                file_name = f.read()
+                for name in objects_to_save:
+                    curr_file_name = f'{file_name}_{name}'
+                    with open('data/' + curr_file_name, 'rb') as f:
                         obj = pickle.load(f)
                         globals()[name] = obj
-                    except EOFError:
-                        pass
 
+            print('memory loaded')
         except FileNotFoundError:
-            pass
+            print('Memory dump does not exits on path "data/"')
 
     def get_users(self, vk_ids, full=False):
         global users_data_
@@ -153,9 +153,9 @@ class VKAPI:
 
     def get_random_group_users(self, group_id, k=3000):
         request_groups = 1000
-        groups = self.get_group_members(group_id=group_id, amount=request_groups, items=False)
-        count = groups['count']
-        items = groups['items']
+        res = self.get_group_members(group_id=group_id, amount=request_groups, count=True)
+        items = res['items']
+        count = res['count']
         k -= request_groups
         count -= request_groups
         if k <= 0 or count <= 0:
@@ -269,20 +269,22 @@ class VKAPI:
                     if item['type'] == 'profile']
         return search_result['items']
 
-    def get_group_members(self, group_id, offset=0, amount=1000):
-        # return self.execute_query('API.groups.getMembers({group_id=%d, offset=%d})', )
+    def get_group_members(self, group_id, offset=0, amount=1000, count=False):
         if amount <= 1000:
             t = (group_id, offset)
             if t in groups_members_:
-                return groups_members_[t]
-            try:
-                res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
-            except Exception as e:
-                if e.code == 15:
-                    res = {'items': [], 'count': 0}
-                else:
-                    raise e
-            groups_members_[t] = res
+                res = groups_members_[t]
+            else:
+                try:
+                    res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
+                except Exception as e:
+                    if e.code == 15:
+                        res = {'items': [], 'count': 0}
+                    else:
+                        raise e
+                groups_members_[t] = res
+            if count:
+                return res
             return res['items']
         else:
             items = self.get_group_members(group_id, offset, 1000)

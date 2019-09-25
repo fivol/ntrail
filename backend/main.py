@@ -4,7 +4,7 @@ from community_pool import Community
 from groups_pool import GroupsPool
 from vkuser import VKUser
 from vkgroup import VKGroup
-
+from pprint import pprint
 
 def make_json_serializable(obj):
     try:
@@ -18,8 +18,7 @@ def make_json_serializable(obj):
 
         return str(obj)
 
-
-bapi.load_memory()
+# VKUser('boris2000n').friends.pools()
 # user = VKUser('boris2000n')
 # user.groups.color_graph(algorithm='louvain')
 

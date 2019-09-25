@@ -1,4 +1,3 @@
-from vkapi import VKAPI
 import random
 from slmpy import ModularityOptimzer
 import numpy as np
@@ -7,10 +6,10 @@ import networkx as nx
 from collections import Counter
 import pandas as pd
 import matplotlib.patches as mpatches
-import time
+from time import time
 import math
 import hashlib
-import pickle
+from pprint import pprint
 
 colors = []
 
@@ -54,7 +53,21 @@ def self_replace(*arg_names):
     return decorator
 
 
-class BaseAPI(VKAPI):
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        t = time()
+        result = func(*args, **kwargs)
+        eps = time() - t
+        print(f'# timeit {func.__name__} {eps:.5f} {str(time())[8:]}')
+        return result
+    return wrapper
+
+
+from vkapi import VKAPI
+from instapi import InstAPI
+
+
+class BaseAPI(VKAPI, InstAPI):
     @staticmethod
     def get_color(i, size=None):
         if size == 1:
@@ -87,13 +100,16 @@ class BaseAPI(VKAPI):
         return dict([(item[key], item) for item in list_obj])
 
     @classmethod
-    def list_from_dicts(cls, dicts_list, key, counter=False, ignore_zero=False):
+    def list_from_dicts(cls, dicts_list, key, counter=False, ignore_zero=False, most_common=True):
         dicts_list = filter(lambda x: key in x, dicts_list)
         result = map(lambda x: x[key], dicts_list)
         if ignore_zero:
             result = filter(lambda x: bool(x), result)
         if counter:
-            return Counter(result)
+            res = Counter(result)
+            if most_common:
+                return res.most_common()
+            return res
         return list(result)
 
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
@@ -145,11 +161,12 @@ class BaseAPI(VKAPI):
             plt.legend(handles=color_patches)
 
         if not save_path:
-            save_path = f'data/weighted_graph_{int(time.time())}.svg'
+            save_path = f'data/weighted_graph_{int(time())}.svg'
         plt.savefig(save_path, dpi=1200)
         plt.show()
 
     @self_replace('graph')
+    @timeit
     def show_graph(self, graph=None, node_color='r', sizes=False, color_patches=None, save_path=None):
         if not graph.edges:
             return
@@ -173,14 +190,25 @@ class BaseAPI(VKAPI):
             plt.legend(handles=color_patches)
 
         if not save_path:
-            save_path = f'data/graph_{int(time.time())}.svg'
+            save_path = f'data/graph_{int(time())}.svg'
         plt.savefig(save_path, dpi=1200)
         plt.show()
 
     def __del__(self):
-        self.save_memory()
+        pass
+        # self.save_memory()
 
     @self_replace('graph')
+    def get_k_neighbors_nodes(self, graph, k=0):
+        result = []
+        for node in graph.nodes:
+            if len(list(graph.neighbors(node))) == k:
+                result.append(node)
+
+        return result
+
+    @self_replace('graph')
+    @timeit
     def color_graph(self, graph=None, sizes=False, pools=None, save_path=None, **kwargs):
         if not pools:
             pools = self.pools(**kwargs)
@@ -213,20 +241,12 @@ class BaseAPI(VKAPI):
 
         self.show_graph(node_color=node_colors, sizes=sizes, color_patches=color_patches, save_path=save_path)
 
-    @self_replace('graph')
-    def get_k_neighbors_nodes(self, graph, k=0):
-        result = []
-        for node in graph.nodes:
-            if len(list(graph.neighbors(node))) == k:
-                result.append(node)
-
-        return result
-
-    def print(self):
-        print(self.print_data)
+    def print_params(self):
+        pprint(self.params, compact=True)
 
     @self_replace('graph')
-    def pools(self, graph=None, algorithm='local_moving'):
+    @timeit
+    def pools(self, graph=None, algorithm='louvain'):
         main_user = None
         if hasattr(self, 'main_user'):
             main_user = self.main_user
@@ -235,6 +255,7 @@ class BaseAPI(VKAPI):
         return pools
 
     @classmethod
+    @timeit
     def communities_from_graph(cls, graph_, algorithm, remove_node=None):
 
         if not graph_.number_of_nodes() or not graph_.number_of_edges():
@@ -320,3 +341,14 @@ class BaseAPI(VKAPI):
 
 
 bapi = BaseAPI()
+
+
+class Memory:
+    def __init__(self):
+        bapi.load_memory()
+
+    def __del__(self):
+        bapi.save_memory()
+
+
+base_memory_object = Memory()

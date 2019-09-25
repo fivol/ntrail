@@ -1,4 +1,4 @@
-from baseapi import BaseAPI, once_property
+from baseapi import BaseAPI, once_property, timeit
 import matplotlib.pyplot as plt
 import io
 import numpy as np
@@ -22,6 +22,7 @@ class VKUser(BaseAPI):
             raise Exception('Wrong user type')
 
     @once_property
+    @timeit
     def groups(self):
         return GroupsPool(self.get_user_groups(self.id))
 
@@ -57,6 +58,7 @@ class VKUser(BaseAPI):
         return f'https://vk.com/id{self.id}'
 
     @once_property
+    # @timeit
     def friends(self):
         from community_pool import Community
         friends_ids = self.get_user_friends(self.id)
@@ -68,7 +70,8 @@ class VKUser(BaseAPI):
         pass
 
     def print(self):
-        print(f'{self.name}\t\t {self.url}')
+        name = self.name + ' ' * max(25 - len(self.name), 1)
+        print(f'{name} {self.url}')
 
     def show_icon(self):
         user = self.short_data
@@ -81,3 +84,6 @@ class VKUser(BaseAPI):
 
     def __hash__(self):
         return hash(self.id)
+
+    def __eq__(self, other):
+        return hash(other) == hash(self)
