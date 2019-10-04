@@ -1,8 +1,9 @@
-from baseapi import BaseAPI, once_property, timeit
+from baseapi import BaseAPI
+from tools import timeit, once_property
 import matplotlib.pyplot as plt
 import io
 import numpy as np
-from groups_pool import GroupsPool
+from vkgroups import VKGroups
 
 
 class VKUser(BaseAPI):
@@ -24,7 +25,7 @@ class VKUser(BaseAPI):
     @once_property
     @timeit
     def groups(self):
-        return GroupsPool(self.get_user_groups(self.id))
+        return VKGroups(self.get_user_groups(self.id))
 
     @classmethod
     def from_random(cls):
@@ -60,10 +61,10 @@ class VKUser(BaseAPI):
     @once_property
     # @timeit
     def friends(self):
-        from community_pool import Community
+        from vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
-        return Community(friends_ids, main_user=self.id)
+        return VKCommunity(friends_ids, main_user=self.id)
 
     @once_property
     def params(self):

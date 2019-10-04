@@ -1,5 +1,6 @@
-from baseapi import BaseAPI, bapi, once_property, timeit
-from groups_pool import GroupsPool
+from baseapi import BaseAPI, bapi
+from tools import once_property, timeit
+from vkgroups import VKGroups
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -28,7 +29,7 @@ from pprint import pprint
 # sex 2-man 1-woman
 
 
-class Community(BaseAPI):
+class VKCommunity(BaseAPI):
 
     def __init__(self, users=None, main_user=None):
         super().__init__()
@@ -56,7 +57,7 @@ class Community(BaseAPI):
         self.size = len(self.nodes)
 
     def __add__(self, other):
-        return Community(self.counter + other.counter)
+        return self.__class__(self.counter + other.counter)
 
     @once_property
     def users(self):
@@ -69,14 +70,14 @@ class Community(BaseAPI):
                 lambda x: isinstance(x, list), self.get_users_groups(self.nodes)),
             [])
         counter = Counter(all_groups)
-        return GroupsPool(counter)
+        return VKGroups(counter)
 
     @once_property
     @timeit
     def graph(self):
         g = nx.Graph()
         self.get_users_friends(self.nodes)
-        g.add_nodes_from(self.users)
+        g.add_nodes_from(self.nodes)
         for user in self.users:
             friends = user.friends.nodes
             if friends:
@@ -152,6 +153,59 @@ class Community(BaseAPI):
             friends_counter += new_participant_unique_friends
         return cls(community)
 
+    def shorten_data(self):
+        params = self.params
+        data = {}
+
+        def time_delta(timestamp_list, dev=1):
+            delta = time() - np.array(timestamp_list)
+            delta = delta / dev
+            return delta
+
+        age = time_delta(params['bdate'], dev=31536000)
+        data['age_all_count'] = len(age)
+        data.update(self.prepare_list(age[(age > 6) & (age < 90)], 'age', clean=True))
+        data['city_all_count'] = len(params['city'])
+        data['city'] = self.counter_top(params['city'])
+        data['country_all_count'] = len(params['country'])
+        data['country'] = self.counter_top(params['country'])
+        data.update(self.prepare_list(params['followers_count'], 'followers_count', clean=True))
+        data['home_town_all_count'] = len(params['home_town'])
+        data['home_town'] = self.counter_top(params['home_town'])
+        last_seen = time_delta(params['last_seen'], dev=3600)
+        data.update(self.prepare_list(last_seen, 'last_seen'))
+        data['online'] = params['online']
+        data['online_mobile'] = params['online_mobile']
+        data['personal_alcohol'] = self.counter_top(params['personal_alcohol'])
+        # occupation personal_inspired_by schools status universities
+        # ? personal_religion relation
+        data['personal_langs'] = self.counter_top(params['personal_langs'])
+        data['personal_life_main'] = self.counter_top(params['personal_life_main'])
+        data['personal_people_main'] = self.counter_top(params['personal_people_main'])
+        data['personal_political'] = self.counter_top(params['personal_political'])
+        data['personal_religion'] = self.counter_top(params['personal_religion'])
+        data['personal_smoking'] = self.counter_top(params['personal_smoking'])
+        data['relation'] = self.counter_top(params['relation'])
+        data['relatives'] = params['relatives']
+        data['sex'] = params['sex']
+        data['verified'] = params['verified']
+        sites_sites = sum([self.get_sites(url_string) for url_string in params['site']], [])
+        sites_status = sum([self.get_sites(url_string) for url_string in params['status']], [])
+        sites = sites_sites + sites_status
+        data['site_common'] = self.counter_top(Counter([item[0] for item in sites]).most_common())
+        username = [url.split('/') for url in self.list_get(sites, 'instagram')]
+        data['instagram_username'] = [item[-1] if item[-1] else item[-2] for item in username]
+        vkid= [url.split('/') for url in self.list_get(sites, 'vk')]
+        data['vk_id'] = [item[-1] if item[-1] else item[-2] for item in vkid]
+        data['site_facebook'] = self.list_get(sites, 'facebook')
+        data['site_twitter'] = self.list_get(sites, 'twitter')
+        data['site_site_count'] = len(params['site'])
+        data['site_site_good_count'] = len(sites_sites)
+        data['site_status_count'] = len(sites_status)
+        data['site_good_count'] = len(sites)
+
+        return data
+
     @once_property
     def params(self):
         params = {}
@@ -175,9 +229,8 @@ class Community(BaseAPI):
             except ValueError:
                 return False
 
-        params['size'] = size
         params['sex'] = Counter(get_field_values('sex')).most_common()
-        params['city_counter'] = self.list_from_dicts(get_field_values('city'), 'title', counter=True)
+        params['city'] = self.list_from_dicts(get_field_values('city'), 'title', counter=True)
         params['country'] = self.list_from_dicts(get_field_values('country'), 'title', counter=True)
         params['online'] = sum(get_field_values('online'))
         params['online_mobile'] = sum(get_field_values('online_mobile'))
@@ -230,9 +283,6 @@ class Community(BaseAPI):
                 }
             )
         params['schools'] = sorted(schools_data, key=lambda x: -x['count'])
-        # params['schools_type_str'] = self.list_from_dicts(schools_list, 'type_str', counter=True)
-        # params['schools_year_from_median'] = np.median(self.list_from_dicts(schools_list, 'year_from'))
-        # params['schools_year_to_median'] = np.median(self.list_from_dicts(schools_list, 'year_to'))
 
         universities_list = sorted(sum(list(get_field_values('universities')), []), key=lambda x: x['id'])
         universities_data = []

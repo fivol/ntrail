@@ -1,10 +1,13 @@
 import json
 from baseapi import bapi, BaseAPI
-from community_pool import Community
-from groups_pool import GroupsPool
+from vkcommunity import VKCommunity
+from vkgroups import VKGroups
 from vkuser import VKUser
 from vkgroup import VKGroup
 from pprint import pprint
+from glbal import logger
+from instcommunity import InstCommunity
+from instuser import InstUser
 
 def make_json_serializable(obj):
     try:

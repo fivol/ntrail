@@ -1,12 +1,14 @@
-from baseapi import BaseAPI, once_property
+from baseapi import BaseAPI
+from tools import once_property
 from collections import Counter
 import numpy as np
 import networkx as nx
 from vkgroup import VKGroup
 import math
+from glbal import logger
 
 
-class GroupsPool(BaseAPI):
+class VKGroups(BaseAPI):
     def __init__(self, groups=None, most_common=None):
         super().__init__()
         if not groups:
@@ -34,14 +36,14 @@ class GroupsPool(BaseAPI):
         self.size = len(self.nodes)
 
     def __add__(self, other):
-        return GroupsPool(self.counter + other.counter)
+        return VKGroups(self.counter + other.counter)
 
     @once_property
     def groups(self):
         return [VKGroup(group_id) for group_id in self.nodes]
 
     def split_components(self):
-        return sorted([GroupsPool(comp) for comp in nx.connected_components(self.graph)],
+        return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
                       key=lambda x: -len(x.groups))
 
     @once_property
@@ -52,11 +54,22 @@ class GroupsPool(BaseAPI):
     def full_data(self):
         return self.get_groups_data(self.nodes, one_by_one=True)
 
-    def common(self, amount=50):
-        return GroupsPool(Counter(dict(self.counter.most_common(amount))))
+    def common(self, amount=None, break_point=1):
+        if not amount:
+            return VKGroups(
+                Counter(
+                    dict(
+                        [(item, count)
+                         for item, count in self.counter.most_common(amount)
+                         if count > break_point
+                         ]
+                    )
+                )
+            )
+        return VKGroups(Counter(dict(self.counter.most_common(amount))))
 
     def select_type(self, type_name):
-        return GroupsPool([group['id'] for group in self.short_data if group['type'] == type_name])
+        return VKGroups([group['id'] for group in self.short_data if group['type'] == type_name])
 
     @once_property
     def graph(self):
@@ -100,8 +113,8 @@ class GroupsPool(BaseAPI):
                 group.print()
 
     def get_members(self, each_amount=1000):
-        from community_pool import Community
-        return Community(sum([group.get_members(each_amount) for group in self.groups], []))
+        from vkcommunity import VKCommunity
+        return VKCommunity(sum([group.get_members(each_amount) for group in self.groups], []))
 
     @once_property
     def short_info(self):
@@ -127,7 +140,7 @@ class GroupsPool(BaseAPI):
             if self.size == 1:
                 return word
 
-        activity = self.params['pages_activity'].most_common(1)
+        activity = self.params['pages_activity']
         if activity:
             return activity[0]
         return 'None'
@@ -137,30 +150,33 @@ class GroupsPool(BaseAPI):
 
     def order(self, order_type='smart'):
         if order_type == 'smart':
-            return GroupsPool(
+            self.short_data
+            return VKGroups(
                 Counter(
                     dict(
-                        [(group.id, self.counter[group.id] / math.log(group.data['members_count']))
+                        [(group.id, self.counter[group.id] / math.log(group.short_data.get('members_count', 10)))
                          for group in self.groups]
                     )
                 )
             )
         if order_type == 'popular':
-            return GroupsPool(
+            self.short_data
+            return VKGroups(
                 Counter(
                     dict(
-                        [(group.id, group.data['members_count'])
+                        [(group.id, group.short_data['members_count'])
                          for group in self.groups]
                     )
                 )
             )
         if order_type == 'reverse':
-            return GroupsPool(self.nodes[::-1])
+            return VKGroups(self.nodes[::-1])
 
     @once_property
     def params(self):
+        logger.debug('@ get groups params')
         params = {}
-        groups_list = self.short_data
+        groups_list = self.full_data
         params['size'] = self.size
         params['age_limits'] = self.list_from_dicts(groups_list, 'age_limits', counter=True)
         params['city'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'city'),
@@ -171,7 +187,23 @@ class GroupsPool(BaseAPI):
         params['main_section'] = self.list_from_dicts(groups_list, 'main_section',
                                                       counter=True, ignore_zero=True)
         params['place'] = self.list_from_dicts(groups_list, 'title', counter=True)
-        params['verified'] = self.list_from_dicts(groups_list, 'verified', counter=True)
+        params['verified'] = sum(self.list_from_dicts(groups_list, 'verified'))
+        params['members_count'] = sorted(self.list_from_dicts(groups_list, 'members_count'), reverse=True)
+        params['trending'] = sum(self.list_from_dicts(groups_list, 'trending'))
+        params['wall'] = Counter(self.list_from_dicts(groups_list, 'wall')).most_common()
+        links = sum(self.list_from_dicts(groups_list, 'links'), [])
+        params['links_names'] = self.list_from_dicts(links, 'name', ignore_zero=True)
+        params['links_urls'] = self.list_from_dicts(links, 'url', ignore_zero=True)
+        params['contacts'] = Counter(self.list_from_dicts(
+            sum(self.list_from_dicts(groups_list, 'contacts'), []), 'user_id')).most_common()
+        params['description'] = self.list_from_dicts(groups_list, 'description', ignore_zero=True)
+        params['site'] = self.list_from_dicts(groups_list, 'site', ignore_zero=True)
+        params['start_date'] = sorted(self.list_from_dicts(groups_list, 'start_date', ignore_zero=True), reverse=True)
+        params['deactivated'] = Counter(self.list_from_dicts(groups_list, 'deactivated')).most_common()
+        counters = self.list_from_dicts(groups_list, 'counters')
+        for counter_item in ['albums', 'articles', 'docs', 'photos', 'topics', 'videos']:
+            params['counters_' + counter_item] = \
+                sorted(self.list_from_dicts(counters, counter_item, ignore_zero=True), reverse=True)
 
         type_groups = self.select_type('group')
         type_pages = self.select_type('page')

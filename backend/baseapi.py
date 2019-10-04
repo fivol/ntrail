@@ -6,115 +6,22 @@ import networkx as nx
 from collections import Counter
 import pandas as pd
 import matplotlib.patches as mpatches
-from time import time
+from time import time, sleep
 import math
 import hashlib
 from pprint import pprint
-
-colors = []
-
-colors += ['#FFFF00', '#0000FF', '#FF0000', '#00FF00', '#FF00FF', '#808000', '#00FFFF', '#800000',
-           '#800080']
-colors = list(set(colors))
-random.shuffle(colors)
-
-objects = {}
-
-
-def once_property(func):
-    @property
-    def wrapper(class_obj):
-        func_name = func.__name__
-        class_value_name = f'{func_name}_'
-        if hasattr(class_obj, class_value_name):
-            return getattr(class_obj, class_value_name)
-        method_result = func(class_obj)
-        setattr(class_obj, class_value_name, method_result)
-        return method_result
-
-    return wrapper
-
-
-def self_replace(*arg_names):
-    def decorator(func):
-        def wrapper(self, *args, **kwargs):
-            # print(func.__name__, kwargs)
-            for arg_name in arg_names:
-                if arg_name not in kwargs:
-                    obj = getattr(self, arg_name)
-                    if callable(obj):
-                        obj = obj()
-                    kwargs[arg_name] = obj
-
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
-def timeit(func):
-    def wrapper(*args, **kwargs):
-        t = time()
-        result = func(*args, **kwargs)
-        eps = time() - t
-        print(f'# timeit {func.__name__} {eps:.5f} {str(time())[8:]}')
-        return result
-    return wrapper
-
-
 from vkapi import VKAPI
 from instapi import InstAPI
+from tools import *
+from glbal import logger
+import pickle
 
 
-class BaseAPI(VKAPI, InstAPI):
-    @staticmethod
-    def get_color(i, size=None):
-        if size == 1:
-            return '#000000'
-        if i == 0:
-            return '#000000'
-        if i - 1 >= len(colors):
-            return '#FFFFFF'
-
-        return colors[i - 1]
-
-    @classmethod
-    def get_obj(cls, id):
-        return objects.get(id, None)
-
-    @classmethod
-    def set_obj(cls, id, obj):
-        objects[id] = obj
-
-    @staticmethod
-    def reset_colors():
-        random.shuffle(colors)
-
-    @classmethod
-    def tryelse(cls, code):
-        pass
-
-    @classmethod
-    def dict_from_dicts(cls, list_obj, key):
-        return dict([(item[key], item) for item in list_obj])
-
-    @classmethod
-    def list_from_dicts(cls, dicts_list, key, counter=False, ignore_zero=False, most_common=True):
-        dicts_list = filter(lambda x: key in x, dicts_list)
-        result = map(lambda x: x[key], dicts_list)
-        if ignore_zero:
-            result = filter(lambda x: bool(x), result)
-        if counter:
-            res = Counter(result)
-            if most_common:
-                return res.most_common()
-            return res
-        return list(result)
+class BaseAPI(VKAPI, InstAPI, Tools):
 
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
                             color_patches=None, save_path=None):
-        from groups_pool import GroupsPool
+        from vkgroups import VKGroups
         def value_to_color(x):
             x = 1 - x
             x = math.sqrt(x)
@@ -139,7 +46,7 @@ class BaseAPI(VKAPI, InstAPI):
         weights *= 1 / (max(weights))
         weights[weights > 1] = 1
         node_sizes = 50
-        if isinstance(self, GroupsPool) and sizes:
+        if isinstance(self, VKGroups) and sizes:
             groups_dict = self.dict_from_dicts(self.groups_base_data(), 'id')
 
             def get_node_size(members_count):
@@ -165,6 +72,7 @@ class BaseAPI(VKAPI, InstAPI):
         plt.savefig(save_path, dpi=1200)
         plt.show()
 
+
     @self_replace('graph')
     @timeit
     def show_graph(self, graph=None, node_color='r', sizes=False, color_patches=None, save_path=None):
@@ -176,7 +84,7 @@ class BaseAPI(VKAPI, InstAPI):
                                      node_color=node_color, color_patches=color_patches, save_path=save_path)
             return
 
-        plt.figure(figsize=(10, 10))
+        plt.figure(figsize=(8, 8))
         options = {
             'node_color': node_color,
             'width': 1,
@@ -243,6 +151,9 @@ class BaseAPI(VKAPI, InstAPI):
 
     def print_params(self):
         pprint(self.params, compact=True)
+
+    def print_shorten_data(self):
+        pprint(self.shorten_data(), compact=True)
 
     @self_replace('graph')
     @timeit
@@ -347,8 +258,13 @@ class Memory:
     def __init__(self):
         bapi.load_memory()
 
-    def __del__(self):
-        bapi.save_memory()
+    @staticmethod
+    def save_memory_timer():
+        while True:
+            sleep(3)
+            bapi.save_memory(silent=True)
 
 
 base_memory_object = Memory()
+import threading
+threading.Thread(target=Memory.save_memory_timer).start()
