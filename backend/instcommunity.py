@@ -1,14 +1,17 @@
-from baseapi import BaseAPI
-from tools import once_property
+from tools import once_property, timeit
 from instuser import InstUser
 import instagram
 from collections import Counter
 import networkx as nx
 from instagram.entities import Account
+from many_objects import ManyObjects
 
 
-class InstCommunity(BaseAPI):
+class InstCommunity(ManyObjects):
+    @timeit
     def __init__(self, users):
+        self.base_class = InstUser
+        super().__init__()
         if not users:
             self.nodes = []
             self.size = 0
@@ -33,43 +36,53 @@ class InstCommunity(BaseAPI):
 
         self.size = len(self.nodes)
 
+    def load_media_data(self, users=None, full=False):
+        if not users:
+            users = self.objects
+        self.get_objects_medias([Account(user.username) for user in users], full=full)
+
     @once_property
-    def users(self):
-        return [InstUser(username) for username in self.nodes]
+    def short_data(self):
+        self.load_media_data(full=False)
+        return [user.short_data for user in self.objects]
 
-    def print(self, k=None):
-        users = sorted(self.users, key=lambda x: -self.counter[x.username])
-        if k:
-            users = users[:k]
+    @once_property
+    def full_data(self):
+        self.load_media_data(full=True)
+        return [user.full_data for user in self.objects]
 
-        self.get_objects_medias([Account(user.username) for user in users])
-        for user in users:
-            if self.counter[user.username] != 1:
-                user.print(self.counter[user.username])
-            else:
-                user.print()
-
-    def __add__(self, other):
-        return InstCommunity(self.counter + other.counter)
+    def get_key_words(self):
+        result = {}
+        for data in self.short_data:
+            name = data['full_name']
+            username = data['username']
+            if name:
+                result[name] = data['username']
+            names = name.split(' ')
+            if len(names) > 1:
+                if names[0] and names[1]:
+                    result[f'{names[1]} {names[0]}'] = username
+                if names[0]:
+                    result[names[0]] = username
+                if names[1]:
+                    result[names[1]] = username
+            result[username] = username
+        return dict(result)
 
     @once_property
     def valid_users(self):
         self.get_objects_medias([Account(username) for username in self.nodes])
-        return InstCommunity([user for user in self.users if user.valid])
+        return InstCommunity([user for user in self.objects if user.valid])
 
-    def friends(self):
-        return self.followers() + self.follows()
+    def friends(self, include_self=False):
+        friends_community = self.followers() + self.follows()
+        if include_self:
+            friends_community += self.__class__(self.nodes)
+        return friends_community
 
-    @once_property
-    def graph(self):
-        g = nx.Graph()
+    def get_connections(self, **kwargs):
         self.friends()
-        g.add_nodes_from(self.nodes)
-        for user in self.users:
-            friends = user.friends().nodes
-            if friends:
-                g.add_edges_from([(user.username, friend) for friend in friends if friend in self.nodes])
-        return g
+        return dict([(obj, obj.friends().nodes) for obj in self.objects])
 
     @once_property
     def short_info(self):
@@ -84,10 +97,3 @@ class InstCommunity(BaseAPI):
         nodes = self.get_users_follows(self.nodes)
         nodes = sum(nodes, [])
         return InstCommunity(Counter(nodes))
-
-    def common(self, k=-1, break_point=1):
-        if k <= 0:
-            return InstCommunity(Counter(dict(self.counter_top(self.counter.most_common(), break_point))))
-        return InstCommunity(Counter(dict(self.counter.most_common(k))))
-
-

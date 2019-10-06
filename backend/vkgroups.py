@@ -1,4 +1,4 @@
-from baseapi import BaseAPI
+from many_objects import ManyObjects
 from tools import once_property
 from collections import Counter
 import numpy as np
@@ -6,11 +6,13 @@ import networkx as nx
 from vkgroup import VKGroup
 import math
 from glbal import logger
+from tools import timeit
 
 
-class VKGroups(BaseAPI):
+class VKGroups(ManyObjects):
     def __init__(self, groups=None, most_common=None):
         super().__init__()
+        self.base_class = VKGroup
         if not groups:
             self.counter = Counter()
             self.nodes = []
@@ -35,13 +37,6 @@ class VKGroups(BaseAPI):
 
         self.size = len(self.nodes)
 
-    def __add__(self, other):
-        return VKGroups(self.counter + other.counter)
-
-    @once_property
-    def groups(self):
-        return [VKGroup(group_id) for group_id in self.nodes]
-
     def split_components(self):
         return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
                       key=lambda x: -len(x.groups))
@@ -54,35 +49,19 @@ class VKGroups(BaseAPI):
     def full_data(self):
         return self.get_groups_data(self.nodes, one_by_one=True)
 
-    def common(self, amount=None, break_point=1):
-        if not amount:
-            return VKGroups(
-                Counter(
-                    dict(
-                        [(item, count)
-                         for item, count in self.counter.most_common(amount)
-                         if count > break_point
-                         ]
-                    )
-                )
-            )
-        return VKGroups(Counter(dict(self.counter.most_common(amount))))
-
     def select_type(self, type_name):
         return VKGroups([group['id'] for group in self.short_data if group['type'] == type_name])
 
-    @once_property
-    def graph(self):
-        g = nx.Graph()
-        groups = self.nodes
-        for i in groups:
-            g.add_node(i)
-            for j in groups:
+    def get_connections(self):
+        connections = {}
+        for i in self.nodes:
+            connections[i] = []
+            for j in self.nodes:
                 if j != i:
                     connection_weight = self.compare_groups(i, j, k=1000)
                     if connection_weight > 0.005:
-                        g.add_edge(i, j, weight=connection_weight)
-        return g
+                        connections[i] += [j]
+        return connections
 
     @once_property
     def links_graph(self):
@@ -100,21 +79,12 @@ class VKGroups(BaseAPI):
                         g.add_edge(group_data['id'], link_group['id'])
         return g
 
-    def print(self, amount=None, shuffle=False):
-        groups = self.groups.copy()
-        self.short_data
-        if shuffle and amount:
-            np.random.shuffle(groups)
-
-        for group in groups[:amount]:
-            if self.counter[group.id] != 1:
-                group.print(self.counter[group.id])
-            else:
-                group.print()
-
     def get_members(self, each_amount=1000):
         from vkcommunity import VKCommunity
         return VKCommunity(sum([group.get_members(each_amount) for group in self.groups], []))
+
+    def load_media_data(self, groups=None):
+        self.short_data
 
     @once_property
     def short_info(self):
@@ -148,6 +118,7 @@ class VKGroups(BaseAPI):
     def reverse(self):
         return self.order('reverse')
 
+    @timeit
     def order(self, order_type='smart'):
         if order_type == 'smart':
             self.short_data
@@ -164,13 +135,13 @@ class VKGroups(BaseAPI):
             return VKGroups(
                 Counter(
                     dict(
-                        [(group.id, group.short_data['members_count'])
+                        [(group.id, group.short_data.get('members_count', 10))
                          for group in self.groups]
                     )
                 )
             )
         if order_type == 'reverse':
-            return VKGroups(self.nodes[::-1])
+            return VKGroups(Counter(dict([(item, 1 / count) for item, count in self.counter.most_common()])))
 
     @once_property
     def params(self):

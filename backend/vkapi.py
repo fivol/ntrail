@@ -5,6 +5,7 @@ import pickle
 import math
 from glbal import logger
 import os
+from tools import get
 
 # vk app client_id 7091370
 # service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
@@ -67,22 +68,6 @@ api = API(session=vk.Session(access_token=user_token), v='5.69', lang='ru', time
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
 api_app = API(session=vk.Session(access_token=app_token), v='5.69', lang='ru', timeout=10)
 
-users_data_ = {}
-users_friends_ = {}
-groups_data_ = {}
-users_groups_ = {}
-screen_names_ = {}
-groups_members_ = {}
-
-objects_to_save = [
-    'users_data_',
-    'users_friends_',
-    'groups_data_',
-    'users_groups_',
-    'screen_names_',
-    'groups_members_',
-]
-
 
 class VKAPI:
     def __init__(self, verbose=1):
@@ -90,42 +75,11 @@ class VKAPI:
         self.api_user = api
         self.api_app = api_app
 
-    @staticmethod
-    def vk_save_memory(silent=False):
-        try:
-            with open('data/0last_memory_dump.info', 'r') as f:
-                file_name = f.read()
-        except FileNotFoundError:
-            file_name = f'0{str(int(time.time()))}_memory_dump'
-            with open('data/0last_memory_dump.info', 'w') as f:
-                f.write(file_name)
+    @classmethod
+    def get_users(cls, vk_ids, full=False):
 
-        for name in objects_to_save:
-            curr_file_name = f'{file_name}_{name}'
-            with open('data/' + curr_file_name, 'wb') as f:
-                pickle.dump(globals()[name], f)
-        if not silent:
-            logger.info('memory saved')
-
-    @staticmethod
-    def vk_load_memory():
-        try:
-            with open('data/0last_memory_dump.info', 'r') as f:
-                file_name = f.read()
-                for name in objects_to_save:
-                    curr_file_name = f'{file_name}_{name}'
-                    with open('data/' + curr_file_name, 'rb') as f:
-                        obj = pickle.load(f)
-                        globals()[name] = obj
-
-            logger.info('memory loaded')
-        except FileNotFoundError:
-            logger.warning('Memory dump does not exits on path "data/"')
-
-    def get_users(self, vk_ids, full=False):
-        global users_data_
-
-        have_users = [vkid for vkid in vk_ids if vkid in users_data_ and users_data_[vkid]['full'] >= full]
+        have_users = [vkid for vkid in vk_ids if
+                      vkid in get('users_data_') and get('users_data_')[vkid]['full'] >= full]
         to_save = [vkid for vkid in vk_ids if vkid not in have_users]
 
         if to_save:
@@ -136,23 +90,25 @@ class VKAPI:
                     'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
                     'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
                     'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
-                    'universities', 'verified', 'counters'
+                    'universities', 'verified', 'counters', 'screen_name'
                 ]
             logger.debug('Get users data: %s', len(to_save))
             users = api.users.get(user_ids=to_save, fields=fields)
             for user in users:
                 vkid = user['id']
                 user['full'] = full
-                users_data_[vkid] = user
+                get('users_data_')[vkid] = user
 
-        return dict([(vkid, users_data_[vkid]) for vkid in vk_ids])
+        return dict([(vkid, get('users_data_')[vkid]) for vkid in vk_ids if vkid in get('users_data_')])
 
-    def get_user(self, vk_id, full=False):
-        return self.get_users([vk_id], full)[vk_id]
+    @classmethod
+    def get_user(cls, vk_id, full=False):
+        return cls.get_users([vk_id], full)[vk_id]
 
-    def get_random_group_users(self, group_id, k=3000):
+    @classmethod
+    def get_random_group_users(cls, group_id, k=3000):
         request_groups = 1000
-        res = self.get_group_members(group_id=group_id, amount=request_groups, count=True)
+        res = cls.get_group_members(group_id=group_id, amount=request_groups, count=True)
         items = res['items']
         count = res['count']
         k -= request_groups
@@ -163,18 +119,20 @@ class VKAPI:
         curr_offset = request_groups
         offset = math.ceil(count / k_requests)
         for i in range(k_requests):
-            res = self.get_group_members(group_id=group_id, offset=curr_offset, amount=request_groups)
+            res = cls.get_group_members(group_id=group_id, offset=curr_offset, amount=request_groups)
             curr_offset += offset
             items += res
 
         return list(set(items))[:k]
 
-    def compare_groups(self, group1, group2, k=3000):
-        users1 = set(self.get_random_group_users(group1, k=k))
-        users2 = set(self.get_random_group_users(group2, k=k))
+    @classmethod
+    def compare_groups(cls, group1, group2, k=3000):
+        users1 = set(cls.get_random_group_users(group1, k=k))
+        users2 = set(cls.get_random_group_users(group2, k=k))
         return len(users1.intersection(users2)) / k
 
-    def execute_query(self, item_string, items_list, save_dict, default_value=None, msg=None):
+    @classmethod
+    def execute_query(cls, item_string, items_list, save_dict, default_value=None, msg=None):
         if not items_list:
             return []
         items_list = list(items_list)
@@ -217,22 +175,27 @@ class VKAPI:
             save_dict[id] = item
         return [save_dict[id] for id in items_list]
 
-    def get_users_friends(self, user_ids):
-        return self.execute_query('API.friends.get({"user_id":%d})["items"]', user_ids, users_friends_,
-                                  default_value=[], msg='Get users friends')
+    @classmethod
+    def get_users_friends(cls, user_ids):
+        return cls.execute_query('API.friends.get({"user_id":%d})["items"]', user_ids, get('users_friends_'),
+                                 default_value=[], msg='Get users friends')
 
-    def get_users_groups(self, user_ids):
-        return self.execute_query('API.groups.get({"user_id":%d})["items"]',
-                                  user_ids, users_groups_, default_value=[], msg='Get users groups')
+    @classmethod
+    def get_users_groups(cls, user_ids):
+        return cls.execute_query('API.groups.get({"user_id":%d})["items"]',
+                                 user_ids, get('users_groups_'), default_value=[], msg='Get users groups')
 
-    def resolve_screen_names(self, screen_names):
-        return self.execute_query('API.utils.resolveScreenName({"screen_name":"%s"})', screen_names,
-                                  screen_names_, msg='Resolve screen name')
+    @classmethod
+    def resolve_screen_names(cls, screen_names):
+        return cls.execute_query('API.utils.resolveScreenName({"screen_name":"%s"})', screen_names,
+                                 get('screen_names_'), msg='Resolve screen name')
 
-    def resolve_screen_name(self, screen_name):
-        return self.resolve_screen_names([screen_name])[0]
+    @classmethod
+    def resolve_screen_name(cls, screen_name):
+        return cls.resolve_screen_names([screen_name])[0]
 
-    def get_groups_data(self, group_ids, one_by_one=False):
+    @classmethod
+    def get_groups_data(cls, group_ids, one_by_one=False):
         # one_by_one fields: links counters
         fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
                   'main_section', 'members_count', 'place',
@@ -240,28 +203,31 @@ class VKAPI:
                   'description', 'site', 'start_date']
         fields_string = ','.join(fields)
         if one_by_one and len(group_ids) > 1:
-            return self.execute_query(
+            return cls.execute_query(
                 'API.groups.getById({"fields": "' + fields_string + '", "group_id":%d})[0]',
                 group_ids,
-                groups_data_,
+                get('groups_data_'),
                 msg='Get groups data'
             )
-        new_items_ids = [item for item in group_ids if item not in groups_data_]
+        new_items_ids = [item for item in group_ids if item not in get('groups_data_')]
         new_items = []
         if new_items_ids:
             logger.debug('Get short groups data: %s', len(new_items_ids))
             new_items = api.groups.getById(group_ids=new_items_ids, fields=fields)
-        for id, item in zip(new_items_ids, new_items):
-            groups_data_[id] = item
-        return [groups_data_[id] for id in group_ids if id in groups_data_]
+        for id_, item in zip(new_items_ids, new_items):
+            get('groups_data_')[id_] = item
+        return [get('groups_data_')[id] for id in group_ids if id in get('groups_data_')]
 
-    def get_user_friends(self, vkid):
-        return self.get_users_friends([vkid])[0]
+    @classmethod
+    def get_user_friends(cls, vkid):
+        return cls.get_users_friends([vkid])[0]
 
-    def get_user_groups(self, vkid):
-        return self.get_users_groups([vkid])[0]
+    @classmethod
+    def get_user_groups(cls, vkid):
+        return cls.get_users_groups([vkid])[0]
 
-    def search(self, string, offset=0, limit=100, filters='', users_ids=None):
+    @classmethod
+    def search(cls, string, offset=0, limit=100, filters='', users_ids=None):
         logger.debub('Search %s', string)
         search_result = api.search.getHints(q=string, offset=offset,
                                             limit=limit, filters=filters, search_global=1)
@@ -271,11 +237,12 @@ class VKAPI:
                     if item['type'] == 'profile']
         return search_result['items']
 
-    def get_group_members(self, group_id, amount=1000, offset=0, count=False):
+    @classmethod
+    def get_group_members(cls, group_id, amount=1000, offset=0, count=False):
         if amount <= 1000:
             t = (group_id, offset, amount)
-            if t in groups_members_:
-                res = groups_members_[t]
+            if t in get('groups_members_'):
+                res = get('groups_members_')[t]
             else:
                 logger.debug('Get group members: %s amount: %s', group_id, amount)
                 try:
@@ -285,15 +252,16 @@ class VKAPI:
                         res = {'items': [], 'count': 0}
                     else:
                         raise e
-                groups_members_[t] = res
+                get('groups_members_')[t] = res
             if count:
                 return res
             return res['items']
         else:
-            items = self.get_group_members(group_id, offset, 1000)
+            items = cls.get_group_members(group_id, offset, 1000)
             if len(items) < 1000:
                 return items
-            return items + self.get_group_members(group_id, offset + 1000, amount - 1000)
+            return items + cls.get_group_members(group_id, offset + 1000, amount - 1000)
 
-    def get_group_data(self, group_id, full):
-        return self.get_groups_data([group_id], one_by_one=full)[0]
+    @classmethod
+    def get_group_data(cls, group_id, full):
+        return cls.get_groups_data([group_id], one_by_one=full)[0]

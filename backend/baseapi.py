@@ -72,14 +72,11 @@ class BaseAPI(VKAPI, InstAPI, Tools):
         plt.savefig(save_path, dpi=1200)
         plt.show()
 
-
     @self_replace('graph')
     @timeit
     def show_graph(self, graph=None, node_color='r', sizes=False, color_patches=None, save_path=None):
-        if not graph.edges:
-            return
 
-        if 'weight' in next(iter(graph.edges(data=True)))[2]:
+        if len(graph.edges) and 'weight' in next(iter(graph.edges(data=True)))[2]:
             self.show_weighted_graph(graph, sizes=sizes,
                                      node_color=node_color, color_patches=color_patches, save_path=save_path)
             return
@@ -252,19 +249,3 @@ class BaseAPI(VKAPI, InstAPI, Tools):
 
 
 bapi = BaseAPI()
-
-
-class Memory:
-    def __init__(self):
-        bapi.load_memory()
-
-    @staticmethod
-    def save_memory_timer():
-        while True:
-            sleep(3)
-            bapi.save_memory(silent=True)
-
-
-base_memory_object = Memory()
-import threading
-threading.Thread(target=Memory.save_memory_timer).start()

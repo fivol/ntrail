@@ -1,8 +1,8 @@
-from baseapi import BaseAPI
+from one_object import OneObject
 from tools import once_property
 
 
-class VKGroup(BaseAPI):
+class VKGroup(OneObject):
     def __init__(self, group):
         super().__init__()
         self.screen_name = None
@@ -13,6 +13,7 @@ class VKGroup(BaseAPI):
         else:
             self.id = int(group)
 
+        self.pk = self.id
         assert self.id
 
     @once_property
@@ -28,10 +29,10 @@ class VKGroup(BaseAPI):
         members = self.get_group_members(self.id, amount=amount)
         return VKCommunity(members)
 
-    def print(self, additional=''):
-        name = self.short_data['name']
-        name += ' ' * max(30 - len(name), 2)
-        print(f"{name} https://vk.com/{self.short_data['screen_name']} {additional}")
+    @once_property
+    def name(self):
+        return self.short_data['name']
 
-    def __hash__(self):
-        return hash(self.id)
+    @once_property
+    def url(self):
+        return f"https://vk.com/{self.short_data['screen_name']}"

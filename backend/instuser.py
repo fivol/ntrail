@@ -2,9 +2,10 @@ from tools import once_property
 from baseapi import BaseAPI
 from instagram.entities import Account
 from glbal import logger
+from one_object import OneObject
 
 
-class InstUser(BaseAPI):
+class InstUser(OneObject):
     def __init__(self, user):
         if isinstance(user, str):
             if user.endswith('/'):
@@ -12,41 +13,61 @@ class InstUser(BaseAPI):
             username = user.split('/')[-1]
             self.username = username
         elif isinstance(user, Account):
-            self.account_ = user
             self.username = user.username
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
 
+        self.pk = self.username
         super().__init__()
 
     @once_property
     def url(self):
         return f'https://instagram.com/{self.username}/'
 
-    @once_property
-    def account(self):
+    def get_account(self, full=False):
         account = Account(self.username)
-        return self.get_media(account)
+        return self.get_media(account, full=full)
 
     @property
     def name(self):
-        return self.account.full_name
+        return self.short_data['full_name']
 
-    @property
-    def follows_count(self):
-        return self.account.follows_count
+    @once_property
+    def short_data(self):
+        ac = self.get_account(full=False)
+        return {
+            'full_name': ac.full_name,
+            'id': ac.id,
+            'is_verified': ac.is_verified,
+            'profile_pic_url': ac.profile_pic_url,
+            'username': ac.username
+        }
 
-    @property
-    def followers_count(self):
-        return self.account.followers_count
+    @once_property
+    def full_data(self):
+        ac = self.get_account(full=True)
+        data = {
+            'biography': ac.biography,
+            'country_block': ac.country_block,
+            'fb_page': ac.fb_page,
+            'followers_count': ac.followers_count,
+            'follows_count': ac.follows_count,
+            'full_name': ac.full_name,
+            'id': ac.id,
+            'is_private': ac.is_private,
+            'is_verified': ac.is_verified,
+            'media_count': ac.media_count,
+            'profile_pic_url': ac.profile_pic_url,
+            'profile_pic_url_hd': ac.profile_pic_url_hd,
+            'username': ac.username,
+        }
+        return data
 
-    def print(self, extra_data=''):
-        if self.valid:
-            name = f'{self.username} {self.name} {extra_data}'
-            name = name + ' ' * max(25 - len(name), 1)
-            print(f'{name} {self.url}')
-        else:
+    def print(self, *args, **kwargs):
+        if not self.valid:
             print(f'ACCOUNT DOES NOT EXIST: {self.username}')
+        else:
+            super().print(*args, **kwargs)
 
     def followers(self, count=300):
         from instcommunity import InstCommunity
@@ -59,11 +80,10 @@ class InstUser(BaseAPI):
         return InstCommunity(nodes)
 
     def friends(self):
-        return self.follows() + self.followers()
+        from instcommunity import InstCommunity
+        return self.follows() + self.followers() + InstCommunity([self.username])
 
     @once_property
     def valid(self):
-        return not self.account is None
-
-
+        return not self.get_account() is None
 

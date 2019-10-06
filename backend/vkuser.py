@@ -1,12 +1,13 @@
-from baseapi import BaseAPI
+from one_object import OneObject
 from tools import timeit, once_property
 import matplotlib.pyplot as plt
 import io
 import numpy as np
 from vkgroups import VKGroups
+from glbal import logger
 
 
-class VKUser(BaseAPI):
+class VKUser(OneObject):
     def __init__(self, user):
         super().__init__()
         if not user:
@@ -21,22 +22,15 @@ class VKUser(BaseAPI):
             self.id = user
         else:
             raise Exception('Wrong user type')
+        self.pk = self.id
 
-    @once_property
-    @timeit
     def groups(self):
         return VKGroups(self.get_user_groups(self.id))
 
     @classmethod
-    def from_random(cls):
-        min_id = 1
-        max_id = 420000000
-        base = BaseAPI(verbose=0)
-        ids_list = np.random.randint(min_id, max_id, size=5)
-        users = [x for x in base.get_users(ids_list, full=True).values() if 'deactivated' not in x]
-        if not users:
-            return cls.from_random()
-        return VKUser(users[0]['id'])
+    def generate_random(cls):
+        from vkcommunity import VKCommunity
+        return VKCommunity.generate_random(1).objects[0]
 
     @once_property
     def friends_ids(self):
@@ -58,8 +52,37 @@ class VKUser(BaseAPI):
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    @once_property
-    # @timeit
+    def get_key_words(self):
+        site_string = ' '.join([str(item) for key, item in self.full_data.items() if not key.startswith('photo')])
+        sites = self.get_sites(site_string)
+        sites_username = []
+        for host, site in sites:
+            try:
+                if site.endswith('/'):
+                    site = site[:-1]
+                path_items = site.split('//')[1].split('/')
+                if len(path_items) >= 2:
+                    sites_username.append(path_items[-1])
+            except:
+                logger.exception('Fail to get username from site: %s', site)
+
+        key_words = [
+            self.name,
+            self.full_data.get('first_name', None),
+            self.full_data.get('last_name', None),
+            self.full_data.get('screen_name', None),
+            self.full_data.get('skype', None),
+            self.full_data.get('livejournal', None),
+            self.full_data.get('instagram', None),
+            self.full_data.get('twitter', None),
+            self.full_data.get('facebook', None),
+            self.full_data.get('maiden_name', None),
+            self.full_data.get('nickname', None),
+            *sites_username
+        ]
+        key_words = list(filter(lambda x: bool(x), key_words))
+        return key_words
+
     def friends(self):
         from vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
@@ -70,10 +93,6 @@ class VKUser(BaseAPI):
     def params(self):
         pass
 
-    def print(self):
-        name = self.name + ' ' * max(25 - len(self.name), 1)
-        print(f'{name} {self.url}')
-
     def show_icon(self):
         user = self.short_data
         url = user['photo_200']
@@ -82,9 +101,3 @@ class VKUser(BaseAPI):
         plt.axis('off')
         plt.imshow(a)
         plt.show()
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __eq__(self, other):
-        return hash(other) == hash(self)

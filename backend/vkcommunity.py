@@ -1,19 +1,15 @@
-from baseapi import BaseAPI, bapi
+from many_objects import ManyObjects
 from tools import once_property, timeit
 from vkgroups import VKGroups
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
 import collections
 from collections import Counter
 import datetime
 from time import time
-import functools
 from vkuser import VKUser
 import math
 from itertools import groupby
-import pandas as pd
-from pprint import pprint
 
 
 # @ - полное говнище, но надо куда нибудь прикрутить
@@ -28,11 +24,14 @@ from pprint import pprint
 # '!universities', '#verified', '#counters'
 # sex 2-man 1-woman
 
+vk_connections_names = ['skype', 'livejournal', 'instagram', 'facebook', 'twitter']
 
-class VKCommunity(BaseAPI):
 
+class VKCommunity(ManyObjects):
+    @timeit
     def __init__(self, users=None, main_user=None):
         super().__init__()
+        self.base_class = VKUser
         if isinstance(users, set):
             users = list(users)
         self.main_user = main_user
@@ -56,13 +55,6 @@ class VKCommunity(BaseAPI):
             raise TypeError('Wrong users type: {}'.format(type(users)))
         self.size = len(self.nodes)
 
-    def __add__(self, other):
-        return self.__class__(self.counter + other.counter)
-
-    @once_property
-    def users(self):
-        return [VKUser(user_id) for user_id in self.nodes]
-
     @once_property
     def groups(self):
         all_groups = sum(
@@ -73,29 +65,11 @@ class VKCommunity(BaseAPI):
         return VKGroups(counter)
 
     @once_property
-    @timeit
-    def graph(self):
-        g = nx.Graph()
-        self.get_users_friends(self.nodes)
-        g.add_nodes_from(self.nodes)
-        for user in self.users:
-            friends = user.friends.nodes
-            if friends:
-                g.add_edges_from([(user.id, friend) for friend in friends if friend in self.nodes])
-        return g
-
-    def print(self, amount=None, shuffle=True):
-        users = self.users.copy()
-        self.short_data
-        if shuffle and amount:
-            np.random.shuffle(users)
-
-        for user in users[:amount]:
-            user.print()
-
-    @once_property
     def short_info(self):
         return ''
+
+    def load_media_data(self, users=None):
+        self.short_data
 
     @once_property
     def short_data(self):
@@ -105,13 +79,19 @@ class VKCommunity(BaseAPI):
     def full_data(self):
         return self.get_users(self.nodes, full=True)
 
+    def friends(self):
+        return self.__class__(self.get_users_friends(self.nodes), [])
+
+    def get_connections(self):
+        connections = self.get_users_friends(self.nodes)
+        return dict(zip(self.nodes, connections))
+
     @classmethod
     def generate_random(cls, size):
         min_vkid = 1
         max_vkid = 420000000
-        base = BaseAPI(verbose=0)
         ids_list = np.random.randint(min_vkid, max_vkid, size=size * 2)
-        users = [x for x in base.get_users(ids_list, full=True).values() if 'deactivated' not in x]
+        users = [x for x in cls.get_users(ids_list, full=True).values() if 'deactivated' not in x]
         community_nodes_data = users[:size]
         nodes = [item['id'] for item in community_nodes_data]
         return cls(nodes)
@@ -124,9 +104,9 @@ class VKCommunity(BaseAPI):
     @classmethod
     def expand(cls, nodes_part, weight_reduction_ratio=0.95, break_point=10, max_nodes=300):
         community = set(nodes_part)
-        bapi.get_users_friends(community)
+        cls.get_users_friends(community)
         friends_counter = collections.Counter(
-            sum([list(set(bapi.get_user_friends(user)) - set(community)) for user in community], []))
+            sum([list(set(cls.get_user_friends(user)) - set(community)) for user in community], []))
         # bapi.get_users_friends([i[0] for i in friends_counter.most_common(75)])
         community_friends_amount_changes = []
         max_iterations = max_nodes
@@ -140,7 +120,7 @@ class VKCommunity(BaseAPI):
             community_friends_amount_changes.append(community_friends_amount)
             community.add(new_participant)
             del friends_counter[new_participant]
-            unique_friends = set(bapi.get_user_friends(new_participant)) - set(community)
+            unique_friends = set(cls.get_user_friends(new_participant)) - set(community)
             new_participant_unique_friends = collections.Counter(
                 dict(
                     zip(
@@ -161,6 +141,9 @@ class VKCommunity(BaseAPI):
             delta = time() - np.array(timestamp_list)
             delta = delta / dev
             return delta
+
+        def prepare_username_list(username_list, service_name):
+            return list(set(username_list))
 
         age = time_delta(params['bdate'], dev=31536000)
         data['age_all_count'] = len(age)
@@ -194,7 +177,9 @@ class VKCommunity(BaseAPI):
         sites = sites_sites + sites_status
         data['site_common'] = self.counter_top(Counter([item[0] for item in sites]).most_common())
         username = [url.split('/') for url in self.list_get(sites, 'instagram')]
-        data['instagram_username'] = [item[-1] if item[-1] else item[-2] for item in username]
+        instagram_username = params['instagram']
+        data['username_instagram'] = prepare_username_list(
+            [item[-1] if item[-1] else item[-2] for item in username] + instagram_username, 'instagram')
         vkid= [url.split('/') for url in self.list_get(sites, 'vk')]
         data['vk_id'] = [item[-1] if item[-1] else item[-2] for item in vkid]
         data['site_facebook'] = self.list_get(sites, 'facebook')
@@ -228,6 +213,9 @@ class VKCommunity(BaseAPI):
                 return True
             except ValueError:
                 return False
+
+        for item_name in vk_connections_names:
+            params[item_name] = get_field_values(item_name)
 
         params['sex'] = Counter(get_field_values('sex')).most_common()
         params['city'] = self.list_from_dicts(get_field_values('city'), 'title', counter=True)
