@@ -1,8 +1,9 @@
 from one_object import OneObject
 from tools import once_property
+from vkapi import VKAPI
 
 
-class VKGroup(OneObject):
+class VKGroup(OneObject, VKAPI):
     def __init__(self, group):
         super().__init__()
         self.screen_name = None
@@ -23,6 +24,10 @@ class VKGroup(OneObject):
     @once_property
     def short_data(self):
         return self.get_group_data(self.id, full=False)
+
+    @once_property
+    def valid(self):
+        return True
 
     def get_members(self, amount=1000):
         from vkcommunity import VKCommunity

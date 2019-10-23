@@ -39,8 +39,8 @@ class WebAgent:
             query += obj.base_url + getattr(obj, obj.primary_key)
 
         response = self.get_request(query, **settings)
-        with open('response.html', 'w') as f:
-            f.write(response.text)
+        # with open('response.html', 'w') as f:
+        #     f.write(response.text)
         if self.logger:
             self.logger.debug('UPDATE response is %s', response)
         try:
@@ -407,7 +407,7 @@ class WebAgent:
     def get_request(self, *args, **kwargs):
         try:
             if self.logger:
-                self.logger.info('GET REQUEST, %s %s %s %s', args, kwargs, self.session.params, self.session.cookies)
+                self.logger.info('GET REQUEST, %s %s %s', args, kwargs, self.session.params)
             response = self.session.get(*args, **kwargs)
             if self.logger:
                 self.logger.info('Response status code is: %s', response.status_code)
@@ -1015,7 +1015,7 @@ class WebAgentAccount(Account, WebAgent):
             return WebAgent.update(self, obj, settings=settings)
         except:
             if self.logger:
-                self.logger.warning('FAIL TO UPDATE WEB AGENT')
+                self.logger.exception('FAIL TO UPDATE WEB AGENT')
 
     @exception_manager.decorator
     def get_media(self, obj=None, pointer=None, count=12, limit=12, delay=0, settings=None):

@@ -1,11 +1,11 @@
-from tools import timeit
 import vk
+from vk.exceptions import VkAPIError
 import time
-import pickle
 import math
 from glbal import logger
 import os
 from tools import get
+from constants import INVALID_USER_ID, ACCESS_DENIED
 
 # vk app client_id 7091370
 # service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
@@ -49,38 +49,54 @@ class API(vk.API):
             res = res(**self.kwargs)
             self.method1, self.method2, self.kwargs = None, None, None
             return res
-        except Exception as e:
+        except VkAPIError as e:
             if e.code == 6:
+                '''Too many requests'''
                 if time.time() - begin_time > 3:
                     logger.warning('Requests time limit exceeded! Sleep 3 seconds')
                     time.sleep(3)
                 logger.warning(f'VK API error 6. Too many requests per second. Wait {wait_seconds} seconds')
                 time.sleep(wait_seconds)
                 return self.make_request(begin_time)
+            if e.code == 113:
+                '''Invalid input data (object does not exist)'''
+                logger.info('INVALID_USER_ID found')
+                return INVALID_USER_ID
+
+            if e.code == 15:
+                '''Access denied: this profile is private'''
+                logger.info('ACCESS_DENIED')
+                return ACCESS_DENIED
 
             self.method1, self.method2, self.kwargs = None, None, None
             raise e
 
 
 user_token = '5211d7bcf46f21eb3e2e5bd64e75fa1199968260d81e170a8d21bb70758f14a46dd160009815ed8fcf94d'
-api = API(session=vk.Session(access_token=user_token), v='5.69', lang='ru', timeout=10)
+api = API(session=vk.Session(access_token=user_token), v='5.102', lang='ru', timeout=10)
 
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
-api_app = API(session=vk.Session(access_token=app_token), v='5.69', lang='ru', timeout=10)
+api_app = API(session=vk.Session(access_token=app_token), v='5.102', lang='ru', timeout=10)
 
 
 class VKAPI:
-    def __init__(self, verbose=1):
-        self.verbose = verbose
-        self.api_user = api
-        self.api_app = api_app
 
     @classmethod
     def get_users(cls, vk_ids, full=False):
-
+        # print(vk_ids)
+        # print(full)
+        assert isinstance(vk_ids, list)
+        if not vk_ids:
+            return {}
+        assert isinstance(vk_ids[0], int)
+        # print('vk_ids', len(vk_ids))
         have_users = [vkid for vkid in vk_ids if
-                      vkid in get('users_data_') and get('users_data_')[vkid]['full'] >= full]
+                      vkid in get('users_data_') and
+                      (isinstance(get('users_data_')[vkid], str) or get('users_data_')[vkid]['full'] >= full)]
+        # print('have_users', have_users, vk_ids[0] in get('users_data_'))
         to_save = [vkid for vkid in vk_ids if vkid not in have_users]
+        # print('to_save', len(to_save))
+        # print('have_users', len(have_users))
 
         if to_save:
             fields = []
@@ -90,20 +106,37 @@ class VKAPI:
                     'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
                     'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
                     'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
-                    'universities', 'verified', 'counters', 'screen_name'
+                    'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed'
                 ]
             logger.debug('Get users data: %s', len(to_save))
-            users = api.users.get(user_ids=to_save, fields=fields)
-            for user in users:
-                vkid = user['id']
-                user['full'] = full
+            users = []
+            k = 500
+            for i in range(len(to_save) // k + 1):
+                begin = i * k
+                end = (i + 1) * k
+                if begin < len(to_save):
+                    users += api.users.get(user_ids=to_save[begin:end], fields=fields)
+
+            # print('users (after api request)', len(users))
+            assert isinstance(users, list), users
+            # if isinstance(users, str):
+            #     return users
+            for user, vkid in zip(users, to_save):
+                if isinstance(user, dict):
+                    vkid = user['id']
+                    user['full'] = full
+                else:
+                    assert isinstance(user, str)
                 get('users_data_')[vkid] = user
 
         return dict([(vkid, get('users_data_')[vkid]) for vkid in vk_ids if vkid in get('users_data_')])
 
     @classmethod
     def get_user(cls, vk_id, full=False):
-        return cls.get_users([vk_id], full)[vk_id]
+        res = cls.get_users([vk_id], full)
+        if isinstance(res, str):
+            return res
+        return res[vk_id]
 
     @classmethod
     def get_random_group_users(cls, group_id, k=3000):
@@ -145,16 +178,22 @@ class VKAPI:
             if not items:
                 return []
             method = item_string.split('.')[1]
-            if method in service_token_methods and len(items) == 1:
-                code_str = item_string % items[0]
-                code_str = 'api_app' + code_str[3:]
-                code_str = code_str.replace('({', '(**{')
-                try:
-                    res = eval(code_str)
-                except:
-                    logger.exception('execute 25')
-                    res = default_value
-                return [res]
+            # if method in service_token_methods and len(items) == 1:
+            #     code_str = item_string % items[0]
+            #     code_str = 'api_app' + code_str[3:]
+            #     code_str = code_str.replace('({', '(**{')
+            #     # print(code_str)
+            #     request = code_str.split('[')[0]
+            #     try:
+            #         res = eval(request)
+            #         if isinstance(res, str):
+            #             return [res]
+            #         if '[' in code_str:
+            #             res = eval(str(res) + '[' + code_str.split('[')[1])
+            #     except:
+            #         logger.exception('execute 25 eval code')
+            #         res = default_value
+            #     return [res]
             code = 'return [' + \
                    ','.join(
                        [
@@ -192,7 +231,10 @@ class VKAPI:
 
     @classmethod
     def resolve_screen_name(cls, screen_name):
-        return cls.resolve_screen_names([screen_name])[0]
+        res = cls.resolve_screen_names([screen_name])
+        if isinstance(res, str):
+            return res
+        return res[0]
 
     @classmethod
     def get_groups_data(cls, group_ids, one_by_one=False):
@@ -247,7 +289,7 @@ class VKAPI:
                 logger.debug('Get group members: %s amount: %s', group_id, amount)
                 try:
                     res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
-                except Exception as e:
+                except VkAPIError as e:
                     if e.code == 15:
                         res = {'items': [], 'count': 0}
                     else:

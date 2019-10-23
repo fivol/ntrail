@@ -1,15 +1,15 @@
 from many_objects import ManyObjects
 from tools import once_property
 from collections import Counter
-import numpy as np
 import networkx as nx
 from vkgroup import VKGroup
 import math
 from glbal import logger
-from tools import timeit
+from tools import timeit, dict_from_dicts, list_from_dicts
+from vkapi import VKAPI
 
 
-class VKGroups(ManyObjects):
+class VKGroups(ManyObjects, VKAPI):
     def __init__(self, groups=None, most_common=None):
         super().__init__()
         self.base_class = VKGroup
@@ -39,7 +39,7 @@ class VKGroups(ManyObjects):
 
     def split_components(self):
         return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
-                      key=lambda x: -len(x.groups))
+                      key=lambda x: -len(x.objects))
 
     @once_property
     def short_data(self):
@@ -66,7 +66,7 @@ class VKGroups(ManyObjects):
     @once_property
     def links_graph(self):
         groups_data = self.full_data
-        groups_names_dict = self.dict_from_dicts(groups_data, 'name')
+        groups_names_dict = dict_from_dicts(groups_data, 'name')
         g = nx.Graph()
         for group_name, group_data in groups_names_dict.items():
             g.add_node(group_data['id'])
@@ -81,7 +81,7 @@ class VKGroups(ManyObjects):
 
     def get_members(self, each_amount=1000):
         from vkcommunity import VKCommunity
-        return VKCommunity(sum([group.get_members(each_amount) for group in self.groups], []))
+        return VKCommunity(sum([group.get_members(each_amount) for group in self.objects], []))
 
     def load_media_data(self, groups=None):
         self.short_data
@@ -126,7 +126,7 @@ class VKGroups(ManyObjects):
                 Counter(
                     dict(
                         [(group.id, self.counter[group.id] / math.log(group.short_data.get('members_count', 10)))
-                         for group in self.groups]
+                         for group in self.objects]
                     )
                 )
             )
@@ -136,7 +136,7 @@ class VKGroups(ManyObjects):
                 Counter(
                     dict(
                         [(group.id, group.short_data.get('members_count', 10))
-                         for group in self.groups]
+                         for group in self.objects]
                     )
                 )
             )
@@ -149,32 +149,32 @@ class VKGroups(ManyObjects):
         params = {}
         groups_list = self.full_data
         params['size'] = self.size
-        params['age_limits'] = self.list_from_dicts(groups_list, 'age_limits', counter=True)
-        params['city'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'city'),
+        params['age_limits'] = list_from_dicts(groups_list, 'age_limits', counter=True)
+        params['city'] = list_from_dicts(list_from_dicts(groups_list, 'city'),
                                               'title', counter=True)
-        params['country'] = self.list_from_dicts(self.list_from_dicts(groups_list, 'country'),
+        params['country'] = list_from_dicts(list_from_dicts(groups_list, 'country'),
                                                  'title', counter=True)
-        params['has_photo'] = self.list_from_dicts(groups_list, 'has_photo', counter=True)
-        params['main_section'] = self.list_from_dicts(groups_list, 'main_section',
+        params['has_photo'] = list_from_dicts(groups_list, 'has_photo', counter=True)
+        params['main_section'] = list_from_dicts(groups_list, 'main_section',
                                                       counter=True, ignore_zero=True)
-        params['place'] = self.list_from_dicts(groups_list, 'title', counter=True)
-        params['verified'] = sum(self.list_from_dicts(groups_list, 'verified'))
-        params['members_count'] = sorted(self.list_from_dicts(groups_list, 'members_count'), reverse=True)
-        params['trending'] = sum(self.list_from_dicts(groups_list, 'trending'))
-        params['wall'] = Counter(self.list_from_dicts(groups_list, 'wall')).most_common()
-        links = sum(self.list_from_dicts(groups_list, 'links'), [])
-        params['links_names'] = self.list_from_dicts(links, 'name', ignore_zero=True)
-        params['links_urls'] = self.list_from_dicts(links, 'url', ignore_zero=True)
-        params['contacts'] = Counter(self.list_from_dicts(
-            sum(self.list_from_dicts(groups_list, 'contacts'), []), 'user_id')).most_common()
-        params['description'] = self.list_from_dicts(groups_list, 'description', ignore_zero=True)
-        params['site'] = self.list_from_dicts(groups_list, 'site', ignore_zero=True)
-        params['start_date'] = sorted(self.list_from_dicts(groups_list, 'start_date', ignore_zero=True), reverse=True)
-        params['deactivated'] = Counter(self.list_from_dicts(groups_list, 'deactivated')).most_common()
-        counters = self.list_from_dicts(groups_list, 'counters')
+        params['place'] = list_from_dicts(groups_list, 'title', counter=True)
+        params['verified'] = sum(list_from_dicts(groups_list, 'verified'))
+        params['members_count'] = sorted(list_from_dicts(groups_list, 'members_count'), reverse=True)
+        params['trending'] = sum(list_from_dicts(groups_list, 'trending'))
+        params['wall'] = Counter(list_from_dicts(groups_list, 'wall')).most_common()
+        links = sum(list_from_dicts(groups_list, 'links'), [])
+        params['links_names'] = list_from_dicts(links, 'name', ignore_zero=True)
+        params['links_urls'] = list_from_dicts(links, 'url', ignore_zero=True)
+        params['contacts'] = Counter(list_from_dicts(
+            sum(list_from_dicts(groups_list, 'contacts'), []), 'user_id')).most_common()
+        params['description'] = list_from_dicts(groups_list, 'description', ignore_zero=True)
+        params['site'] = list_from_dicts(groups_list, 'site', ignore_zero=True)
+        params['start_date'] = sorted(list_from_dicts(groups_list, 'start_date', ignore_zero=True), reverse=True)
+        params['deactivated'] = Counter(list_from_dicts(groups_list, 'deactivated')).most_common()
+        counters = list_from_dicts(groups_list, 'counters')
         for counter_item in ['albums', 'articles', 'docs', 'photos', 'topics', 'videos']:
             params['counters_' + counter_item] = \
-                sorted(self.list_from_dicts(counters, counter_item, ignore_zero=True), reverse=True)
+                sorted(list_from_dicts(counters, counter_item, ignore_zero=True), reverse=True)
 
         type_groups = self.select_type('group')
         type_pages = self.select_type('page')
@@ -184,7 +184,7 @@ class VKGroups(ManyObjects):
         params['type_pages_count'] = type_pages.size
         params['type_events_count'] = type_event.size
 
-        params['pages_activity'] = self.list_from_dicts(type_pages.short_data, 'activity', counter=True)
-        params['groups_activity'] = self.list_from_dicts(type_groups.short_data, 'activity', counter=True)
+        params['pages_activity'] = list_from_dicts(type_pages.short_data, 'activity', counter=True)
+        params['groups_activity'] = list_from_dicts(type_groups.short_data, 'activity', counter=True)
 
         return params

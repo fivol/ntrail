@@ -10,6 +10,7 @@ from threading import Thread
 import difflib
 import string
 import transliterate
+import json
 
 colors = []
 
@@ -24,6 +25,17 @@ execution_locked_func = {}
 
 def get(name, save=False):
     return MemoryCache.get(name, save)
+
+
+def valid_object_method(method):
+    def wrapper(obj, *args, **kwargs):
+        if obj.valid:
+            return method(obj, *args, **kwargs)
+        logger.warning("This object isn't valid! -> method %s in class %s can't be used.",
+                       method.__name__, obj.__class__)
+        return None
+
+    return wrapper
 
 
 def once_property(func):
@@ -99,7 +111,7 @@ class MemoryCache:
             cls.save_memory()
         default = {}
         if name not in cls.stored_data:
-            logger.warning('ITEM %s not in stored_data', name)
+            # logger.warning('ITEM %s not in stored_data', name)
             cls.stored_data[name] = default
 
         return cls.stored_data[name]
@@ -132,191 +144,207 @@ class MemoryCache:
         cls.save_memory()
 
 
-class Tools:
-    @staticmethod
-    def reset_colors():
-        random.shuffle(colors)
+def reset_colors():
+    random.shuffle(colors)
 
-    @classmethod
-    def get_obj(cls, id):
-        return objects.get(id, None)
 
-    @classmethod
-    def get_objs(cls, ids):
-        return reduce((lambda x, y: x + y), [Tools.get_obj(id) for id in ids])
+def get_obj(id):
+    return objects.get(id, None)
 
-    @classmethod
-    def set_obj(cls, id, obj):
-        objects[id] = obj
 
-    @staticmethod
-    def get_color(i, size=None):
-        if size == 1:
-            return '#000000'
-        if i == 0:
-            return '#000000'
-        if i - 1 >= len(colors):
-            return '#FFFFFF'
+def get_objs(ids):
+    return reduce((lambda x, y: x + y), [get_obj(id) for id in ids])
 
-        return colors[i - 1]
 
-    @classmethod
-    def dict_from_dicts(cls, list_obj, key):
-        return dict([(item[key], item) for item in list_obj])
+def set_obj(id, obj):
+    objects[id] = obj
 
-    @staticmethod
-    def sizeof(obj, mb_capacity=False):
-        string = str(obj)
-        obj_str_len = len(string.replace(' ', ''))
-        size = obj_str_len * 2 / 1024
-        if mb_capacity:
-            return int(1024 / size)
-        return size
 
-    @classmethod
-    def list_from_dicts(cls, dicts_list, key, counter=False, ignore_zero=False, most_common=True):
-        dicts_list = filter(lambda x: key in x, dicts_list)
-        result = map(lambda x: x[key], dicts_list)
-        if ignore_zero:
-            result = filter(lambda x: bool(x), result)
-        if counter:
-            res = Counter(result)
-            if most_common:
-                return res.most_common()
-            return res
-        return list(result)
+def get_color(i, size=None):
+    if size == 1:
+        return '#000000'
+    if i == 0:
+        return '#000000'
+    if i - 1 >= len(colors):
+        return '#FFFFFF'
 
-    @staticmethod
-    def prepare_list(list_object, name, funcs=None, mean=True, median=True,
-                     max=True, min=True, count=True, fourth=True, last_fourth=True, clean=False):
-        res = {}
-        l = np.array(list_object)
-        if clean:
-            l = l[l != 0]
-        if not len(l):
-            return {}
-        if funcs:
-            mean = 'mean' in funcs
-            median = 'median' in funcs
-            max = 'max' in funcs
-            min = 'min' in funcs
-            count = 'count' in funcs
-            fourth = 'fourth' in funcs
-            last_fourth = 'last_fourth' in funcs
+    return colors[i - 1]
 
-        name += '_'
-        ordered_list = sorted(l, reverse=True)
-        if mean: res[name + 'mean'] = np.mean(l)
-        if median: res[name + 'median'] = np.median(l)
-        if max: res[name + 'max'] = np.max(l)
-        if min: res[name + 'min'] = np.min(l)
-        if count: res[name + 'count'] = len(l)
-        if fourth: res[name + 'fourth'] = ordered_list[int(len(l) / 4)]
-        if last_fourth: res[name + 'last_fourth'] = ordered_list[int(len(l) / 4 * 3)]
 
+def dict_from_dicts(list_obj, key):
+    assert isinstance(list_obj, list)
+    return dict([(item[key], item) for item in list_obj if key in item])
+
+
+def sizeof(obj, mb_capacity=False):
+    str_obj = str(obj)
+    obj_str_len = len(str_obj.replace(' ', ''))
+    size = obj_str_len * 2 / 1024
+    if mb_capacity:
+        return int(1024 / size)
+    return size
+
+
+def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True):
+    dicts_list = filter(lambda x: key in x, dicts_list)
+    result = map(lambda x: x[key], dicts_list)
+    if ignore_zero:
+        result = filter(lambda x: bool(x), result)
+    if counter:
+        res = Counter(result)
+        if most_common:
+            return res.most_common()
         return res
+    return list(result)
 
-    @staticmethod
-    def counter_top(common_list, break_point=1):
-        return [(item, count) for item, count in common_list if count > break_point]
 
-    @staticmethod
-    def list_get(tuple_list, key):
-        return [
-            item[1]
-            for item in tuple_list
-            if item[0] == key
-        ]
+def make_json_serializable(obj):
+    try:
+        json.dumps(obj)
+        return obj
+    except:
+        if isinstance(obj, dict):
+            return dict([(key, make_json_serializable(value)) for key, value, in obj.items()])
+        if isinstance(obj, list):
+            return [make_json_serializable(item) for item in obj]
 
-    @staticmethod
-    def best_names_matches(items_dict, examples):
-        def compare(a, b):
-            seq = difflib.SequenceMatcher(a=a, b=b)
-            return seq.ratio()
+        return str(obj)
 
-        def is_english(s):
-            return re.sub(f'[{string.punctuation}a-zA-Z0-9 ]', '', s) == ''
 
-        def is_russian(s):
-            return re.sub(f'[{string.punctuation}а-яА-Я0-9 ]', '', s) == ''
+def prepare_list(list_object, name, funcs=None, mean=True, median=True,
+                 max=True, min=True, count=True, fourth=True, last_fourth=True, clean=False):
+    res = {}
+    l = np.array(list_object)
+    if clean:
+        l = l[l != 0]
+    if not len(l):
+        return {}
+    if funcs:
+        mean = 'mean' in funcs
+        median = 'median' in funcs
+        max = 'max' in funcs
+        min = 'min' in funcs
+        count = 'count' in funcs
+        fourth = 'fourth' in funcs
+        last_fourth = 'last_fourth' in funcs
 
-        def clear(s):
-            return re.sub(f'[{string.punctuation}]', '', s)
+    name += '_'
+    ordered_list = sorted(l, reverse=True)
+    if mean: res[name + 'mean'] = np.mean(l)
+    if median: res[name + 'median'] = np.median(l)
+    if max: res[name + 'max'] = np.max(l)
+    if min: res[name + 'min'] = np.min(l)
+    if count: res[name + 'count'] = len(l)
+    if fourth: res[name + 'fourth'] = ordered_list[int(len(l) / 4)]
+    if last_fourth: res[name + 'last_fourth'] = ordered_list[int(len(l) / 4 * 3)]
 
-        def translit(s):
-            try:
-                return transliterate.translit(s, reversed=True)
-            except:
-                return None
+    return res
 
-        def prepare_string(s):
-            s = clear(s.lower())
-            if len(s) < 3:
-                return None
-            if is_english(s):
-                return s
-            elif is_russian(s):
-                return translit(s)
+
+def counter_top(common_list, break_point=1):
+    return [(item, count) for item, count in common_list if count > break_point]
+
+
+def list_get(tuple_list, key):
+    return [
+        item[1]
+        for item in tuple_list
+        if item[0] == key
+    ]
+
+
+def clear_list(list_obj, unique=True):
+    return list(set([i for i in list_obj if i]))
+
+
+def best_names_matches(items_dict, examples):
+    def compare(a, b):
+        seq = difflib.SequenceMatcher(a=a, b=b)
+        return seq.ratio()
+
+    def is_english(s):
+        return re.sub(f'[{string.punctuation}a-zA-Z0-9 ]', '', s) == ''
+
+    def is_russian(s):
+        return re.sub(f'[{string.punctuation}а-яА-Я0-9 ]', '', s) == ''
+
+    def clear(s):
+        return re.sub(f'[{string.punctuation}]', '', s)
+
+    def translit(s):
+        try:
+            return transliterate.translit(s, reversed=True)
+        except:
             return None
 
-        def item_evaluate_ratio(item, examples_list):
-            return max([compare(item, example) for example in examples_list])
+    def prepare_string(s):
+        s = clear(s.lower())
+        if len(s) < 3:
+            return None
+        if is_english(s):
+            return s
+        elif is_russian(s):
+            return translit(s)
+        return None
 
-        items_dict_ = {}
+    def item_evaluate_ratio(item, examples_list):
+        return max([compare(item, example) for example in examples_list])
 
-        for key, value in items_dict.items():
-            prepared_value = prepare_string(key)
-            if prepared_value:
-                items_dict_[prepared_value] = value
+    items_dict_ = {}
 
-        good_examples = [prepare_string(s) for s in examples]
-        good_examples = [i for i in good_examples if i]
+    for key, value in items_dict.items():
+        prepared_value = prepare_string(key)
+        if prepared_value:
+            items_dict_[prepared_value] = value
 
-        result = [
-            (value, item_evaluate_ratio(key, good_examples))
-            for key, value in items_dict_.items()
-        ]
-        result_dict = {}
-        for key, value in result:
-            result_dict[key] = max(result_dict.get(key, 0), value)
+    good_examples = [prepare_string(s) for s in examples]
+    good_examples = [i for i in good_examples if i]
 
-        return Counter(result_dict)
+    result = [
+        (value, item_evaluate_ratio(key, good_examples))
+        for key, value in items_dict_.items()
+    ]
+    result_dict = {}
+    for key, value in result:
+        result_dict[key] = max(result_dict.get(key, 0), value)
 
-    @staticmethod
-    def get_sites(site_string):
-        site_string = str(site_string)
-        regex = r'('
-        regex += r'(?:(?:https|http):\/\/)?'
-        regex += r'(?:www\.)?'
-        regex += r'(?:(?:[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.)+)'
-        regex += r'(?:[a-z]{2,6})'
-        regex += r'(?:(?:\/[a-z0-9_\-.]+)*)'
-        regex += r'(?:\?[^;\s]+)?'
-        regex += r')'
-        urls = re.findall(regex, site_string)
+    return Counter(result_dict)
 
-        sites = []
-        for inst_username in re.findall(r'\W@([a-zA-Z0-9_\.]+)', site_string):
-            sites.append(('instagram', 'https://www.instagram.com/{}/'.format(inst_username)))
 
-        for site in urls:
-            try:
-                if (site.startswith('www') or '//www.' in site) and len(site.split('.')) <= 2:
-                    continue
+def get_sites(site_string):
+    site_string = str(site_string)
+    regex = r'('
+    regex += r'(?:(?:https|http):\/\/)?'
+    regex += r'(?:www\.)?'
+    regex += r'(?:(?:[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.)+)'
+    regex += r'(?:[a-z]{2,6})'
+    regex += r'(?:(?:\/[a-z0-9_\-.]+)*)'
+    regex += r'(?:\?[^;\s]+)?'
+    regex += r')'
+    urls = re.findall(regex, site_string)
 
-                if not site.startswith('http://') and not site.startswith('https://'):
-                    site = 'https://' + site
+    sites = []
+    for inst_username in re.findall(r'\W@([a-zA-Z0-9_\.]+)', site_string):
+        sites.append(('instagram', 'https://www.instagram.com/{}/'.format(inst_username)))
 
-                host = site.split('//')[1]
-                if host.startswith('www.'):
-                    host = host[4:]
+    for site in urls:
+        try:
+            if (site.startswith('www') or '//www.' in site) and len(site.split('.')) <= 2:
+                continue
 
-                host_name = host.split('/')[0].split('.')[-2]
-                sites.append((host_name, site))
-            except:
-                logger.exception('Fail to parse site: %s', site)
+            if not site.startswith('http://') and not site.startswith('https://'):
+                site = 'https://' + site
 
-        return sites
+            host = site.split('//')[1]
+            if host.startswith('www.'):
+                host = host[4:]
+
+            host_name = host.split('/')[0].split('.')[-2]
+            sites.append((host_name, site))
+        except:
+            logger.exception('Fail to parse site: %s', site)
+
+    return sites
 
 
 class ThreadResult:

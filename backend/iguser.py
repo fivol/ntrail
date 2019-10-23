@@ -5,7 +5,7 @@ from glbal import logger
 from one_object import OneObject
 
 
-class InstUser(OneObject):
+class IGUser(OneObject):
     def __init__(self, user):
         if isinstance(user, str):
             if user.endswith('/'):
@@ -70,18 +70,22 @@ class InstUser(OneObject):
             super().print(*args, **kwargs)
 
     def followers(self, count=300):
-        from instcommunity import InstCommunity
+        from igcommunity import IGCommunity
         nodes = self.get_followers(self.username, count=count)
-        return InstCommunity(nodes)
+        return IGCommunity(nodes)
 
     def follows(self, count=300):
-        from instcommunity import InstCommunity
+        from igcommunity import IGCommunity
         nodes = self.get_follows(self.username, count=count)
-        return InstCommunity(nodes)
+        return IGCommunity(nodes)
+
+    @property
+    def is_private(self):
+        return self.full_data['is_private']
 
     def friends(self):
-        from instcommunity import InstCommunity
-        return self.follows() + self.followers() + InstCommunity([self.username])
+        from igcommunity import IGCommunity
+        return self.follows() + self.followers() + IGCommunity([self.username])
 
     @once_property
     def valid(self):

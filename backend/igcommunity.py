@@ -1,5 +1,5 @@
 from tools import once_property, timeit
-from instuser import InstUser
+from iguser import IGUser
 import instagram
 from collections import Counter
 import networkx as nx
@@ -7,10 +7,9 @@ from instagram.entities import Account
 from many_objects import ManyObjects
 
 
-class InstCommunity(ManyObjects):
-    @timeit
+class IGCommunity(ManyObjects):
     def __init__(self, users):
-        self.base_class = InstUser
+        self.base_class = IGUser
         super().__init__()
         if not users:
             self.nodes = []
@@ -20,9 +19,9 @@ class InstCommunity(ManyObjects):
         if isinstance(users, Counter):
             self.counter = users
             self.nodes = list(users)
-        else:
+        elif isinstance(users, list):
             user0 = users[0]
-            if isinstance(user0, InstUser):
+            if isinstance(user0, IGUser):
                 self.nodes = [user.username for user in users]
             elif isinstance(user0, str):
                 self.nodes = users
@@ -33,6 +32,8 @@ class InstCommunity(ManyObjects):
 
             self.counter = Counter(self.nodes)
             self.nodes = list(self.counter)
+        else:
+            raise TypeError('Users must be Counter or list type')
 
         self.size = len(self.nodes)
 
@@ -72,7 +73,7 @@ class InstCommunity(ManyObjects):
     @once_property
     def valid_users(self):
         self.get_objects_medias([Account(username) for username in self.nodes])
-        return InstCommunity([user for user in self.objects if user.valid])
+        return IGCommunity([user for user in self.objects if user.valid])
 
     def friends(self, include_self=False):
         friends_community = self.followers() + self.follows()
@@ -91,9 +92,9 @@ class InstCommunity(ManyObjects):
     def followers(self):
         nodes = self.get_users_followers(self.nodes)
         nodes = sum(nodes, [])
-        return InstCommunity(Counter(nodes))
+        return IGCommunity(Counter(nodes))
 
     def follows(self):
         nodes = self.get_users_follows(self.nodes)
         nodes = sum(nodes, [])
-        return InstCommunity(Counter(nodes))
+        return IGCommunity(Counter(nodes))

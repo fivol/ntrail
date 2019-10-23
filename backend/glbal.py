@@ -9,4 +9,6 @@ formatter = logging.Formatter('%(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
-logger.debug('Start logging...')
+
+if __name__ == '__main__':
+    logger.debug('Start logging...')

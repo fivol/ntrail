@@ -16,8 +16,20 @@ STATUS_USING_AGENT = 'STATUS_USING_AGENT'
 REQUEST_STATUS_OK = 'REQUEST_STATUS_OK'
 REQUEST_STATUS_FAIL = 'REQUEST_STATUS_FAIL'
 
+dead_agents = set()
+
+try:
+    with open('data/dead_agents', 'r') as f:
+        globals()['dead_agents'] = set(f.read().split(','))
+except:
+    logger.debug('dead_agents file not found')
+    with open('data/dead_agents', 'w') as f:
+        f.write('')
+
 
 class InstAgent:
+    logging = False
+
     def __init__(self, username, password=None):
         self.username = username
         self.password = password
@@ -30,7 +42,7 @@ class InstAgent:
         self.last_429_check_time = 0
         self.first_429_request_time = 0
         self.valid = self.is_valid()
-        self.agent = WebAgentAccount(username)
+        self.agent = WebAgentAccount(username, logger=logger if self.logging else None)
 
         self.auth()
 
@@ -103,6 +115,7 @@ class InstAgent:
             if 'NoneType' in str(e):
                 request_status = REQUEST_STATUS_OK
                 request_result = REQUEST_ERROR_404
+                logger.exception('404 %s %s %s', func_name, args, kwargs)
             else:
                 raise e
 
@@ -117,7 +130,7 @@ class InstRequest:
     active_agents = set()
     used_agents = set()
     last_agent_review_time = 0
-    
+
     @classmethod
     def print_stat(cls):
         print('Good agents count:', len(cls.good_agents))
@@ -164,6 +177,7 @@ class InstRequest:
             agent = cls.check_agent()
             if agent:
                 return agent
+
             new_agent = cls.create_agent()
             if isinstance(new_agent, InstAgent):
                 return new_agent
@@ -185,12 +199,15 @@ class InstRequest:
     def process_agent(cls, agent):
         agent_status = agent.status()
         if agent_status == STATUS_DEAD_AGENT:
+            with open('data/dead_agents', 'a') as f:
+                f.write(agent.username + ',')
             logger.error('DEAD agent: %s', agent)
             if agent in cls.wait_agents:
                 cls.wait_agents.remove(agent)
             if agent in cls.good_agents:
                 cls.good_agents.remove(agent)
-            cls.active_agents.remove(agent)
+            if agent in cls.active_agents:
+                cls.active_agents.remove(agent)
 
         elif agent_status == STATUS_WAIT_AGENT:
             if agent in cls.good_agents:
@@ -210,7 +227,7 @@ class InstRequest:
     @sequential_start
     def create_agent(cls):
         for username, password in inst_accounts_data:
-            if username not in cls.used_agents:
+            if username not in dead_agents and username not in cls.used_agents:
                 if username in get('inst_agents'):
                     logger.debug('Add inst agent from cache: {}'.format(username))
                     new_agent = get('inst_agents')[username]
@@ -230,19 +247,19 @@ class InstRequest:
         return None
 
     def make_request(self, func_name, *args, **kwargs):
-        agent = self.get_agent()
-        request_status, request_result = agent.request(func_name, *args, **kwargs)
-        self.process_agent(agent)
-        if request_status is REQUEST_STATUS_OK:
-            return request_result
-        if request_status is REQUEST_STATUS_FAIL:
-            if agent.status() not in [STATUS_WAIT_AGENT, STATUS_DEAD_AGENT, STATUS_GOOD_AGENT]:
-                logger.critical('AAA! Unintended agent status. %s', agent)
-                raise Exception()
-            return self.make_request(func_name, *args, **kwargs)
+        while True:
+            agent = self.get_agent()
+            request_status, request_result = agent.request(func_name, *args, **kwargs)
+            self.process_agent(agent)
+            if request_status is REQUEST_STATUS_OK:
+                return request_result
+            if request_status is REQUEST_STATUS_FAIL:
+                if agent.status() not in [STATUS_WAIT_AGENT, STATUS_DEAD_AGENT, STATUS_GOOD_AGENT]:
+                    logger.critical('AAA! Unintended agent status. %s', agent)
+                    raise Exception()
 
 
-class InstAPI(InstRequest):
+class IGAPI(InstRequest):
 
     def repeat_load(self, func_name, count, data=None):
         assert isinstance(func_name, str)

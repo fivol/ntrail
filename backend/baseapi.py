@@ -11,13 +11,12 @@ import math
 import hashlib
 from pprint import pprint
 from vkapi import VKAPI
-from instapi import InstAPI
+from igapi import IGAPI
 from tools import *
 from glbal import logger
-import pickle
 
 
-class BaseAPI(VKAPI, InstAPI, Tools):
+class BaseAPI:
 
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
                             color_patches=None, save_path=None):
@@ -71,6 +70,43 @@ class BaseAPI(VKAPI, InstAPI, Tools):
             save_path = f'data/weighted_graph_{int(time())}.svg'
         plt.savefig(save_path, dpi=1200)
         plt.show()
+
+    @staticmethod
+    def is_good_username(username):
+        if len(username) < 2:
+            return False
+        bad_characters = re.sub('[a-zA-Z0-9_\-.]', '', username)
+        if bad_characters == '':
+            return True
+        logger.debug('Find bad username: %s', username)
+        return False
+
+    @staticmethod
+    def find_phones(phones_string):
+        phones_string = phones_string.replace(' ', '')
+        exp = r'\+?(?:(?:[0-9]{1,3}\([0-9]{3}\))|(?:[0-9]{4,6}))[0-9]{7}'
+        return list(re.findall(exp, phones_string))
+
+    @staticmethod
+    def get_normal_phone_number(phone_string):
+        if len(phone_string) > 20:
+            return None
+        numbers = re.sub('[^0-9]', '', phone_string)
+        if len(numbers) == 11 and numbers[0] == '8':
+            numbers = '7' + numbers[1:]
+
+        if len(numbers) == 10:
+            numbers = '7' + numbers
+
+        if len(numbers) < 11:
+            return None
+
+        phone_code = numbers[:-10]
+        if len(phone_code) > 3:
+            return None
+
+        phone = '+' + numbers
+        return phone
 
     @self_replace('graph')
     @timeit
@@ -149,15 +185,15 @@ class BaseAPI(VKAPI, InstAPI, Tools):
     def print_params(self):
         pprint(self.params, compact=True)
 
-    def print_shorten_data(self):
-        pprint(self.shorten_data(), compact=True)
+    def print_data(self):
+        pprint(self.process_data(), compact=True)
 
     @self_replace('graph')
     @timeit
     def pools(self, graph=None, algorithm='louvain'):
         main_user = None
-        if hasattr(self, 'main_user'):
-            main_user = self.main_user
+        if hasattr(self, 'main_user') and self.main_user:
+            main_user = self.main_user.id
         communities = self.communities_from_graph(graph, algorithm, remove_node=main_user)
         pools = [self.__class__(pool) for pool in communities]
         return pools

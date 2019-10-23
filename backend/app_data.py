@@ -24,7 +24,6 @@ inst_accounts_data = [('agniiamuraviova212', '58nwNOT6iA'), ('dinafomichiova4713
                       ('agniiakolesnikova5157', 'rDfIoQSOIf'), ('aleksandrakniazeva7955', 'V3WYCG1fQ4'),
                       ('tamarazueva1062', 'vZ5r7U8pBe'), ('iaroslavaignatova8267', 'KuxLCuSD0V'),
                       ('lidiiarogova4743', 'L9RtTctnuG'), ('ameliiafedoseeva674', 'v7iCXPTxGp'),
-                      ('reginapanfilova1678', 'xFzyYhKITD'), ('varvarakhokhlova3462', 'Y01DVVGrJp'),
                       ('agatasuvorova6583', '8DelwWXf5x'), ('lidiiaershova6477', '40FkUNxdVm'),
                       ('varvaraaksionova5004', 'S6KLputgGG'), ('kamillabelousova5951', 'b0Giqt1aWI'),
                       ('elizavetakudriavtseva6928', 'lg0GbPUxJv'), ('tamarakulakova2946', 'Wf8wjgwL3B'),
@@ -39,7 +38,7 @@ inst_accounts_data = [('agniiamuraviova212', '58nwNOT6iA'), ('dinafomichiova4713
                       ('aleksandraartemeva3635', 'tOO3IppS8W'), ('lidiiasokolova4179', 'uPM9iHBoza'),
                       ('aksiniatikhonova3013', '9VvwKHL0tK'), ('kiralobanova1045', 'UL7DSSHDkP'),
                       ('sabinaovchinnikova9754', '6Zno0fytS2'), ('darinashiriaeva3744', 'hkEr37xNcj'),
-                      ('sabinaermakova235', '1vll4XMbT5'), ('reginakrasilnikova6193', 'psuCJtH9Tv'),
+                      ('sabinaermakova235', '1vll4XMbT5'),
                       ('ameliiapakhomova8339', 'fnLE5uSJHL'), ('aksinianazarova8923', 'v3YmPOV0GY'),
                       ('reginablinova191', 'guwcfylZsP'), ('varvaramikheeva3584', '3jRcxyLJRF'),
                       ('tamaraovchinnikova9303', 'm2WyAsnLZe'), ('dinaalekseeva4958', 'yN8TsL36ZN'),
@@ -48,7 +47,7 @@ inst_accounts_data = [('agniiamuraviova212', '58nwNOT6iA'), ('dinafomichiova4713
                       ('dinapetukhova3310', 'yqeKnuPpDa'), ('kamillamorozova3484', 'bZqvmLEQEh'),
                       ('sabinastepanova8002', 'eBVVuSma9t'), ('shirleycarrington473', 'tJDYyGQexU'),
                       ('dianecoleman918', 'w12W2edEtP'), ('christinapearcy30', 'aZoshE28n5'),
-                      ('shirleydonovan84', 'kUpQ8Ht03t'), ('lisachandter45', 'zM6KR6h8og'),]
+                      ('lisachandter45', 'zM6KR6h8og'),]
                       # ('suzannecoleman156', '2lhIjYGObO'), ('abbytracey43', 'vK1HSQzBZJ'),
                       # ('carlyfleming76', 'D0ETWLJnFS'), ('alyssachesterton933', 'EUnNW0fAIX'),
                       # ('estherlaird79', 'jBVHAAFZWF'), ('carriejacobson4880', 'Ouit8UdtxY'),

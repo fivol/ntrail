@@ -6,7 +6,20 @@ import random
 
 
 class ManyObjects(BaseAPI):
+    def __init__(self):
+        self.base_class = None
+        self.counter = None
+        self.nodes = None
+
+    def load_media_data(self, objects=None):
+        raise NotImplementedError
+
+    def get_connections(self, **kwargs):
+        raise NotImplementedError
+
     def print(self, k=50, shuffle=False):
+        head_line = f'Class: {self.__class__}. Size: {self.size}'
+        print(head_line)
         objects = sorted(self.objects, key=lambda x: -self.counter[x.pk])
         if k:
             objects = objects[:k]
@@ -36,9 +49,6 @@ class ManyObjects(BaseAPI):
             return self.__class__(Counter(dict(self.counter_top(self.counter.most_common(), break_point))))
         return self.__class__(Counter(dict(self.counter.most_common(k))))
 
-    def __add__(self, other):
-        return self.__class__(self.counter + other.counter)
-
     def graph(self, **kwargs):
         g = nx.Graph()
         connections = self.get_connections(**kwargs)
@@ -48,3 +58,11 @@ class ManyObjects(BaseAPI):
             if links:
                 g.add_edges_from([(node, link) for link in links if link in self.nodes])
         return g
+
+    def __add__(self, other):
+        assert other.base_class == self.base_class
+        return self.__class__(self.counter + other.counter)
+
+    def __getitem__(self, key):
+        assert isinstance(key, int), key
+        return self.objects[key]
