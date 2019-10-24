@@ -4,8 +4,8 @@ import random
 import string
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
-
 from playhouse.postgres_ext import JSONField
+
 db = PostgresqlDatabase(DB_NAME, user=DB_USER, password=DB_PASS,
                         host=DB_HOST, port=DB_PORT)
 
@@ -43,18 +43,7 @@ class QueryModel(BaseModel):
     key = CharField(50, null=False)
     value = JSONField(null=False)
     params = JSONField(null=True)
-    hash = CharField(60)
-
-    def __init__(self, query):
-        assert query.can_cache
-        super().__init__()
-        query_hash = hash(query)
-        self.hash = query_hash
-        self.service = query.service
-        self.method = query.method
-        self.key = query.key
-        self.value = query.value
-        self.params = query.params
+    hash = CharField(60, unique=True, null=False)
 
 
 def create_tables():

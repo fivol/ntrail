@@ -6,6 +6,7 @@ DB_PASS = 'postgres'
 DB_NAME = 'ntrail_db'
 DB_PORT = '5432'
 
+API_SERVER_REQUEST_VERSION = 0
 
 # remote db
 # DB_USER = 'postgres'

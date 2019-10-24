@@ -12,7 +12,7 @@ class VKAPI:
             return []
         assert isinstance(vk_ids, list)
         assert isinstance(vk_ids[0], int)
-        method = 'user_' + 'full' if full else 'short'
+        method = 'user_' + ('full' if full else 'short')
         vk_ids = [str(item) for item in vk_ids]
         result = APIQueries().many(service, method, vk_ids, exe=exe)
         assert isinstance(result, list)
@@ -22,7 +22,7 @@ class VKAPI:
     @classmethod
     def get_user(cls, vk_id, full=False, exe=True):
         assert isinstance(vk_id, int)
-        return cls.get_users([vk_id], full=full, exe=exe)
+        return cls.get_users([vk_id], full=full, exe=exe)[0]
 
     @classmethod
     def get_random_group_users(cls, group_id, k=3000):
@@ -69,7 +69,10 @@ class VKAPI:
 
     @classmethod
     def resolve_screen_names(cls, screen_names, exe=True):
-        return APIQueries().many(service, 'resolve', screen_names, exe=exe)
+        if not screen_names:
+            return []
+        res = APIQueries().many(service, 'resolve', screen_names, exe=exe)
+        return res
 
     @classmethod
     def resolve_screen_name(cls, screen_name, exe=True):

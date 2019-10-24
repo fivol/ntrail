@@ -10,6 +10,6 @@ from pprint import pprint
 from glbal import logger
 from igcommunity import IGCommunity
 from iguser import IGUser
+from models import *
 
-
-print(VKUser('jolex009').id)
+# VKUser('boris2000n').print()

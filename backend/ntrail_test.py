@@ -1,11 +1,16 @@
 import unittest
 from tools import *
 from vkuser import VKUser
+from glbal import logger
+import logging
+import datetime
+from local_cache import LocalCache
 from vkcommunity import VKCommunity
 from iguser import IGUser
 from igcommunity import IGCommunity
 from vkgroup import VKGroup
 from vkgroups import VKGroups
+logger.setLevel(logging.WARNING)
 
 
 class ToolsTest(unittest.TestCase):
@@ -42,6 +47,14 @@ class ToolsTest(unittest.TestCase):
 
 
 class VKUserTest(unittest.TestCase):
+    def setUp(self):
+        self.begin_time = datetime.datetime.now()
+        self.queries_count = LocalCache.count_cached_queries()
+
+    def tearDown(self):
+        LocalCache.remove_queries_from_time(self.begin_time)
+        self.assertEqual(self.queries_count, LocalCache.count_cached_queries())
+
     def test_user_init(self):
         self.assertTrue(VKUser('https://vk.com/jolex009').valid)
         self.assertTrue(VKUser('https://vk.com/id119007020').valid)
@@ -57,10 +70,13 @@ class VKUserTest(unittest.TestCase):
         self.assertEqual(VKUser('jolex009').id, 119007020)
         self.assertEqual(VKUser(119007020).id, 119007020)
 
+        for i in range(5):
+            r = random.randint(1000, 10000000)
+            self.assertEqual(VKUser(r).status, VKUser(f'id{r}').status)
+
         self.assertRaises(TypeError, VKUser, {1: 2})
         self.assertRaises(TypeError, VKUser, [])
 
 
 if __name__ == '__main__':
-    # pass
     unittest.main()

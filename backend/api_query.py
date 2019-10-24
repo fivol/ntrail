@@ -1,6 +1,7 @@
-from query_object import APIQuery
+from query_object import BasicQuery
 from local_cache import LocalCache
 from api_server_call import APIServerCall
+from glbal import logger
 
 
 class APIQueries:
@@ -14,8 +15,8 @@ class APIQueries:
             self.add_query(query)
         return self
 
-    def one(self, *args, exe=True, **kwargs):
-        self.add_query(APIQuery(*args, **kwargs))
+    def one(self, service, method, key, params=None, exe=True):
+        self.add_query(BasicQuery(service, method, key, params))
         if exe:
             return self.execute()
 
@@ -23,20 +24,14 @@ class APIQueries:
         assert isinstance(service, str)
         assert isinstance(method, str)
         assert isinstance(keys, list)
-        if not keys:
-            return []
         for key in keys:
-            assert isinstance(key, str)
-            self.add_query(APIQuery(service, method, key))
+            self.add_query(BasicQuery(service, method, key))
 
         if exe:
             return self.execute()
 
-    def print(self):
-        print('Len:', len(self.queries))
-
     def add_query(self, query):
-        assert isinstance(query, APIQuery)
+        assert isinstance(query, BasicQuery)
         query.num = self.curr_num
         self.curr_num += 1
         self.queries.add(query)
@@ -48,12 +43,25 @@ class APIQueries:
         queries = sorted(queries, key=lambda x: x.num)
         return [query.value for query in queries]
 
+    @classmethod
+    def get_queries_to_cache(cls, queries):
+        assert isinstance(queries, set)
+        return set([query for query in queries if query.can_cache])
+
     def execute(self):
         assert self.valid
         self.valid = False
         cached_queries = LocalCache.get_cached_queries_set(queries=self.queries)
+        # logger.debug('Find cached queries: %s', len(cached_queries))
         assert isinstance(cached_queries, set)
         unknown_queries = self.queries - cached_queries
-        result_queries = APIServerCall(unknown_queries).execute()
-        LocalCache.cache_queries_set(result_queries)
-        return self.right_order_queries(cached_queries | result_queries)
+        # logger.debug('Find unknown queries: %s %s', len(unknown_queries), unknown_queries)
+        if unknown_queries:
+            result_queries = APIServerCall(unknown_queries).execute()
+            queries_to_cache = self.get_queries_to_cache(result_queries)
+            LocalCache.cache_queries_set(queries_to_cache)
+            cached_queries |= result_queries
+
+        result = self.right_order_queries(cached_queries)
+        assert len(result) == len(self.queries)
+        return result

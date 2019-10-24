@@ -15,19 +15,21 @@ class VKUser(OneObject, VKAPI):
         super().__init__()
         self.status = None
         self.id = None
-        if not user:
-            self.status = ACCOUNT_STATUS_ABSENT
-        elif isinstance(user, str):
-            username = VKUser.get_username(user)
-            user_dict = self.resolve_screen_name(username)
-            if not isinstance(user_dict, dict):
-                logger.info('VKUser username does not exist "%s"', username)
-                self.status = ACCOUNT_STATUS_ABSENT
-            elif not user_dict['type'] == 'user':
-                logger.info('VKUser username type is "%s"', user_dict['type'])
+
+        if isinstance(user, str):
+            if not user:
                 self.status = ACCOUNT_STATUS_ABSENT
             else:
-                self.id = user_dict['object_id']
+                username = VKUser.get_username(user)
+                user_dict = self.resolve_screen_name(username)
+                if not isinstance(user_dict, dict):
+                    logger.info('VKUser username does not exist "%s"', username)
+                    self.status = ACCOUNT_STATUS_ABSENT
+                elif not user_dict['type'] == 'user':
+                    logger.info('VKUser username type is "%s"', user_dict['type'])
+                    self.status = ACCOUNT_STATUS_ABSENT
+                else:
+                    self.id = user_dict['object_id']
         elif isinstance(user, int):
             self.id = user
         else:
@@ -48,12 +50,11 @@ class VKUser(OneObject, VKAPI):
     def check_status(self):
         if not self.status:
             user_data = self.short_data
-            print('USER DATA', user_data)
             if isinstance(user_data, str):
-                if user_data is INVALID_USER_ID:
+                if user_data == INVALID_USER_ID:
                     self.status = ACCOUNT_STATUS_ABSENT
                 else:
-                    ValueError('VKUser short data have unknown value:', user_data)
+                    raise ValueError('VKUser short data have unknown value:', user_data)
             elif isinstance(user_data, dict):
                 if 'deactivated' in user_data:
                     deactivated_status = user_data['deactivated']
@@ -67,8 +68,7 @@ class VKUser(OneObject, VKAPI):
                 else:
                     self.status = ACCOUNT_STATUS_VALID
             else:
-                TypeError('VKUser short data wrong type:', type(user_data))
-        print('STATUS', self.status)
+                raise TypeError('VKUser short data wrong type:', user_data)
         return self.status
 
     @once_property

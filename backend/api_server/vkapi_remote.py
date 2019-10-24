@@ -132,11 +132,29 @@ class VKAPI:
         return dict([(vkid, get('users_data_')[vkid]) for vkid in vk_ids if vkid in get('users_data_')])
 
     @classmethod
-    def get_user(cls, vk_id, full=False):
-        res = cls.get_users([vk_id], full)
-        if isinstance(res, str):
-            return res
-        return res[vk_id]
+    def user_full(cls, vkid):
+        fields = [
+            'photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
+            'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
+            'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
+            'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
+            'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed'
+        ]
+        return api.users.get(user_ids=[int(vkid)], fields=fields)
+
+    @classmethod
+    def user_short(cls, vkid):
+        result = api.users.get(user_ids=[int(vkid)])
+        if isinstance(result, list):
+            return result[0]
+        return result
+
+    # @classmethod
+    # def get_user(cls, vkid, full=False):
+    #     res = cls.get_users([vkid], full)
+    #     if isinstance(res, str):
+    #         return res
+    #     return res[vk_id]
 
     @classmethod
     def get_random_group_users(cls, group_id, k=3000):
