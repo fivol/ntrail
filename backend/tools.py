@@ -11,6 +11,7 @@ import difflib
 import string
 import transliterate
 import json
+import math
 
 colors = []
 
@@ -309,6 +310,20 @@ def best_names_matches(items_dict, examples):
         result_dict[key] = max(result_dict.get(key, 0), value)
 
     return Counter(result_dict)
+
+
+def value_to_color(x):
+    x = 1 - x
+    x = math.sqrt(x)
+    x *= 255
+    x = int(x)
+    x += 50
+    x = min(x, 255)
+    x = max(0, x)
+    color = hex(x)[2:].upper()
+    if len(color) == 1:
+        color += color
+    return f'#{color * 3}'
 
 
 def get_sites(site_string):

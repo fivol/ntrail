@@ -42,12 +42,19 @@ class QueryModel(BaseModel):
     method = CharField(50, null=False)
     key = CharField(50, null=False)
     value = JSONField(null=False)
+    params = JSONField(null=True)
     hash = CharField(60)
 
-    def __init__(self, service, method, key, value):
+    def __init__(self, query):
+        assert query.can_cache
         super().__init__()
-        query_hash = hash(self.service + self.method + self.key)
+        query_hash = hash(query)
         self.hash = query_hash
+        self.service = query.service
+        self.method = query.method
+        self.key = query.key
+        self.value = query.value
+        self.params = query.params
 
 
 def create_tables():

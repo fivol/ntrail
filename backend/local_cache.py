@@ -8,7 +8,7 @@ class LocalCache:
     def get_cached_queries_set(queries):
         if not queries:
             return set()
-        assert isinstance(queries, list)
+        assert isinstance(queries, set)
         for query in queries:
             assert isinstance(query, APIQuery)
             assert query.valid
@@ -33,10 +33,7 @@ class LocalCache:
         for query in queries:
             assert isinstance(query, APIQuery)
             assert query.can_cache
-            model = QueryModel(service=query.service,
-                               method=query.method,
-                               key=query.key,
-                               value=query.value)
+            model = QueryModel(query)
             models_list.append(model)
 
         QueryModel.bulk_create(models_list)

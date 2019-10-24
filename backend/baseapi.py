@@ -6,12 +6,9 @@ import networkx as nx
 from collections import Counter
 import pandas as pd
 import matplotlib.patches as mpatches
-from time import time, sleep
 import math
 import hashlib
 from pprint import pprint
-from vkapi import VKAPI
-from igapi import IGAPI
 from tools import *
 from glbal import logger
 
@@ -21,18 +18,7 @@ class BaseAPI:
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
                             color_patches=None, save_path=None):
         from vkgroups import VKGroups
-        def value_to_color(x):
-            x = 1 - x
-            x = math.sqrt(x)
-            x *= 255
-            x = int(x)
-            x += 50
-            x = min(x, 255)
-            x = max(0, x)
-            color = hex(x)[2:].upper()
-            if len(color) == 1:
-                color += color
-            return f'#{color * 3}'
+
 
         weights = np.array([d['weight'] for (u, v, d) in graph.edges(data=True)])
         ordered_weights = np.sort(weights)
