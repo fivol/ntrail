@@ -15,9 +15,6 @@ from constants import INVALID_USER_ID, ACCESS_DENIED
 # 30 - private user
 # 15 - user deactivated
 
-user_token_methods = ['groups']
-service_token_methods = ['friends']
-
 
 class API(vk.API):
     def __init__(self, *args, **kwargs):
@@ -82,56 +79,6 @@ api_app = API(session=vk.Session(access_token=app_token), v='5.102', lang='ru', 
 class VKAPI:
 
     @classmethod
-    def get_users(cls, vk_ids, full=False):
-        # print(vk_ids)
-        # print(full)
-        assert isinstance(vk_ids, list)
-        if not vk_ids:
-            return {}
-        assert isinstance(vk_ids[0], int)
-        # print('vk_ids', len(vk_ids))
-        have_users = [vkid for vkid in vk_ids if
-                      vkid in get('users_data_') and
-                      (isinstance(get('users_data_')[vkid], str) or get('users_data_')[vkid]['full'] >= full)]
-        # print('have_users', have_users, vk_ids[0] in get('users_data_'))
-        to_save = [vkid for vkid in vk_ids if vkid not in have_users]
-        # print('to_save', len(to_save))
-        # print('have_users', len(have_users))
-
-        if to_save:
-            fields = []
-            if full:
-                fields = [
-                    'photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
-                    'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
-                    'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
-                    'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
-                    'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed'
-                ]
-            logger.debug('Get users data: %s', len(to_save))
-            users = []
-            k = 500
-            for i in range(len(to_save) // k + 1):
-                begin = i * k
-                end = (i + 1) * k
-                if begin < len(to_save):
-                    users += api.users.get(user_ids=to_save[begin:end], fields=fields)
-
-            # print('users (after api request)', len(users))
-            assert isinstance(users, list), users
-            # if isinstance(users, str):
-            #     return users
-            for user, vkid in zip(users, to_save):
-                if isinstance(user, dict):
-                    vkid = user['id']
-                    user['full'] = full
-                else:
-                    assert isinstance(user, str)
-                get('users_data_')[vkid] = user
-
-        return dict([(vkid, get('users_data_')[vkid]) for vkid in vk_ids if vkid in get('users_data_')])
-
-    @classmethod
     def user_full(cls, vkid):
         fields = [
             'photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
@@ -149,176 +96,38 @@ class VKAPI:
             return result[0]
         return result
 
-    # @classmethod
-    # def get_user(cls, vkid, full=False):
-    #     res = cls.get_users([vkid], full)
-    #     if isinstance(res, str):
-    #         return res
-    #     return res[vk_id]
-
-    @classmethod
-    def get_random_group_users(cls, group_id, k=3000):
-        request_groups = 1000
-        res = cls.get_group_members(group_id=group_id, amount=request_groups, count=True)
-        items = res['items']
-        count = res['count']
-        k -= request_groups
-        count -= request_groups
-        if k <= 0 or count <= 0:
-            return items
-        k_requests = math.ceil(k / request_groups)
-        curr_offset = request_groups
-        offset = math.ceil(count / k_requests)
-        for i in range(k_requests):
-            res = cls.get_group_members(group_id=group_id, offset=curr_offset, amount=request_groups)
-            curr_offset += offset
-            items += res
-
-        return list(set(items))[:k]
-
-    @classmethod
-    def compare_groups(cls, group1, group2, k=3000):
-        users1 = set(cls.get_random_group_users(group1, k=k))
-        users2 = set(cls.get_random_group_users(group2, k=k))
-        return len(users1.intersection(users2)) / k
-
-    @classmethod
-    def execute_query(cls, item_string, items_list, save_dict, default_value=None, msg=None):
-        if not items_list:
-            return []
-        items_list = list(items_list)
-        new_items_list = [item for item in items_list if item not in save_dict]
-
-        if msg and new_items_list:
-            logger.debug(f'{msg} {len(items_list)}')
-
-        def execute_25(items):
-            if not items:
-                return []
-            method = item_string.split('.')[1]
-            # if method in service_token_methods and len(items) == 1:
-            #     code_str = item_string % items[0]
-            #     code_str = 'api_app' + code_str[3:]
-            #     code_str = code_str.replace('({', '(**{')
-            #     # print(code_str)
-            #     request = code_str.split('[')[0]
-            #     try:
-            #         res = eval(request)
-            #         if isinstance(res, str):
-            #             return [res]
-            #         if '[' in code_str:
-            #             res = eval(str(res) + '[' + code_str.split('[')[1])
-            #     except:
-            #         logger.exception('execute 25 eval code')
-            #         res = default_value
-            #     return [res]
-            code = 'return [' + \
-                   ','.join(
-                       [
-                           item_string % item
-                           for item in items
-                       ],
-                   ) + '];'
-            res = api.execute(code=code)
-            res = [i if i else [] for i in res]
-            return res
-
-        new_items = sum(
-            [execute_25(new_items_list[a: a + 25])
-             for a in range(0, len(new_items_list), 25)],
-            []
-        )
-        for id, item in zip(new_items_list, new_items):
-            save_dict[id] = item
-        return [save_dict[id] for id in items_list]
-
-    @classmethod
-    def get_users_friends(cls, user_ids):
-        return cls.execute_query('API.friends.get({"user_id":%d})["items"]', user_ids, get('users_friends_'),
-                                 default_value=[], msg='Get users friends')
-
-    @classmethod
-    def get_users_groups(cls, user_ids):
-        return cls.execute_query('API.groups.get({"user_id":%d})["items"]',
-                                 user_ids, get('users_groups_'), default_value=[], msg='Get users groups')
-
-    @classmethod
-    def resolve_screen_names(cls, screen_names):
-        return cls.execute_query('API.utils.resolveScreenName({"screen_name":"%s"})', screen_names,
-                                 get('screen_names_'), msg='Resolve screen name')
-
     @classmethod
     def resolve(cls, screen_name):
         return api_app.utils.resolveScreenName(screen_name=screen_name)
 
     @classmethod
-    def get_groups_data(cls, group_ids, one_by_one=False):
-        # one_by_one fields: links counters
+    def group_full(cls, group_ids):
         fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
                   'main_section', 'members_count', 'place',
                   'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
                   'description', 'site', 'start_date']
-        fields_string = ','.join(fields)
-        if one_by_one and len(group_ids) > 1:
-            return cls.execute_query(
-                'API.groups.getById({"fields": "' + fields_string + '", "group_id":%d})[0]',
-                group_ids,
-                get('groups_data_'),
-                msg='Get groups data'
-            )
-        new_items_ids = [item for item in group_ids if item not in get('groups_data_')]
-        new_items = []
-        if new_items_ids:
-            logger.debug('Get short groups data: %s', len(new_items_ids))
-            new_items = api.groups.getById(group_ids=new_items_ids, fields=fields)
-        for id_, item in zip(new_items_ids, new_items):
-            get('groups_data_')[id_] = item
-        return [get('groups_data_')[id] for id in group_ids if id in get('groups_data_')]
+
+        return api.groups.getById(group_ids=group_ids, fields=fields)
 
     @classmethod
-    def get_user_friends(cls, vkid):
-        return cls.get_users_friends([vkid])[0]
+    def group_short(cls, group_ids):
+        return api.groups.getById(group_ids=group_ids)
 
     @classmethod
-    def get_user_groups(cls, vkid):
-        return cls.get_users_groups([vkid])[0]
+    def friends(cls, vkid):
+        return api_app.friends.get(user_id=vkid)
 
     @classmethod
-    def search(cls, string, offset=0, limit=100, filters='', users_ids=None):
+    def groups(cls, vkid):
+        return api.groups.groups(user_id=vkid)
+
+    @classmethod
+    def search(cls, string, offset=0, limit=100, filters=''):
         logger.debub('Search %s', string)
         search_result = api.search.getHints(q=string, offset=offset,
                                             limit=limit, filters=filters, search_global=1)
-        if users_ids:
-            return [item['profile']['id']
-                    for item in search_result['items']
-                    if item['type'] == 'profile']
-        return search_result['items']
+        return search_result
 
     @classmethod
-    def get_group_members(cls, group_id, amount=1000, offset=0, count=False):
-        if amount <= 1000:
-            t = (group_id, offset, amount)
-            if t in get('groups_members_'):
-                res = get('groups_members_')[t]
-            else:
-                logger.debug('Get group members: %s amount: %s', group_id, amount)
-                try:
-                    res = api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
-                except VkAPIError as e:
-                    if e.code == 15:
-                        res = {'items': [], 'count': 0}
-                    else:
-                        raise e
-                get('groups_members_')[t] = res
-            if count:
-                return res
-            return res['items']
-        else:
-            items = cls.get_group_members(group_id, offset, 1000)
-            if len(items) < 1000:
-                return items
-            return items + cls.get_group_members(group_id, offset + 1000, amount - 1000)
-
-    @classmethod
-    def get_group_data(cls, group_id, full):
-        return cls.get_groups_data([group_id], one_by_one=full)[0]
+    def members(cls, group_id, amount=1000, offset=0, count=False):
+        return api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)

@@ -1,8 +1,10 @@
 from api_server.vkapi_remote import VKAPI
 from api_server.igapi_remote import IGAPI
+from api_server.query_handler import QueryHandler
 from query_object import BasicQuery, ComplexQuery
 from glbal import logger
 from constants import QUERY_RESULT_ERROR
+from collections import defaultdict
 
 api_dict = {'vk': VKAPI, 'ig': IGAPI}
 
@@ -27,8 +29,20 @@ class APIServerEmulator:
     def generate_complex_queries(cls, basic_queries):
         # {}
         # Самый простой вариант. Не группируем запросы, а передаем в исходном виде
+        complex_queries = []
         assert isinstance(basic_queries, list)
-        return [ComplexQuery.from_basic_query(query) for query in basic_queries]
+        service_dict = defaultdict(list)
+        for query in basic_queries:
+            service_dict[query.service].append(query)
+
+        for service, queries in service_dict.items():
+            service_handler_name = f'{service}_handler'
+            if hasattr(QueryHandler, service_handler_name):
+                complex_queries += getattr(QueryHandler, service_handler_name)(queries=queries)
+            else:
+                complex_queries += [ComplexQuery.from_basic_query(query) for query in queries]
+
+        return complex_queries
 
     @classmethod
     def run_complex_queries(cls, complex_queries):
@@ -84,7 +98,7 @@ class APIServerEmulator:
         assert len(executed_queries) == len(complex_queries)
         assert isinstance(executed_queries[0], ComplexQuery)
 
-        basic_query_results = [query.split_basic_queries() for query in executed_queries]
+        basic_query_results = [list(query.split_basic_queries()) for query in executed_queries]
         basic_query_results = sum(basic_query_results, [])
 
         assert len(basic_query_results) == len(basic_query_objects)

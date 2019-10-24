@@ -66,18 +66,19 @@ class BasicQuery:
 
 
 class ComplexQuery(BasicQuery):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, service, method, key, queries=None, **kwargs):
+        self.basic_queries = set()
+        if isinstance(key, list):
+            key = str(list)
+        if queries:
+            assert isinstance(queries, set)
+            self.basic_queries |= queries
+        super().__init__(service, method, key, **kwargs)
 
     @classmethod
     def from_basic_query(cls, query):
         return ComplexQuery(query.service, query.method, query.key, params=query.params)
 
-    @classmethod
-    def from_queries(cls):
-        # {}
-        pass
-
     def split_basic_queries(self):
-        # {}
-        return [self]
+        assert self.can_cache
+        return self.basic_queries
