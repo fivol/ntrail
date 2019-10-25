@@ -26,29 +26,40 @@ class APIServerEmulator:
             raise NotImplementedError
 
     @classmethod
-    def generate_complex_queries(cls, basic_queries):
+    def encode_complex_queries(cls, basic_queries):
         # {}
         # Самый простой вариант. Не группируем запросы, а передаем в исходном виде
         complex_queries = []
-        assert isinstance(basic_queries, list)
+        assert isinstance(basic_queries, set)
         service_dict = defaultdict(list)
         for query in basic_queries:
             service_dict[query.service].append(query)
 
         for service, queries in service_dict.items():
-            service_handler_name = f'{service}_handler'
-            if hasattr(QueryHandler, service_handler_name):
-                complex_queries += getattr(QueryHandler, service_handler_name)(queries=queries)
+            if hasattr(QueryHandler, service):
+                complex_queries += getattr(QueryHandler, service).encode(queries=queries)
             else:
                 complex_queries += [ComplexQuery.from_basic_query(query) for query in queries]
 
-        return complex_queries
+        return set(complex_queries)
+
+    @classmethod
+    def decode_complex_queries(cls, complex_queries):
+        basic_queries = set()
+        for query in complex_queries:
+            service = query.service
+            if hasattr(QueryHandler, service):
+                basic_queries |= getattr(QueryHandler, service).decode(query)
+            else:
+                basic_queries.add(query)
+
+        return basic_queries
 
     @classmethod
     def run_complex_queries(cls, complex_queries):
         # {}
         assert len(complex_queries)
-        assert isinstance(complex_queries[0], ComplexQuery)
+        assert isinstance(next(iter(complex_queries)), ComplexQuery)
         for request in complex_queries:
             params = request.params
             if params is None:
@@ -59,8 +70,11 @@ class APIServerEmulator:
 
             if hasattr(api_class, method):
                 try:
+                    print('QUERY', request)
                     res = getattr(api_class, method)(request.key, **params)
-                except:
+                except Exception as e:
+                    if isinstance(e, AssertionError):
+                        raise e
                     logger.exception('Fail to execute api method: %s', request.to_dict())
                     res = QUERY_RESULT_ERROR
 
@@ -72,6 +86,8 @@ class APIServerEmulator:
 
     @classmethod
     def order_by_hashes(cls, query_objects, hashes_list):
+        assert isinstance(hashes_list, list)
+        assert isinstance(query_objects, set)
         queries_dict = {query.hash: query for query in query_objects}
         return [queries_dict[h] for h in hashes_list]
 
@@ -86,22 +102,24 @@ class APIServerEmulator:
         assert isinstance(basic_query_objects[0], BasicQuery)
 
         queries_hashes = [query.hash for query in basic_query_objects]
-        complex_queries = cls.generate_complex_queries(basic_query_objects)
 
-        assert isinstance(complex_queries, list)
+        complex_queries = cls.encode_complex_queries(set(basic_query_objects))
+
+        assert isinstance(complex_queries, set)
         assert len(complex_queries)
-        assert isinstance(complex_queries[0], ComplexQuery)
+        assert isinstance(next(iter(complex_queries)), ComplexQuery)
 
         executed_queries = cls.run_complex_queries(complex_queries)
 
-        assert isinstance(executed_queries, list)
+        assert isinstance(executed_queries, set)
+        assert len(executed_queries)
         assert len(executed_queries) == len(complex_queries)
-        assert isinstance(executed_queries[0], ComplexQuery)
+        assert isinstance(next(iter(executed_queries)), ComplexQuery)
 
-        basic_query_results = [list(query.split_basic_queries()) for query in executed_queries]
-        basic_query_results = sum(basic_query_results, [])
+        basic_query_results = cls.decode_complex_queries(executed_queries)
 
-        assert len(basic_query_results) == len(basic_query_objects)
+        assert isinstance(basic_query_objects, set)
+        assert len(basic_query_results) == len(set(basic_query_objects))
 
         basic_queries = cls.order_by_hashes(basic_query_results, queries_hashes)
         return [query.value for query in basic_queries]

@@ -98,6 +98,7 @@ class VKAPI:
 
     @classmethod
     def resolve(cls, screen_name):
+        assert isinstance(screen_name, str)
         return api_app.utils.resolveScreenName(screen_name=screen_name)
 
     @classmethod
