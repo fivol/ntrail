@@ -24,13 +24,13 @@ class BasicQuery:
         return f'{self.service} {self.method} {self.key} {self.params}'
 
     def __hash__(self):
-        s = self.service + self.method + self.key + str(sorted(self.params.items()))
+        s = self.service + self.method + str(self.key) + str(sorted(self.params.items()))
         return hash(s)
 
     @property
     def hash(self):
-        s = self.service + self.method + self.key + str(sorted(self.params.items()))
-        h = hashlib.md5(s.encode()).hexdigest()[:20]
+        s = self.service + self.method + str(self.key) + str(sorted(self.params.items()))
+        h = hashlib.md5(s.encode()).hexdigest()[:16]
         return h
 
     @property

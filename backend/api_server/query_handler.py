@@ -1,31 +1,66 @@
 from query_object import ComplexQuery, BasicQuery
 from collections import defaultdict
-
+from tools import split_list
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
 # составные запросы для наибыстрейшего выполнение всех
+group_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
+                'main_section', 'members_count', 'place',
+                'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
+                'description', 'site', 'start_date']
+groups_fields_string = ','.join(group_fields)
+user_fields = ['photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
+               'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
+               'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
+               'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
+               'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed', ]
+
+users_fields_string = ','.join(user_fields)
+service_token_methods = {'friends', 'resolve', 'friends',
+                         'members', 'user_short', 'group_short'}
+
+user_token_methods = {'groups', 'search',
+                      'user_full', 'group_full'}
+
+methods_group_key = {'user_short', 'user_full', 'group_short'}
+
+available_execute = {'friends', 'groups', 'resolve'}
+
+execute_queries_count = 25
+service_token_queries_count = 26  # 20
+user_token_queries_count = 5  # 3
+
+assert not len(methods_group_key -
+               user_token_methods -
+               service_token_methods)
+
+assert not len(service_token_methods & user_token_methods)
+
+assert not len(available_execute - user_token_methods - service_token_methods)
+
 
 class VKHandler:
-    service_token_methods = {'friends', 'resolve',
-                             'members', 'user_short', 'group_short'}
-
-    user_token_methods = {'groups', 'search',
-                          'user_full'}
-
-    methods_group_key = {'user_short', 'user_full',
-                         'group_short',
-                         'groups'}
-
     service = 'vk'
 
     @classmethod
     def combine_queries(cls, methods_dict):
         complex_queries = []
         for method, queries in methods_dict.items():
-            if method in cls.methods_group_key:
-                keys = [query.key for query in queries]
-                query = ComplexQuery(cls.service, method, keys, queries=queries, convert_type=1)
-                complex_queries.append(query)
+            if method in methods_group_key:
+                limit = 10000
+                if method.startswith('user_'):
+                    limit = 900  # 1000
+                if method.startswith('group_'):
+                    limit = 400  # 500
+
+                all_keys = [query.key for query in queries]
+                keys_list = split_list(all_keys, limit)
+                queries_list = split_list(queries, limit)
+                for keys_segment, queries_segment in zip(keys_list, queries_list):
+                    complex_queries.append(
+                        ComplexQuery(cls.service, method, keys_segment,
+                                     queries=queries_segment, convert_type=1)
+                    )
             else:
                 complex_queries += [ComplexQuery.from_basic_query(query) for query in queries]
 
@@ -35,7 +70,18 @@ class VKHandler:
     def generate_execute_string(queries):
         def query_execute_str(query):
             if query.method == 'friends':
-                pass
+                return 'API.friends.get({"user_id":%d})' % int(query.key)
+            if query.method == 'groups':
+                return 'API.groups.get({"user_id":%d})' % int(query.key)
+            if query.method == 'resolve':
+                return 'API.utils.resolveScreenName({"screen_name":"%s"})' % query.key
+            if query.method == 'group_full':
+                assert isinstance(query.key, list)
+                return 'API.groups.getById({"fields":"' + groups_fields_string + '","group_ids":"%s"})' % query.key
+            if query.method == 'user_full':
+                assert isinstance(query.key, list)
+                return 'API.users.get({"fields":"' + users_fields_string + '","user_ids":"%s"})' % ','.join(query.key)
+            raise NotImplementedError(query.method)
 
         assert len(queries) <= 25
         query_strings = [query_execute_str(query) for query in queries]
@@ -44,33 +90,50 @@ class VKHandler:
 
     @classmethod
     def calculate_execute(cls, to_execute):
-        size = len(to_execute)
+        execute_queries_bunches = split_list(to_execute, execute_queries_count)
         execute_queries = []
-        for i in range(size // 25):
-            begin = i * 25
-            end = (i + 1) * 25
-            if begin < size:
-                bunch_queries = to_execute[begin:end]
-                execute_string = cls.generate_execute_string(bunch_queries)
-                query = ComplexQuery(cls.service, 'execute', execute_string, convert_type=2)
-                execute_queries.append(query)
+        for query_bunch in execute_queries_bunches:
+            execute_string = cls.generate_execute_string(query_bunch)
+            query = ComplexQuery(cls.service, 'execute', execute_string,
+                                 queries=query_bunch,
+                                 convert_type=2)
+            execute_queries.append(query)
 
         return execute_queries
 
     @classmethod
-    def get_queries_to_execute(cls, complex_queries):
-        return [], complex_queries
+    def get_queries_to_execute(cls, complex_queries_all):
+        service_fast_count = round(execute_queries_count * user_token_queries_count / service_token_queries_count)
+        non_execute = [query for query in complex_queries_all if query.method not in available_execute]
+        complex_queries = [query for query in complex_queries_all if query.method in available_execute]
+        user_token_queries = [query for query in complex_queries if query.method in user_token_methods]
+        service_token_queries = [query for query in complex_queries if query.method in service_token_methods]
+        to_execute = []
+        other = []
+        mod_service_tokens = len(service_token_queries) % execute_queries_count
+        if mod_service_tokens > service_fast_count:
+            to_execute += service_token_queries
+        else:
+            other += service_token_queries[:mod_service_tokens]
+            to_execute += service_token_queries[mod_service_tokens:]
+
+        user_queries_count = len(user_token_queries)
+        if user_queries_count > 1:
+            if (user_queries_count + len(to_execute)) % execute_queries_count == 1:
+                other += to_execute[0]
+                to_execute = to_execute[1:] + user_token_queries
+            else:
+                to_execute += user_token_queries
+        else:
+            other += user_token_queries
+
+        return to_execute, other + non_execute
 
     @classmethod
     def encode(cls, queries):
         assert isinstance(queries, list)
         assert len(queries)
         assert isinstance(queries[0], BasicQuery)
-        assert not len(cls.methods_group_key -
-                       cls.user_token_methods -
-                       cls.service_token_methods)
-
-        assert not len(cls.service_token_methods & cls.user_token_methods)
 
         methods_dict = defaultdict(list)
         for query in queries:
@@ -80,7 +143,11 @@ class VKHandler:
         assert len(complex_queries)
         assert isinstance(complex_queries, list)
         to_execute_queries, other_queries = cls.get_queries_to_execute(complex_queries)
+        assert len(to_execute_queries) + len(other_queries) == len(complex_queries)
         complex_queries = cls.calculate_execute(to_execute_queries)
+        if complex_queries:
+            assert isinstance(complex_queries, list)
+            assert isinstance(next(iter(complex_queries)), ComplexQuery)
         complex_queries += other_queries
 
         assert len(complex_queries)
@@ -92,7 +159,6 @@ class VKHandler:
     def decode(cls, complex_query):
         assert isinstance(complex_query, ComplexQuery)
         convert_type = complex_query.convert_type
-        res = []
         if convert_type == 0:
             query = complex_query.basic_queries[0]
             query.set_value(complex_query.value)
@@ -102,10 +168,10 @@ class VKHandler:
             values = complex_query.value
             assert isinstance(queries, list)
             assert isinstance(values, list)
-            assert len(queries) == len(values)
+            assert len(queries) == len(values), f'{len(queries)} {len(values)}'
             for query, value in zip(queries, values):
                 query.value = value
-            res = values
+            res = queries
         else:
             raise NotImplementedError
 
@@ -114,4 +180,3 @@ class VKHandler:
 
 class QueryHandler:
     vk = VKHandler
-

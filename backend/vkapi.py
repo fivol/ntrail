@@ -53,15 +53,35 @@ class VKAPI:
     @classmethod
     def get_users_friends(cls, user_ids, exe=True):
         assert isinstance(user_ids, list)
-        return APIQueries().many(service, 'friends', user_ids, exe=exe)
+        if not user_ids:
+            return []
+        assert isinstance(user_ids[0], int)
+        user_ids = [str(vkid) for vkid in user_ids]
+        res = APIQueries().many(service, 'friends', user_ids, exe=exe)
+        assert len(res) == len(user_ids)
+        result = []
+        for friends in res:
+            if isinstance(friends, dict):
+                result.append(friends['items'])
+            else:
+                result.append([])
+
+        return result
 
     @classmethod
     def get_user_friends(cls, vkid, exe=True):
-        return cls.get_users_friends([vkid], exe=exe)[0]
+        res = cls.get_users_friends([vkid], exe=exe)[0]
+        if isinstance(res, str):
+            return []
+        assert isinstance(res, list), res
+        return res
 
     @classmethod
     def get_users_groups(cls, user_ids, exe=True):
-        return APIQueries().many(service, 'groups', user_ids, exe=exe)
+        user_ids = [str(vkid) for vkid in user_ids]
+        res = APIQueries().many(service, 'groups', user_ids, exe=exe)
+        assert isinstance(res, list)
+        return [group['items'] for group in res if isinstance(group, dict)]
 
     @classmethod
     def get_user_groups(cls, vkid, exe=True):
@@ -84,7 +104,7 @@ class VKAPI:
             return []
         assert isinstance(group_ids[0], int)
         group_ids = [str(group) for group in group_ids]
-        method = 'group_data_' + 'full' if one_by_one else 'short'
+        method = 'group_' + ('full' if one_by_one else 'short')
         return APIQueries().many(service, method, group_ids, exe=exe)
 
     @classmethod

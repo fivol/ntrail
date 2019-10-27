@@ -64,7 +64,7 @@ class BaseAPI:
         bad_characters = re.sub('[a-zA-Z0-9_\-.]', '', username)
         if bad_characters == '':
             return True
-        logger.debug('Find bad username: %s', username)
+        # logger.debug('Find bad username: %s', username)
         return False
 
     @staticmethod
@@ -148,7 +148,7 @@ class BaseAPI:
                                 zip(
                                     pool.nodes,
                                     [
-                                        (bapi.get_color(i + 1, len(pool.nodes)), pool)
+                                        (get_color(i + 1, len(pool.nodes)), pool)
                                     ] * pool.size))
                             for i, pool in enumerate(pools)
                         ], []
@@ -157,7 +157,7 @@ class BaseAPI:
             )[
                 np.array(graph.nodes)
             ].values
-        color_pool = [i if isinstance(i, tuple) else (self.get_color(0), self)
+        color_pool = [i if isinstance(i, tuple) else (get_color(0), self)
                       for i in color_pool]
         color_patches = []
         color_pool_dict = dict(color_pool)
@@ -175,7 +175,7 @@ class BaseAPI:
         pprint(self.process_data(), compact=True)
 
     @self_replace('graph')
-    @timeit
+    # @timeit
     def pools(self, graph=None, algorithm='louvain'):
         main_user = None
         if hasattr(self, 'main_user') and self.main_user:
@@ -185,7 +185,7 @@ class BaseAPI:
         return pools
 
     @classmethod
-    @timeit
+    # @timeit
     def communities_from_graph(cls, graph_, algorithm, remove_node=None):
 
         if not graph_.number_of_nodes() or not graph_.number_of_edges():
@@ -257,12 +257,12 @@ class BaseAPI:
         return res
 
     def __hash__(self):
-        return hash((*sorted(self.nodes),))
+        return hash(str(sorted(self.nodes)))
 
     @once_property
     def hash(self):
         obj_id = hashlib.sha1(str(self.__hash__()).encode('UTF-8')).hexdigest()[-3:]
-        self.set_obj(obj_id, self)
+        set_obj(obj_id, self)
         return obj_id
 
     @once_property

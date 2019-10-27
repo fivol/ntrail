@@ -46,7 +46,7 @@ class ToolsTest(unittest.TestCase):
                          {1: {1: 1}})
 
 
-class VKUserTest(unittest.TestCase):
+class QueriesTest(unittest.TestCase):
     def setUp(self):
         self.begin_time = datetime.datetime.now()
         self.queries_count = LocalCache.count_cached_queries()
@@ -55,6 +55,8 @@ class VKUserTest(unittest.TestCase):
         LocalCache.remove_queries_from_time(self.begin_time)
         self.assertEqual(self.queries_count, LocalCache.count_cached_queries())
 
+
+class VKUserTest(QueriesTest):
     def test_user_init(self):
         self.assertTrue(VKUser('https://vk.com/jolex009').valid)
         self.assertTrue(VKUser('https://vk.com/id119007020').valid)
@@ -73,9 +75,44 @@ class VKUserTest(unittest.TestCase):
         for i in range(5):
             r = random.randint(1000, 10000000)
             self.assertEqual(VKUser(r).status, VKUser(f'id{r}').status)
+            self.assertTrue(VKUser.generate_random().valid)
 
         self.assertRaises(TypeError, VKUser, {1: 2})
         self.assertRaises(TypeError, VKUser, [])
+
+    def test_friends(self):
+        self.assertGreater(VKUser('jolex009').friends().size, 0)
+
+
+class VKCommunityTest(QueriesTest):
+
+    def test_community_init(self):
+        self.assertEqual(VKCommunity().size, 0)
+        user1 = VKUser('https://vk.com/anna_bigler')
+        user2 = VKUser('jolex009')
+        self.assertEqual(VKCommunity([user1, user2]).only_valid().size, 2)
+        self.assertEqual(VKCommunity(['anna_bigler', 'jolex009'], clear=True).size, 2)
+        VKCommunity([])
+        VKCommunity(Counter())
+        self.assertRaises(TypeError, VKCommunity, {})
+        self.assertRaises(TypeError, VKCommunity, 32)
+        users_string = '''
+        sfjldsfj https://vk.com/anna_bigler dsfsfa32423478888*
+        https://google.com ://
+        boris2000n
+        https://vk.com/jolex009////
+        
+        '''
+        self.assertEqual(VKCommunity(users_string).size, 2)
+
+    def test_operations(self):
+        a = VKCommunity(['anna_bigler', 'jolex009'])
+        b = VKUser('jolex009').friends()
+        self.assertGreater((a + b).size, a.size)
+
+    def test_generate(self):
+        for i in range(5):
+            self.assertEqual(VKCommunity.generate_random(20).only_valid().size, 20)
 
 
 if __name__ == '__main__':

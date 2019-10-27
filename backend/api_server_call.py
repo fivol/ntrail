@@ -43,7 +43,7 @@ class APIServerCall:
 
         assert isinstance(answer, list)
         assert len(answer) == len(self.queries), len(answer)
-        for query, res in zip(self.queries, answer):
+        for query, res in zip(self.queries_list, answer):
             query.set_value(res)
 
         return self.queries

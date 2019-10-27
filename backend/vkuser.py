@@ -5,7 +5,7 @@ import io
 import re
 from vkgroups import VKGroups
 from glbal import logger
-from constants import INVALID_USER_ID, ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
+from constants import QUERY_RESULT_INVALID_ID, ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
     ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
 from vkapi import VKAPI
 
@@ -51,7 +51,7 @@ class VKUser(OneObject, VKAPI):
         if not self.status:
             user_data = self.short_data
             if isinstance(user_data, str):
-                if user_data == INVALID_USER_ID:
+                if user_data == QUERY_RESULT_INVALID_ID:
                     self.status = ACCOUNT_STATUS_ABSENT
                 else:
                     raise ValueError('VKUser short data have unknown value:', user_data)
@@ -65,10 +65,13 @@ class VKUser(OneObject, VKAPI):
                     else:
                         logger.warning('Unknown reason for user account deactivation: %s', deactivated_status)
                         self.status = ACCOUNT_STATUS_DELETED
+                elif user_data['is_closed']:
+                    self.status = ACCOUNT_STATUS_PRIVATE
                 else:
-                    self.status = ACCOUNT_STATUS_VALID
+                    self.status = ACCOUNT_STATUS_PUBLIC
             else:
                 raise TypeError('VKUser short data wrong type:', user_data)
+        assert bool(self.status)
         return self.status
 
     @once_property

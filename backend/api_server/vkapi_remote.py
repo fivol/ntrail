@@ -4,8 +4,9 @@ import time
 import math
 from glbal import logger
 import os
-from tools import get
-from constants import INVALID_USER_ID, ACCESS_DENIED
+from constants import QUERY_RESULT_ACCESS_DENIED, \
+    QUERY_RESULT_INVALID_ID, QUERY_RESULT_ERROR, \
+    QUERY_RESULT_PRIVATE_PROFILE
 
 # vk app client_id 7091370
 # service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
@@ -25,7 +26,7 @@ class API(vk.API):
 
     def __call__(self, **kwargs):
         self.kwargs = kwargs
-        logger.debug('* vk api request: %s', self.method1)
+        # logger.debug('* vk api request: %s', self.method1)
         return self.make_request()
 
     def __getattr__(self, method_name):
@@ -57,13 +58,18 @@ class API(vk.API):
                 return self.make_request(begin_time)
             if e.code == 113:
                 '''Invalid input data (object does not exist)'''
-                logger.info('INVALID_USER_ID found')
-                return INVALID_USER_ID
+                logger.info('QUERY_RESULT_INVALID_ID')
+                return QUERY_RESULT_INVALID_ID
 
             if e.code == 15:
                 '''Access denied: this profile is private'''
-                logger.info('ACCESS_DENIED')
-                return ACCESS_DENIED
+                logger.info('QUERY_RESULT_ACCESS_DENIED')
+                return QUERY_RESULT_ACCESS_DENIED
+
+            if e.code == 30:
+                '''vk.exceptions.VkAPIError: 30. This profile is private'''
+                logger.info('QUERY_RESULT_PRIVATE_PROFILE')
+                return QUERY_RESULT_PRIVATE_PROFILE
 
             self.method1, self.method2, self.kwargs = None, None, None
             raise e
@@ -79,22 +85,28 @@ api_app = API(session=vk.Session(access_token=app_token), v='5.102', lang='ru', 
 class VKAPI:
 
     @classmethod
-    def user_full(cls, vkid):
+    def user(cls, users_ids, fields):
+        users_ids = [int(vkid) for vkid in users_ids]
+        result = api.users.get(user_ids=users_ids, fields=fields)
+
+        if not isinstance(result, list):
+            return [result] * len(users_ids)
+        return result
+
+    @classmethod
+    def user_full(cls, users_ids):
         fields = [
             'photo_200', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
             'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
             'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
             'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
-            'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed'
+            'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed',
         ]
-        return api.users.get(user_ids=[int(vkid)], fields=fields)
+        return cls.user(users_ids, fields=fields)
 
     @classmethod
-    def user_short(cls, vkid):
-        result = api.users.get(user_ids=[int(vkid)])
-        if isinstance(result, list):
-            return result[0]
-        return result
+    def user_short(cls, users_ids):
+        return cls.user(users_ids, fields=[])
 
     @classmethod
     def resolve(cls, screen_name):
@@ -116,15 +128,16 @@ class VKAPI:
 
     @classmethod
     def friends(cls, vkid):
-        return api_app.friends.get(user_id=vkid)
+        res = api_app.friends.get(user_id=vkid)
+        assert isinstance(res, dict) or isinstance(res, str)
+        return res
 
     @classmethod
     def groups(cls, vkid):
-        return api.groups.groups(user_id=vkid)
+        return api.groups.get(user_id=vkid)
 
     @classmethod
     def search(cls, string, offset=0, limit=100, filters=''):
-        logger.debub('Search %s', string)
         search_result = api.search.getHints(q=string, offset=offset,
                                             limit=limit, filters=filters, search_global=1)
         return search_result
@@ -132,3 +145,9 @@ class VKAPI:
     @classmethod
     def members(cls, group_id, amount=1000, offset=0, count=False):
         return api_app.groups.getMembers(group_id=group_id, offset=offset, count=amount)
+
+    @classmethod
+    def execute(cls, code_string):
+        assert isinstance(code_string, str)
+        res = api.execute(code=code_string)
+        return res

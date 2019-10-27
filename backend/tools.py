@@ -24,8 +24,8 @@ objects = {}
 execution_locked_func = {}
 
 
-def get(name, save=False):
-    return MemoryCache.get(name, save)
+# def get(name, save=False):
+#     return MemoryCache.get(name, save)
 
 
 def valid_object_method(method):
@@ -186,6 +186,16 @@ def sizeof(obj, mb_capacity=False):
     return size
 
 
+def split_list(list_object, segment_size):
+    result_list = []
+    for i in range(len(list_object) // segment_size + 1):
+        begin = i * segment_size
+        end = (i + 1) * segment_size
+        if begin < len(list_object):
+            result_list.append(list_object[begin:end])
+    return result_list
+
+
 def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True):
     dicts_list = filter(lambda x: key in x, dicts_list)
     result = map(lambda x: x[key], dicts_list)
@@ -200,44 +210,63 @@ def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_comm
 
 
 def make_json_serializable(obj):
-    try:
-        json.dumps(obj)
-        return obj
-    except:
-        if isinstance(obj, dict):
-            return dict([(key, make_json_serializable(value)) for key, value, in obj.items()])
-        if isinstance(obj, list):
-            return [make_json_serializable(item) for item in obj]
+    if isinstance(obj, dict):
+        return {key: make_json_serializable(value) for key, value, in obj.items()}
+    if isinstance(obj, list):
+        return [make_json_serializable(item) for item in obj]
+    if isinstance(obj, tuple):
+        return tuple([make_json_serializable(item) for item in obj])
 
+    try:
+        if float(obj) == int(obj):
+            return int(obj)
+        return float(obj)
+    except:
         return str(obj)
 
 
-def prepare_list(list_object, name, funcs=None, mean=True, median=True,
-                 max=True, min=True, count=True, fourth=True, last_fourth=True, clean=False):
+def calculate_array_common(arr):
+    size = len(arr)
+    arr = sorted(arr)
+    if not size:
+        return []
+
+    gap = min(4, max(2, size // 2))
+    common_elements = []
+    while gap < size:
+        diffs = []
+        for i in range(size - gap):
+            diff = arr[i + gap] - arr[i]
+            diffs.append((diff, i + gap // 2, (arr[i] + arr[i + gap]) / 2))
+        best = min(diffs)
+        common_elements.append(arr[best[1]])
+        gap += gap // 2
+    return np.array(common_elements)
+
+
+def prepare_list(list_object, mean=True, median=True, fourth=True,
+                 max=True, min=True, common=True, count=True, clean=False):
     res = {}
     l = np.array(list_object)
     if clean:
         l = l[l != 0]
     if not len(l):
         return {}
-    if funcs:
-        mean = 'mean' in funcs
-        median = 'median' in funcs
-        max = 'max' in funcs
-        min = 'min' in funcs
-        count = 'count' in funcs
-        fourth = 'fourth' in funcs
-        last_fourth = 'last_fourth' in funcs
 
-    name += '_'
-    ordered_list = sorted(l, reverse=True)
-    if mean: res[name + 'mean'] = np.mean(l)
-    if median: res[name + 'median'] = np.median(l)
-    if max: res[name + 'max'] = np.max(l)
-    if min: res[name + 'min'] = np.min(l)
-    if count: res[name + 'count'] = len(l)
-    if fourth: res[name + 'fourth'] = ordered_list[int(len(l) / 4)]
-    if last_fourth: res[name + 'last_fourth'] = ordered_list[int(len(l) / 4 * 3)]
+    if mean: res['mean'] = np.mean(l)
+    if max: res['max'] = np.max(l)
+    if min: res['min'] = np.min(l)
+    if count: res['count'] = len(l)
+    if median: res['median'] = np.median(l)
+    if common:
+        common_array = calculate_array_common(l)
+        res['common_mean'] = np.mean(common_array)
+        res['common_median'] = np.median(common_array)
+
+    if fourth:
+        ordered_list = sorted(l)
+        res['fourth'] = ordered_list[int(len(l) / 4)]
+        res['fourth2'] = ordered_list[int(len(l) / 4 * 3)]
 
     return res
 

@@ -1,3 +1,46 @@
+# информация о полях из раздела «Жизненная позиция».
+# political (integer) — политические предпочтения. Возможные значения:
+# 1 — коммунистические;
+# 2 — социалистические;
+# 3 — умеренные;
+# 4 — либеральные;
+# 5 — консервативные;
+# 6 — монархические;
+# 7 — ультраконсервативные;
+# 8 — индифферентные;
+# 9 — либертарианские.
+# langs (array) — языки.
+# religion (string) — мировоззрение.
+# inspired_by (string) — источники вдохновения.
+# people_main (integer) — главное в людях. Возможные значения:
+# 1 — ум и креативность;
+# 2 — доброта и честность;
+# 3 — красота и здоровье;
+# 4 — власть и богатство;
+# 5 — смелость и упорство;
+# 6 — юмор и жизнелюбие.
+# life_main (integer) — главное в жизни. Возможные значения:
+# 1 — семья и дети;
+# 2 — карьера и деньги;
+# 3 — развлечения и отдых;
+# 4 — наука и исследования;
+# 5 — совершенствование мира;
+# 6 — саморазвитие;
+# 7 — красота и искусство;
+# 8 — слава и влияние;
+# smoking (integer) — отношение к курению. Возможные значения:
+# 1 — резко негативное;
+# 2 — негативное;
+# 3 — компромиссное;
+# 4 — нейтральное;
+# 5 — положительное.
+# alcohol (integer) — отношение к алкоголю. Возможные значения:
+# 1 — резко негативное;
+# 2 — негативное;
+# 3 — компромиссное;
+# 4 — нейтральное;
+# 5 — положительное.
+
 import random
 
 from many_objects import ManyObjects
@@ -15,6 +58,9 @@ from itertools import groupby
 from tools import clear_list, prepare_list, counter_top, get_sites, list_get, list_from_dicts
 import re
 from vkapi import VKAPI
+from db_logic import DB
+from bisect import bisect
+from constants import ACCOUNT_STATUS_PUBLIC
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан
@@ -76,6 +122,8 @@ class VKCommunity(ManyObjects, VKAPI):
             self.nodes = clean_community.nodes
             self.counter = clean_community.counter
         self.size = len(self.nodes)
+        if 3 < self.size < 800:
+            self.save_features()
 
     @staticmethod
     def parse_usernames(usernames_string):
@@ -115,19 +163,22 @@ class VKCommunity(ManyObjects, VKAPI):
 
     def get_connections(self):
         connections = self.get_users_friends(self.nodes)
+        # print(connections)
         return dict(zip(self.nodes, connections))
 
     def only_valid(self):
-        # print('BEGIN GETTING VALID USERS')
         self.short_data
-        # print('LEN SHORT DATA:', len(self.short_data))
-        # print('LEN NODES:', len(self.nodes))
-        # from tools import MemoryCache
-        # for id in self.nodes:
-        #     if id not in MemoryCache.get('users_data_'):
-        #         print(id)
         return VKCommunity(
             Counter({user.id: self.counter[user.id] for user in self.objects if user.valid}),
+            clear=False
+        )
+
+    def only_public(self):
+        self.short_data
+        return VKCommunity(
+            Counter({user.id: self.counter[user.id]
+                     for user in self.objects
+                     if user.check_status() == ACCOUNT_STATUS_PUBLIC}),
             clear=False
         )
 
@@ -138,7 +189,7 @@ class VKCommunity(ManyObjects, VKAPI):
             min_vkid = 1
             max_vkid = 420000000
             ids_list = random.sample(range(min_vkid, max_vkid), size * 2)
-            comm = VKCommunity(list(ids_list)).select(size)
+            comm = VKCommunity(list(ids_list)).only_valid().select(size)
         return comm
 
     def connectedness(self):
@@ -214,52 +265,249 @@ class VKCommunity(ManyObjects, VKAPI):
             return clear_list(usernames)
 
         age = time_delta(params['bdate'], dev=31536000)
-        data['age_all_count'] = len(age)
-        data.update(prepare_list(age[(age > 6) & (age < 90)], 'age', clean=True))
-        data['city_all_count'] = len(params['city'])
-        data['city'] = counter_top(params['city'])
-        data['country_all_count'] = len(params['country'])
-        data['country'] = counter_top(params['country'])
-        data.update(prepare_list(params['followers_count'], 'followers_count', clean=True))
-        data['home_town_all_count'] = len(params['home_town'])
-        data['home_town'] = counter_top(params['home_town'])
+        data['age'] = {
+            'all_count': len(age),
+            **prepare_list(age[(age > 6) & (age < 80)], clean=True)
+        }
+        data['city'] = {
+            'all_count': len(params['city']),
+            'common_list': counter_top(params['city'])
+        }
+        data['country'] = {
+            'all_count': len(params['country']),
+            'common_list': counter_top(params['country'])
+        }
+        data['followers_count'] = {
+            **prepare_list(params['followers_count'], clean=True),
+        }
+        data['home_town'] = {
+            'all_count': len(params['home_town']),
+            'common_list': counter_top(params['home_town'])
+        }
         last_seen = time_delta(params['last_seen'], dev=3600)
-        data.update(prepare_list(last_seen, 'last_seen'))
-        data['online'] = params['online']
-        data['online_mobile'] = params['online_mobile']
-        data['personal_alcohol'] = counter_top(params['personal_alcohol'])
-        # occupation personal_inspired_by schools status universities
+        data['last_seen'] = {
+            **prepare_list(last_seen)
+        }
+        data['online'] = {
+            'count': params['online']
+        }
+        data['online_mobile'] = {
+            'count': params['online_mobile'],
+        }
+        # occupation personal_inspired_by
         # ? personal_religion relation
-        data['personal_langs'] = counter_top(params['personal_langs'])
-        data['personal_life_main'] = counter_top(params['personal_life_main'])
-        data['personal_people_main'] = counter_top(params['personal_people_main'])
-        data['personal_political'] = counter_top(params['personal_political'])
-        data['personal_religion'] = counter_top(params['personal_religion'])
-        data['personal_smoking'] = counter_top(params['personal_smoking'])
+        data['status'] = {
+            'count': len(params['status']),
+            'len_median': np.median([len(status) for status in params['status']])
+        }
+        data['personal'] = {
+            'alcohol': counter_top(params['personal_alcohol']),
+            'langs': counter_top(params['personal_langs']),
+            'life_main': counter_top(params['personal_life_main']),
+            'people_main': counter_top(params['personal_people_main']),
+            'political': counter_top(params['personal_political']),
+            'religion': counter_top(params['personal_religion']),
+            'smoking': counter_top(params['personal_smoking'])
+        }
+
         data['relation'] = counter_top(params['relation'])
         data['relatives'] = params['relatives']
         data['sex'] = params['sex']
-        data['verified'] = params['verified']
+        data['verified'] = {
+            'count': params['verified']
+        }
         sites_sites = get_sites(' '.join(params['site']))
         sites_status = get_sites(' '.join(params['status']))
         sites = sites_sites + sites_status
-        data['site_common'] = counter_top(Counter([item[0] for item in sites]).most_common())
-
+        data['site'] = {
+            'site_count': len(params['site']),
+            'site_good_count': len(sites_sites),
+            'status_count': len(sites_status),
+            'good_count': len(sites),
+            'common_list': counter_top(Counter([item[0] for item in sites]).most_common())
+        }
+        usernames_dict = {}
         for connection_site in vk_connections_names:
-            data['username_' + connection_site] = \
-                prepare_username_list(list_get(sites, connection_site) +
-                                      params['connection_' + connection_site],
-                                      connection_site)
-        data['vk_id'] = prepare_username_list(list_get(sites, 'vk'), 'vk')
-        phones_list = params['home_phone'] + params['mobile_phone'] + self.find_phones(' '.join(params['status']))
-        data['phone'] = clear_list([self.get_normal_phone_number(phone) for phone in phones_list])
+            usernames_list = prepare_username_list(list_get(sites, connection_site) +
+                                                   params['connection_' + connection_site],
+                                                   connection_site)
 
-        data['site_site_count'] = len(params['site'])
-        data['site_site_good_count'] = len(sites_sites)
-        data['site_status_count'] = len(sites_status)
-        data['site_good_count'] = len(sites)
+            usernames_dict[connection_site] = {
+                'list': usernames_list,
+                'count': len(usernames_list)
+            }
+        vk_usernames = prepare_username_list(list_get(sites, 'vk'), 'vk')
+        usernames_dict['vk'] = {
+            'list': vk_usernames,
+            'count': len(vk_usernames)
+        }
+        data['username'] = usernames_dict
+
+        phones_list = params['home_phone'] + params['mobile_phone'] + self.find_phones(' '.join(params['status']))
+        phones_list = clear_list([self.get_normal_phone_number(phone) for phone in phones_list])
+        data['phone'] = {
+            'list': phones_list,
+            'count': len(phones_list)
+        }
+        schools_list = []
+        for i, school in enumerate(params['schools'][:3]):
+            schools_list.append({
+                'count': school['count'],
+                'name': school['name'],
+                'class': counter_top(school['class']),
+                'year_from': np.median(school['year_from']),
+                'year_to': np.median(school['year_to']),
+                'speciality': counter_top(school['speciality']),
+                'city': school['city'],
+                'type': school['type']
+            })
+        data['school'] = schools_list
+
+        universities_list = []
+        for i, university in enumerate(params['universities'][:3]):
+            universities_list.append({
+                'count': university['count'],
+                'name': university['name'],
+                'faculty_name': counter_top(university['faculty_name']),
+                'chair_name': counter_top(university['chair_name']),
+                'education_form': counter_top(university['education_form']),
+                'education_status': counter_top(university['education_status']),
+                'graduation': counter_top(university['graduation'])
+            })
+        data['university'] = universities_list
 
         return data
+
+    def get_features(self):
+        def get_value_by_path(full_path):
+            path_elements = full_path.split('.')
+            obj = data
+            for key in path_elements:
+                obj = obj[key]
+            return obj
+
+        features = {}
+        data = self.process_data()
+        assert isinstance(data, dict)
+        plain_features_attributes = {
+            'mean', 'median', 'fourth', 'fourth2',
+            'common_mean', 'common_median',
+            'max', 'min'
+        }
+        plain_features = {
+            'status.len_median',
+        }
+        frequency_features_attributes = {
+            'count', 'all_count'
+        }
+        frequency_features = {
+            'site.site_good_count',
+            'site.good_count',
+            'site.status_count',
+            'site.site_count'
+        }
+        category_frequency_features = {
+            'relation', 'sex', 'personal.life_main', 'personal.langs',
+            'personal.religion', 'personal.people_main',
+            'personal.political', 'relatives',
+            'personal.smoking', 'personal.alcohol'
+        }
+        counter_common_list_attribute = 'common_list'
+        size = self.size
+        features['size'] = size
+
+        for feature in ['personal.smoking', 'personal.alcohol']:
+            feature_common_list = get_value_by_path(feature)
+            if feature_common_list:
+                sum_count = sum(map(lambda x: x[1], feature_common_list))
+                features[feature] = \
+                    sum(map(lambda x: x[0] * x[1], feature_common_list)) / sum_count
+                features[feature + '_count'] = sum_count
+
+        for feature_name, feature_value in data.items():
+            if isinstance(feature_value, dict):
+                for attr_name, attr_value in feature_value.items():
+                    name = f'{feature_name}.{attr_name}'
+                    if attr_name in plain_features_attributes:
+                        features[name] = attr_value
+                    elif attr_name in frequency_features_attributes:
+                        features[name] = attr_value / size
+                    elif attr_name == counter_common_list_attribute:
+                        assert isinstance(attr_value, list)
+                        if len(attr_value):
+                            features[name] = attr_value[0][1] / size
+
+        for feature in plain_features:
+            features[feature] = get_value_by_path(feature)
+        for feature in frequency_features:
+            features[feature] = get_value_by_path(feature) / size
+
+        for username, value in data['username'].items():
+            features[f'username.{username}'] = value['count'] / size
+
+        for i, university in enumerate(data['university'][:2]):
+            features[f'university-{i}'] = university['count'] / size
+
+        for i, university in enumerate(data['school'][:2]):
+            features['school' + str(i)] = university['count'] / size
+
+        for feature in category_frequency_features:
+            for key, value in get_value_by_path(feature):
+                features[f'{feature}-{key}'] = value / size
+
+        features = {key: value for key, value in features.items() if not np.isnan(value)}
+        return features
+
+    def collect_archive(self, count=200):
+        assert isinstance(count, int)
+        features = self.get_features()
+        archive = DB.get_json_lines(count, 'vkcommunity')
+        return {
+            name: (value, sorted(list_from_dicts(archive, name)))
+            for name, value in features.items()
+        }
+
+    def order_features(self, archive_size=200, version=1):
+        assert isinstance(archive_size, int)
+        assert isinstance(version, int)
+
+        def calculate_priority(archive_list, value):
+            ordered_list = archive_list
+            half_len = len(feature_list) // 2
+            # print(len(ordered_list))
+            if version == 0:
+                index = bisect(ordered_list, value)
+                return abs(index - half_len) / max(half_len, 1)
+            if version == 1:
+                median = ordered_list[half_len - 1]
+                f1 = ordered_list[half_len // 2 - 1]
+                f2 = ordered_list[half_len // 2 * 3 - 1]
+                if f2 == f1:
+                    return -1
+                return (value - median) / (f2 - f1)
+
+            raise NotImplementedError
+
+        features_collection = self.collect_archive(archive_size)
+        features_priority = []
+        for feature_name, (feature_value, feature_list) in features_collection.items():
+            if feature_list:
+                priority = calculate_priority(feature_list, feature_value)
+                features_priority.append((priority, feature_value, feature_name))
+            else:
+                features_priority.append((-1, feature_value, feature_name))
+
+        return sorted(features_priority, reverse=True)
+
+    def save_features(self):
+        features = self.get_features()
+        identity = self.nodes
+        DB.save_json(
+            data=features,
+            identity=identity,
+            target='vkcommunity',
+            size=self.size,
+        )
 
     @once_property
     def params(self):
@@ -270,7 +518,7 @@ class VKCommunity(ManyObjects, VKAPI):
                 filter(
                     lambda x: bool(x),
                     [user[field]
-                     for user in self.full_data.values()
+                     for user in self.full_data
                      if field in user]
                 )
             )
@@ -335,7 +583,7 @@ class VKCommunity(ManyObjects, VKAPI):
                     'year_from': Counter(list_from_dicts(schools, 'year_from', ignore_zero=True)).most_common(),
                     'year_to': Counter(list_from_dicts(schools, 'year_to', ignore_zero=True)).most_common(),
                     'year_graduated': Counter(list_from_dicts(schools,
-                                                                   'year_graduated', ignore_zero=True)).most_common(),
+                                                              'year_graduated', ignore_zero=True)).most_common(),
                     'speciality': Counter(list_from_dicts(schools, 'speciality', ignore_zero=True)).most_common(),
                     'type': school.get('type', ''),
                     'country': school['country']

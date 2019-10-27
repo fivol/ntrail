@@ -6,6 +6,17 @@ from glbal import logger
 from constants import QUERY_RESULT_ERROR
 from collections import defaultdict
 
+import requests
+
+
+def internet_on():
+    try:
+        requests.get('http://216.58.192.142', timeout=1)
+        return True
+    except requests.exceptions.ConnectionError:
+        return False
+
+
 api_dict = {'vk': VKAPI, 'ig': IGAPI}
 
 
@@ -58,9 +69,11 @@ class APIServerEmulator:
     @classmethod
     def run_complex_queries(cls, complex_queries):
         # {}
+        assert internet_on(), 'NO INTERNET'
         assert len(complex_queries)
         assert isinstance(next(iter(complex_queries)), ComplexQuery)
         for request in complex_queries:
+            # print('QUERY', request, type(request.key))
             params = request.params
             if params is None:
                 params = {}
@@ -70,8 +83,8 @@ class APIServerEmulator:
 
             if hasattr(api_class, method):
                 try:
-                    print('QUERY', request)
                     res = getattr(api_class, method)(request.key, **params)
+                    logger.debug('* Request %s %s', method, request.key)
                 except Exception as e:
                     if isinstance(e, AssertionError):
                         raise e
@@ -118,8 +131,9 @@ class APIServerEmulator:
 
         basic_query_results = cls.decode_complex_queries(executed_queries)
 
-        assert isinstance(basic_query_objects, set)
+        assert isinstance(basic_query_objects, list)
         assert len(basic_query_results) == len(set(basic_query_objects))
+        assert isinstance(next(iter(basic_query_results)), BasicQuery)
 
         basic_queries = cls.order_by_hashes(basic_query_results, queries_hashes)
         return [query.value for query in basic_queries]

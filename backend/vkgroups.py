@@ -35,6 +35,9 @@ class VKGroups(ManyObjects, VKAPI):
                     self.nodes = groups
             self.counter = Counter(self.nodes)
 
+        else:
+            raise TypeError()
+
         self.size = len(self.nodes)
 
     def split_components(self):

@@ -40,6 +40,7 @@ class APIQueries:
     def right_order_queries(cls, queries):
         assert isinstance(queries, set)
         queries = list(queries)
+        assert len(queries) == sorted([query.num for query in queries])[-1] + 1
         queries = sorted(queries, key=lambda x: x.num)
         return [query.value for query in queries]
 
