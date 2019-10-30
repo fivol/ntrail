@@ -120,7 +120,9 @@ class VKAPI:
                   'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
                   'description', 'site', 'start_date']
 
-        return api.groups.getById(group_ids=group_ids, fields=fields)
+        res = api.groups.getById(group_ids=group_ids, fields=fields)
+        # print(res)
+        return res
 
     @classmethod
     def group_short(cls, group_ids):

@@ -22,7 +22,7 @@ service_token_methods = {'friends', 'resolve', 'friends',
 user_token_methods = {'groups', 'search',
                       'user_full', 'group_full'}
 
-methods_group_key = {'user_short', 'user_full', 'group_short'}
+methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full'}
 
 available_execute = {'friends', 'groups', 'resolve'}
 
@@ -119,7 +119,8 @@ class VKHandler:
 
         user_queries_count = len(user_token_queries)
         if user_queries_count > 1:
-            if (user_queries_count + len(to_execute)) % execute_queries_count == 1:
+            if (user_queries_count + len(to_execute)) % execute_queries_count == 1 \
+                    and len(to_execute):
                 other += to_execute[0]
                 to_execute = to_execute[1:] + user_token_queries
             else:

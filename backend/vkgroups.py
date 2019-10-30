@@ -1,18 +1,21 @@
 from many_objects import ManyObjects
-from tools import once_property
+from tools import once_property, get_common_texts_terms
 from collections import Counter
 import networkx as nx
 from vkgroup import VKGroup
 import math
 from glbal import logger
-from tools import timeit, dict_from_dicts, list_from_dicts
+from tools import timeit, dict_from_dicts, list_from_dicts, counter_top, prepare_list
 from vkapi import VKAPI
+import numpy as np
 
 
 class VKGroups(ManyObjects, VKAPI):
-    def __init__(self, groups=None, most_common=None):
+    base_class = VKGroup
+
+    def __init__(self, groups=None, save_features=False):
         super().__init__()
-        self.base_class = VKGroup
+
         if not groups:
             self.counter = Counter()
             self.nodes = []
@@ -20,14 +23,10 @@ class VKGroups(ManyObjects, VKAPI):
             return
 
         if isinstance(groups, Counter):
-            if most_common:
-                groups = Counter(dict(groups.most_common(most_common)))
             self.counter = groups
             self.nodes = list([item for item, count in groups.most_common()])
         elif isinstance(groups, list) or isinstance(groups, set):
             groups = list(set(groups))
-            if most_common:
-                groups = groups[:most_common]
             if groups:
                 if isinstance(groups[0], VKGroup):
                     self.nodes = [group.id for group in groups]
@@ -39,6 +38,8 @@ class VKGroups(ManyObjects, VKAPI):
             raise TypeError()
 
         self.size = len(self.nodes)
+        if 5 < self.size < 500 and save_features:
+            self.save_features()
 
     def split_components(self):
         return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
@@ -146,6 +147,104 @@ class VKGroups(ManyObjects, VKAPI):
         if order_type == 'reverse':
             return VKGroups(Counter(dict([(item, 1 / count) for item, count in self.counter.most_common()])))
 
+    def process_data(self):
+        params = self.params
+        data = {
+            'size': self.size
+        }
+        list_size_limit = 20
+        ## Need work with links
+        ## Добавить обработку сайтов - количество валидных, конкретные адреса, закономерности по именам доменов
+        ## Подумать на полем counters. Сейчас оно вообще не считается (не приходит тк не использую execute)
+        data['age_limits'] = {
+            'all_count': len(params['age_limits']),
+            'common_categories': counter_top(params['age_limits'])
+        }
+        data['city'] = {
+            'all_count': len(params['city']),
+            'common_list': counter_top(params['city'])
+        }
+        data['country'] = {
+            'all_count': len(params['country']),
+            'common_list': counter_top(params['country'])
+        }
+        data['has_photo'] = {
+            'count': params['has_photo']
+        }
+        data['main_section'] = {
+            'common_categories': counter_top(params['main_section'])
+        }
+        data['verified'] = {
+            'count': params['verified']
+        }
+        data['members_count'] = prepare_list(params['members_count'])
+        data['trending'] = {
+            'count': params['trending']
+        }
+        data['wall'] = {
+            'all_count': len(params['wall']),
+            'common_categories': counter_top(params['wall'])
+        }
+        data['contacts'] = {
+            'all_count': len(params['contacts']),
+            'common_list': counter_top(params['contacts'])
+        }
+        data['description'] = {
+            'len_median': np.median([len(item) for item in params['description']]),
+            'len_mean': np.mean([len(item) for item in params['description']]),
+            'common_list': get_common_texts_terms(params['description'])[:list_size_limit]
+        }
+        data['name'] = {
+            'common_list': get_common_texts_terms(params['name'])[:list_size_limit]
+        }
+        data['site'] = {
+            'all_count': len(params['site'])
+        }
+        data['start_date'] = prepare_list(params['start_date'])
+        data['deactivated'] = {
+            'all_count': len(params['deactivated']),
+            'common_categories': counter_top(params['deactivated'])
+        }
+        data['type'] = {
+            'groups_count': params['type_groups_count'],
+            'pages_count': params['type_pages_count'],
+            'events_count': params['type_events_count']
+        }
+        data['activity'] = {
+            'pages': {
+                'all_count': len(params['pages_activity']),
+                'common_categories': counter_top(params['pages_activity'])[:list_size_limit]
+            },
+            'groups': {
+                'common_categories': counter_top(params['groups_activity'])
+            }
+        }
+        return data
+
+    def get_features(self):
+        data = self.process_data()
+        assert isinstance(data, dict)
+        features = self.get_common_features(
+            data,
+            category_frequency_features={
+                'activity.pages.common_categories',
+                'activity.groups.common_categories',
+                'deactivated.common_categories',
+                'wall.common_categories',
+                'main_section.common_categories',
+                'age_limits.common_categories',
+            }, plain_features={
+                'description.len_median',
+                'description.len_mean'
+            }, frequency_features={
+                'activity.pages.all_count',
+                'type.groups_count',
+                'type.pages_count',
+                'type.events_count'
+            }
+        )
+        return features
+
     @once_property
     def params(self):
         logger.debug('@ get groups params')
@@ -153,13 +252,14 @@ class VKGroups(ManyObjects, VKAPI):
         groups_list = self.full_data
         params['size'] = self.size
         params['age_limits'] = list_from_dicts(groups_list, 'age_limits', counter=True)
+        params['name'] = list_from_dicts(groups_list, 'name')
         params['city'] = list_from_dicts(list_from_dicts(groups_list, 'city'),
-                                              'title', counter=True)
+                                         'title', counter=True)
         params['country'] = list_from_dicts(list_from_dicts(groups_list, 'country'),
-                                                 'title', counter=True)
-        params['has_photo'] = list_from_dicts(groups_list, 'has_photo', counter=True)
+                                            'title', counter=True)
+        params['has_photo'] = sum(list_from_dicts(groups_list, 'has_photo'))
         params['main_section'] = list_from_dicts(groups_list, 'main_section',
-                                                      counter=True, ignore_zero=True)
+                                                 counter=True, ignore_zero=True)
         params['place'] = list_from_dicts(groups_list, 'title', counter=True)
         params['verified'] = sum(list_from_dicts(groups_list, 'verified'))
         params['members_count'] = sorted(list_from_dicts(groups_list, 'members_count'), reverse=True)
@@ -187,7 +287,7 @@ class VKGroups(ManyObjects, VKAPI):
         params['type_pages_count'] = type_pages.size
         params['type_events_count'] = type_event.size
 
-        params['pages_activity'] = list_from_dicts(type_pages.short_data, 'activity', counter=True)
-        params['groups_activity'] = list_from_dicts(type_groups.short_data, 'activity', counter=True)
+        params['pages_activity'] = list_from_dicts(type_pages.full_data, 'activity', counter=True)
+        params['groups_activity'] = list_from_dicts(type_groups.full_data, 'activity', counter=True)
 
         return params

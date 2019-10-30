@@ -174,16 +174,6 @@ class BaseAPI:
     def print_data(self):
         pprint(self.process_data(), compact=True)
 
-    @self_replace('graph')
-    # @timeit
-    def pools(self, graph=None, algorithm='louvain'):
-        main_user = None
-        if hasattr(self, 'main_user') and self.main_user:
-            main_user = self.main_user.id
-        communities = self.communities_from_graph(graph, algorithm, remove_node=main_user)
-        pools = [self.__class__(pool) for pool in communities]
-        return pools
-
     @classmethod
     # @timeit
     def communities_from_graph(cls, graph_, algorithm, remove_node=None):

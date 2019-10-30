@@ -12,6 +12,16 @@ import string
 import transliterate
 import json
 import math
+import pymorphy2
+from app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
+
+morph = pymorphy2.MorphAnalyzer()
+
+
+most_frequent_words = set('абвгдежзийклмнопстуфхцчшщъыьэюяё') | \
+                      set(most_frequent_english_words) | \
+                      set(most_frequent_russian_words) | \
+                      set(string.ascii_lowercase) | set(extra_ignore_words)
 
 colors = []
 
@@ -389,6 +399,24 @@ def get_sites(site_string):
             logger.exception('Fail to parse site: %s', site)
 
     return sites
+
+
+def get_common_texts_terms(texts):
+    assert isinstance(texts, list)
+
+    def normalize_word(word):
+        return re.sub('ия$|ический$', '', morph.parse(word)[0].normal_form)
+
+    texts_words = []
+    for text in texts:
+        text = text.lower()
+        text = re.sub('http\S+', ' ', text)
+        text = re.sub('[^а-яa-z]', ' ', text)
+        words = set([normalize_word(word) for word in text.split()])
+        words -= most_frequent_words
+        texts_words += list(words)
+
+    return counter_top(Counter(texts_words).most_common())
 
 
 class ThreadResult:

@@ -11,6 +11,23 @@ from vkapi import VKAPI
 
 
 class VKUser(OneObject, VKAPI):
+
+    @staticmethod
+    def me():
+        return VKUser('boris2000n')
+
+    @staticmethod
+    def alex():
+        return VKUser('jolex009')
+
+    @staticmethod
+    def petr():
+        return VKUser('p.volnov')
+
+    @staticmethod
+    def kate():
+        return VKUser('katya11111')
+
     def __init__(self, user):
         super().__init__()
         self.status = None
@@ -146,7 +163,7 @@ class VKUser(OneObject, VKAPI):
         from vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
-        return VKCommunity(friends_ids, main_user=self)
+        return VKCommunity(friends_ids, main_user=self, clear=True)
 
     @once_property
     @valid_object_method

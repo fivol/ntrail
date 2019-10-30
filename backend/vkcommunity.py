@@ -59,7 +59,7 @@ from tools import clear_list, prepare_list, counter_top, get_sites, list_get, li
 import re
 from vkapi import VKAPI
 from db_logic import DB
-from bisect import bisect
+import bisect
 from constants import ACCOUNT_STATUS_PUBLIC
 
 # @ - полное говнище, но надо куда нибудь прикрутить
@@ -78,9 +78,10 @@ vk_connections_names = ['skype', 'livejournal', 'instagram', 'facebook', 'twitte
 
 
 class VKCommunity(ManyObjects, VKAPI):
-    def __init__(self, users=None, main_user=None, clear=False):
+    base_class = VKUser
+
+    def __init__(self, users=None, main_user=None, clear=False, save_features=True):
         super().__init__()
-        self.base_class = VKUser
         if isinstance(users, set):
             users = list(users)
         assert main_user is None or isinstance(main_user, VKUser), main_user
@@ -122,7 +123,7 @@ class VKCommunity(ManyObjects, VKAPI):
             self.nodes = clean_community.nodes
             self.counter = clean_community.counter
         self.size = len(self.nodes)
-        if 3 < self.size < 800:
+        if 3 < self.size < 800 and save_features:
             self.save_features()
 
     @staticmethod
@@ -231,7 +232,9 @@ class VKCommunity(ManyObjects, VKAPI):
 
     def process_data(self):
         params = self.params
-        data = {}
+        data = {
+            'size': self.size
+        }
 
         def time_delta(timestamp_list, dev=1):
             delta = time() - np.array(timestamp_list)
@@ -379,68 +382,39 @@ class VKCommunity(ManyObjects, VKAPI):
         return data
 
     def get_features(self):
-        def get_value_by_path(full_path):
-            path_elements = full_path.split('.')
-            obj = data
-            for key in path_elements:
-                obj = obj[key]
-            return obj
+        if not self.nodes:
+            return {}
 
-        features = {}
         data = self.process_data()
         assert isinstance(data, dict)
-        plain_features_attributes = {
-            'mean', 'median', 'fourth', 'fourth2',
-            'common_mean', 'common_median',
-            'max', 'min'
-        }
-        plain_features = {
-            'status.len_median',
-        }
-        frequency_features_attributes = {
-            'count', 'all_count'
-        }
-        frequency_features = {
-            'site.site_good_count',
-            'site.good_count',
-            'site.status_count',
-            'site.site_count'
-        }
-        category_frequency_features = {
-            'relation', 'sex', 'personal.life_main', 'personal.langs',
-            'personal.religion', 'personal.people_main',
-            'personal.political', 'relatives',
-            'personal.smoking', 'personal.alcohol'
-        }
-        counter_common_list_attribute = 'common_list'
+
+        features = self.get_common_features(
+            data,
+            category_frequency_features={
+                'relation', 'sex', 'personal.life_main', 'personal.langs',
+                'personal.religion', 'personal.people_main',
+                'personal.political', 'relatives',
+                'personal.smoking', 'personal.alcohol'
+            }, plain_features={
+                'status.len_median',
+            }, frequency_features={
+                'site.site_good_count',
+                'site.good_count',
+                'site.status_count',
+                'site.site_count'
+            }
+        )
+        assert isinstance(features, dict)
+
         size = self.size
-        features['size'] = size
 
         for feature in ['personal.smoking', 'personal.alcohol']:
-            feature_common_list = get_value_by_path(feature)
+            feature_common_list = self.get_value_by_path(data, feature)
             if feature_common_list:
                 sum_count = sum(map(lambda x: x[1], feature_common_list))
                 features[feature] = \
                     sum(map(lambda x: x[0] * x[1], feature_common_list)) / sum_count
                 features[feature + '_count'] = sum_count
-
-        for feature_name, feature_value in data.items():
-            if isinstance(feature_value, dict):
-                for attr_name, attr_value in feature_value.items():
-                    name = f'{feature_name}.{attr_name}'
-                    if attr_name in plain_features_attributes:
-                        features[name] = attr_value
-                    elif attr_name in frequency_features_attributes:
-                        features[name] = attr_value / size
-                    elif attr_name == counter_common_list_attribute:
-                        assert isinstance(attr_value, list)
-                        if len(attr_value):
-                            features[name] = attr_value[0][1] / size
-
-        for feature in plain_features:
-            features[feature] = get_value_by_path(feature)
-        for feature in frequency_features:
-            features[feature] = get_value_by_path(feature) / size
 
         for username, value in data['username'].items():
             features[f'username.{username}'] = value['count'] / size
@@ -448,12 +422,8 @@ class VKCommunity(ManyObjects, VKAPI):
         for i, university in enumerate(data['university'][:2]):
             features[f'university-{i}'] = university['count'] / size
 
-        for i, university in enumerate(data['school'][:2]):
-            features['school' + str(i)] = university['count'] / size
-
-        for feature in category_frequency_features:
-            for key, value in get_value_by_path(feature):
-                features[f'{feature}-{key}'] = value / size
+        for i, school in enumerate(data['school'][:2]):
+            features[f'school-{i}'] = school['count'] / size
 
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
@@ -472,12 +442,21 @@ class VKCommunity(ManyObjects, VKAPI):
         assert isinstance(version, int)
 
         def calculate_priority(archive_list, value):
+            # archive_list = sorted(list(set(archive_list)))
             ordered_list = archive_list
+            if len(archive_list) < max(archive_size / 4, 50):
+                return -1
             half_len = len(feature_list) // 2
             # print(len(ordered_list))
             if version == 0:
-                index = bisect(ordered_list, value)
-                return abs(index - half_len) / max(half_len, 1)
+                index_left = bisect.bisect_left(ordered_list, value)
+                index_right = bisect.bisect_right(ordered_list, value)
+                if index_left <= half_len <= index_right:
+                    return 0
+
+                return min(abs(index_left - half_len),
+                           abs(index_right - half_len)) \
+                       / max(half_len, 1)
             if version == 1:
                 median = ordered_list[half_len - 1]
                 f1 = ordered_list[half_len // 2 - 1]
@@ -498,16 +477,6 @@ class VKCommunity(ManyObjects, VKAPI):
                 features_priority.append((-1, feature_value, feature_name))
 
         return sorted(features_priority, reverse=True)
-
-    def save_features(self):
-        features = self.get_features()
-        identity = self.nodes
-        DB.save_json(
-            data=features,
-            identity=identity,
-            target='vkcommunity',
-            size=self.size,
-        )
 
     @once_property
     def params(self):

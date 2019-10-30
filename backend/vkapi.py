@@ -105,7 +105,11 @@ class VKAPI:
         assert isinstance(group_ids[0], int)
         group_ids = [str(group) for group in group_ids]
         method = 'group_' + ('full' if one_by_one else 'short')
-        return APIQueries().many(service, method, group_ids, exe=exe)
+        res = APIQueries().many(service, method, group_ids, exe=exe)
+        assert isinstance(res, list)
+        assert len(res) == len(group_ids)
+        assert isinstance(res[0], dict), res
+        return res
 
     @classmethod
     def get_group_data(cls, group_id, full):
