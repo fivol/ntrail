@@ -9,10 +9,17 @@ from vkcommunity import VKCommunity
 from iguser import IGUser
 from igcommunity import IGCommunity
 from vkgroup import VKGroup
-from vkgroups import VKGroups
+from vkgroup import VKGroups
+import warnings
+from vkpost import VKPosts
+from vkpost import VKPost
+from constants import ACCOUNT_STATUS_ABSENT, ACCOUNT_STATUS_PUBLIC
+
+
 logger.setLevel(logging.WARNING)
 
 
+# @unittest.skip
 class ToolsTest(unittest.TestCase):
     def test_get_obj(self):
         n = 321321
@@ -50,6 +57,7 @@ class QueriesTest(unittest.TestCase):
     def setUp(self):
         self.begin_time = datetime.datetime.now()
         self.queries_count = LocalCache.count_cached_queries()
+        warnings.filterwarnings("ignore")
 
     def tearDown(self):
         LocalCache.remove_queries_from_time(self.begin_time)
@@ -77,13 +85,24 @@ class VKUserTest(QueriesTest):
             self.assertEqual(VKUser(r).status, VKUser(f'id{r}').status)
             self.assertTrue(VKUser.generate_random().valid)
 
-        self.assertRaises(TypeError, VKUser, {1: 2})
+        self.assertRaises(ValueError, VKUser, {1: 2})
         self.assertRaises(TypeError, VKUser, [])
+        self.assertEqual(VKUser('').status, ACCOUNT_STATUS_ABSENT)
+        self.assertRaises(ValueError, VKUser, -1)
+        self.assertIsNone(VKUser('').friends())
 
     def test_friends(self):
-        self.assertGreater(VKUser('jolex009').friends().size, 0)
+        self.assertGreater(VKUser('jolex009').friends().size, 10)
+        self.assertGreater(VKUser.me().friends().size, 10)
+
+    def test_functions(self):
+        self.assertEqual(VKUser.get_username('  https://vk.com/jksdaf_ji32 '), 'jksdaf_ji32')
+        self.assertEqual(VKUser.me().check_status(), ACCOUNT_STATUS_PUBLIC)
+        self.assertIsInstance(VKUser.me().follows(), VKCommunity)
+        self.assertIsInstance(VKUser.me().followers(), VKCommunity)
 
 
+# @unittest.skip
 class VKCommunityTest(QueriesTest):
 
     def test_community_init(self):
@@ -113,6 +132,34 @@ class VKCommunityTest(QueriesTest):
     def test_generate(self):
         for i in range(5):
             self.assertEqual(VKCommunity.generate_random(20).only_valid().size, 20)
+
+
+class VKGroupTest(QueriesTest):
+    def test_init(self):
+        self.assertEqual(VKGroup('https://vk.com/stfivt').valid, True)
+        self.assertEqual(VKGroup('https://vk.com/stfivt/').valid, True)
+        self.assertEqual(VKGroup('https://vk.com/ovsyanochan').valid, True)
+        self.assertEqual(VKGroup('https://vk.com/fsdfkjdlsfjldsfjl/').valid, False)
+        self.assertEqual(VKGroup('fds/fdsa/fd/ds/das/dfs/dfs/fffffffijijij').valid, False)
+        self.assertEqual(VKGroup(48392472736478).valid, False)
+        self.assertEqual(VKGroup(242142131).valid, False)
+        self.assertEqual(VKGroup(144624886).valid, True)
+        self.assertEqual(VKGroup(45698612).valid, True)
+        self.assertRaises(TypeError, VKGroup, ([1, 2, 3],))
+        self.assertRaises(TypeError, VKGroup, ({1: 2, 3: 4},))
+
+
+class VKPostsTest(QueriesTest):
+    def test_init(self):
+        pass
+
+    def test_get_wall(self):
+        self.assertIsInstance(VKUser('https://vk.com/id493754172').posts(), VKPosts)
+        self.assertIsNone(VKUser('fdasjlfsdajoifdsfds').posts())
+        self.assertIsNone(VKUser(324234243324).posts())
+        self.assertIsInstance(VKUser('boris2000n').posts(), VKPosts)
+        self.assertEqual(VKUser('boris2000n').posts().size, 0)
+        self.assertGreater(VKUser('https://vk.com/id91888646').posts().size, 7)
 
 
 if __name__ == '__main__':

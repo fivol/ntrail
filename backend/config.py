@@ -1,12 +1,17 @@
-
+from constants import CACHE_TYPE_FULL_USE, CACHE_TYPE_IGNORE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_ONLY_WRITE
 
 DB_USER = 'postgres'
 DB_HOST = 'localhost'
-DB_PASS = 'postgres'
-DB_NAME = 'ntrail_db'
+DB_PASS = '12345'
+DB_NAME = 'NTrailDB'
 DB_PORT = '5432'
 
+VERSION = '2.0'
 API_SERVER_REQUEST_VERSION = 0
+
+
+CACHE_TYPE = CACHE_TYPE_FULL_USE
+# CACHE_TYPE = CACHE_TYPE_IGNORE
 
 # remote db
 # DB_USER = 'postgres'

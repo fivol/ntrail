@@ -1,5 +1,5 @@
 import hashlib
-from constants import QUERY_RESULT_ERROR
+from errors.api_errors import APIError
 
 
 class BasicQuery:
@@ -60,7 +60,13 @@ class BasicQuery:
 
     @property
     def can_cache(self):
-        return self.valid and not (self.value is None) and not (self.value == QUERY_RESULT_ERROR)
+        if self.value is None:
+            return False
+        if APIError.is_error(self.value):
+            if not APIError(self.value).is_request_result():
+                return False
+
+        return self.valid
 
 
 class ComplexQuery(BasicQuery):

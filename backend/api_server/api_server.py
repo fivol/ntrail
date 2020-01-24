@@ -3,8 +3,8 @@ from api_server.igapi_remote import IGAPI
 from api_server.query_handler import QueryHandler
 from query_object import BasicQuery, ComplexQuery
 from glbal import logger
-from constants import QUERY_RESULT_ERROR
 from collections import defaultdict
+from errors.api_errors import APIError, ServerError
 
 import requests
 
@@ -67,33 +67,39 @@ class APIServerEmulator:
         return basic_queries
 
     @classmethod
+    def run_query(cls, query):
+        assert isinstance(query, ComplexQuery)
+        params = query.params
+        if params is None:
+            params = {}
+
+        api_class = api_dict[query.service]
+        method = query.method
+
+        assert isinstance(method, str)
+        assert hasattr(api_class, method)
+
+        try:
+            res = getattr(api_class, method)(query.key, **params)
+            if isinstance(res, dict):
+                res['status'] = res.get('status', 'ok')
+            logger.debug('* Request %s %s', method, query.key)
+        except Exception as e:
+            if isinstance(e, AssertionError):
+                raise e
+            assert internet_on(), 'NO INTERNET'
+            logger.exception('Fail to execute api method: %s', query.to_dict())
+            res = ServerError(0)
+
+        query.set_value(res)
+
+    @classmethod
     def run_complex_queries(cls, complex_queries):
         # {}
-        assert internet_on(), 'NO INTERNET'
         assert len(complex_queries)
         assert isinstance(next(iter(complex_queries)), ComplexQuery)
-        for request in complex_queries:
-            # print('QUERY', request, type(request.key))
-            params = request.params
-            if params is None:
-                params = {}
-
-            api_class = api_dict[request.service]
-            method = request.method
-
-            if hasattr(api_class, method):
-                try:
-                    res = getattr(api_class, method)(request.key, **params)
-                    logger.debug('* Request %s %s', method, request.key)
-                except Exception as e:
-                    if isinstance(e, AssertionError):
-                        raise e
-                    logger.exception('Fail to execute api method: %s', request.to_dict())
-                    res = QUERY_RESULT_ERROR
-
-                request.set_value(res)
-            else:
-                raise NotImplementedError
+        for query in complex_queries:
+            cls.run_query(query)
 
         return complex_queries
 

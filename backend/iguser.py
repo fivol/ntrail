@@ -1,5 +1,4 @@
 from tools import once_property
-from baseapi import BaseAPI
 from instagram.entities import Account
 from glbal import logger
 from one_object import OneObject
@@ -17,7 +16,7 @@ class IGUser(OneObject):
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
 
-        self.pk = self.username
+        self.id = self.username
         super().__init__()
 
     @once_property

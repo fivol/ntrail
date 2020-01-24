@@ -1,7 +1,5 @@
 from peewee import *
 import datetime
-import random
-import string
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
 from playhouse.postgres_ext import JSONField
@@ -16,29 +14,34 @@ class BaseModel(Model):
 
 
 class PersonModel(BaseModel):
-    hash = CharField(20)
-
-    def __init__(self):
-        super().__init__()
-        self.hash = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    identity_hash = CharField(16)
 
 
 class UserModel(BaseModel):
-    hash = CharField(20)
-
-    def __init__(self):
-        super().__init__()
-        self.hash = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    login = CharField(50, null=False, unique=True)
+    password = CharField(50, null=True, unique=False, index=True)
+    status = CharField(50, null=False, unique=False)
 
 
-class JsonModel(BaseModel):
+class EntityModel(BaseModel):
     time = DateTimeField(default=datetime.datetime.now)
-    target = CharField(30, default='')
+    target = CharField(30)
     size = IntegerField(null=True)
-    hash = CharField(20, unique=True, null=False)
     user = ForeignKeyField(UserModel, null=True)
     identity = JSONField()
+    identity_hash = CharField(16, unique=True, null=False)
     data = JSONField()
+
+
+class FeatureModel(BaseModel):
+    entity = ForeignKeyField(EntityModel, null=True)
+    name = CharField(80, default='', null=False, index=True)
+    value = FloatField(null=False, index=False, unique=False)
+
+    class Meta:
+        indexes = (
+            (('entity', 'name'), True),  # create a unique
+        )
 
 
 class ConfigModel(BaseModel):
@@ -53,12 +56,13 @@ class QueryModel(BaseModel):
     key = CharField(50, null=False)
     value = JSONField(null=False)
     params = JSONField(null=True)
-    hash = CharField(20, unique=True, null=False)
+    identity_hash = CharField(16, null=False, unique=True)
 
 
 def create_tables():
     with db:
-        db.create_tables([ConfigModel, UserModel, PersonModel, JsonModel, QueryModel])
+        db.create_tables([ConfigModel, UserModel, PersonModel,
+                          EntityModel, QueryModel, FeatureModel])
 
 
 create_tables()

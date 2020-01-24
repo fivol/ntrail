@@ -1,41 +1,36 @@
+import time
+
 from one_object import OneObject
-from tools import once_property, valid_object_method, get_sites
+from tools import once_property, valid_object_method, get_sites, to_string_time_period
 import matplotlib.pyplot as plt
 import io
 import re
-from vkgroups import VKGroups
+from vkgroup import VKGroups
 from glbal import logger
-from constants import QUERY_RESULT_INVALID_ID, ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
-    ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
 from vkapi import VKAPI
+from vkphoto import VKPhotos, VKAlbum, VKAlbums
+from errors.api_errors import APIError, INVALID_ID_ERROR
+from constants import ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
+    ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, \
+    ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
+from vkpost import VKPosts
 
 
 class VKUser(OneObject, VKAPI):
-
     @staticmethod
     def me():
         return VKUser('boris2000n')
 
-    @staticmethod
-    def alex():
-        return VKUser('jolex009')
-
-    @staticmethod
-    def petr():
-        return VKUser('p.volnov')
-
-    @staticmethod
-    def kate():
-        return VKUser('katya11111')
-
     def __init__(self, user):
         super().__init__()
-        self.status = None
         self.id = None
+        self.status = None
 
         if isinstance(user, str):
             if not user:
                 self.status = ACCOUNT_STATUS_ABSENT
+            elif user.startswith('vku_'):
+                self.id = int(user[4:])
             else:
                 username = VKUser.get_username(user)
                 user_dict = self.resolve_screen_name(username)
@@ -48,10 +43,15 @@ class VKUser(OneObject, VKAPI):
                 else:
                     self.id = user_dict['object_id']
         elif isinstance(user, int):
+            if user < 0:
+                raise ValueError('User id < 0', user)
             self.id = user
+        elif isinstance(user, dict):
+            if 'id' not in user:
+                raise ValueError('Wrong user dict')
+            self.id = user['id']
         else:
-            raise TypeError(f'VKUser "{user}" type is {type(user)}')
-        self.pk = self.id
+            raise TypeError(f'VKUser {user} type is {type(user)}')
 
     @staticmethod
     def get_username(url):
@@ -64,14 +64,24 @@ class VKUser(OneObject, VKAPI):
             return None
         return usernames[0]
 
+    @valid_object_method
+    def photos(self):
+        return VKPhotos(self.get_all_photos(self.id))
+
+    @valid_object_method
+    def user_photos(self):
+        return VKPhotos(self.get_photos_with_user(self.id))
+
+    @valid_object_method
+    def albums(self):
+        return VKAlbums(self.get_albums(self.id))
+
     def check_status(self):
         if not self.status:
             user_data = self.short_data
-            if isinstance(user_data, str):
-                if user_data == QUERY_RESULT_INVALID_ID:
+            if APIError.is_error(user_data):
+                if APIError(user_data).code == INVALID_ID_ERROR:
                     self.status = ACCOUNT_STATUS_ABSENT
-                else:
-                    raise ValueError('VKUser short data have unknown value:', user_data)
             elif isinstance(user_data, dict):
                 if 'deactivated' in user_data:
                     deactivated_status = user_data['deactivated']
@@ -82,12 +92,12 @@ class VKUser(OneObject, VKAPI):
                     else:
                         logger.warning('Unknown reason for user account deactivation: %s', deactivated_status)
                         self.status = ACCOUNT_STATUS_DELETED
-                elif user_data['is_closed']:
+                elif user_data.get('is_closed', False):
                     self.status = ACCOUNT_STATUS_PRIVATE
                 else:
                     self.status = ACCOUNT_STATUS_PUBLIC
             else:
-                raise TypeError('VKUser short data wrong type:', user_data)
+                raise TypeError('VKUser short data wrong type:', type(user_data))
         assert bool(self.status)
         return self.status
 
@@ -100,6 +110,20 @@ class VKUser(OneObject, VKAPI):
                status == ACCOUNT_STATUS_PRIVATE
 
     @valid_object_method
+    def followers(self):
+        from vkcommunity import VKCommunity
+        followers = self.get_user_followers(self.id)
+        assert isinstance(followers, list)
+        return VKCommunity(followers)
+
+    @valid_object_method
+    def follows(self):
+        from vkcommunity import VKCommunity
+        subscriptions = self.get_user_subscriptions(self.id)
+        assert isinstance(subscriptions, list)
+        return VKCommunity(subscriptions)
+
+    @valid_object_method
     def groups(self):
         return VKGroups(self.get_user_groups(self.id))
 
@@ -110,11 +134,16 @@ class VKUser(OneObject, VKAPI):
 
     @once_property
     def short_data(self):
-        return self.get_user(self.id, full=False)
+        return self.full_data
+        # return self.get_user(self.id, full=False)
 
     @once_property
     def full_data(self):
         return self.get_user(self.id, full=True)
+
+    @valid_object_method
+    def posts(self):
+        return VKPosts(self.get_user_posts(self.id))
 
     @property
     @valid_object_method
@@ -122,9 +151,11 @@ class VKUser(OneObject, VKAPI):
         return f"{self.short_data['first_name']} {self.short_data['last_name']}"
 
     @property
-    @valid_object_method
     def url(self):
         return f'https://vk.com/id{self.id}'
+
+    def preload(self):
+        a = self.full_data
 
     @valid_object_method
     def get_key_words(self):
@@ -163,7 +194,7 @@ class VKUser(OneObject, VKAPI):
         from vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
-        return VKCommunity(friends_ids, main_user=self, clear=True)
+        return VKCommunity(friends_ids, main_user=self, clear=True, target='friends')
 
     @once_property
     @valid_object_method
@@ -179,3 +210,178 @@ class VKUser(OneObject, VKAPI):
         plt.axis('off')
         plt.imshow(a)
         plt.show()
+
+    def get_interesting_properties(self):
+        return [
+            {
+                'name': 'Интересное свойство 1',
+                'value': '23',
+                'id': 52315,
+                'idAll': 1
+            },
+            {
+                'name': "Средний возраст",
+                'value': "19.6",
+                'type': "order",
+                'id': 53124312,
+            },
+            {
+                'name': "Максимальное число подписчиков",
+                'value': "3567",
+                'type': "order",
+                'id': 5435325,
+            },
+            {
+                'name': "Школа",
+                'value': "СУНЦ МГУ",
+                'confidence': 0.7,
+                'type': "show",
+                'id': 41325132
+            }
+        ]
+
+    def get_important_properties(self):
+        if not self.valid:
+            return []
+        return [
+            {
+                'name': "Количество",
+                'value': "1",
+                'id': 166
+            },
+            {
+                'name': "Пол",
+                'value': 'Мужской' if self.full_data['sex'] == 2 else 'Женский',
+                'id': 42341
+            },
+            {
+                'name': "Онлайн",
+                'value': 'В сети' if self.full_data['online'] else to_string_time_period(
+                    time.time() - self.full_data['last_seen']['time']
+                ) + ' назад',
+                'id': 16153
+            }]
+
+    def get_all_properties(self):
+        return [
+            {
+                'name': "Возраст",
+                'id': 0,
+                'values': [
+                    {
+                        'name': "Минимальный",
+                        'value': "14 лет",
+                        'id': 1613
+                    },
+                    {
+                        'name': "Средний",
+                        'value': "18.1 год",
+                        'id': 13513
+                    },
+                    {
+                        'name': "Медианный",
+                        'value': "17.4 года",
+                        'id': 2715325
+                    },
+                    {
+                        'name': "Максимальный",
+                        'value': "26 лет",
+                        'id': 3613351
+                    }
+                ]
+            },
+            {
+                'name': "Количество друзей",
+                'id': 1,
+                'values': [
+                    {
+                        'name': "Минимальное",
+                        'value': "4",
+                        'id': 6153
+                    },
+                    {
+                        'name': "Среднее",
+                        'value': "89",
+                        'id': 11432
+                    },
+                    {
+                        'name': "Медианное",
+                        'value': "56",
+                        'id': 313212
+                    },
+                    {
+                        'name': "Максимальное",
+                        'value': "451",
+                        'id': 41616
+                    }
+                ]
+            }
+        ]
+
+    def get_properties(self):
+        return {
+            'all': self.get_all_properties(),
+            'interesting': self.get_interesting_properties(),
+            'important': self.get_important_properties()
+        }
+
+    def get_entity(self):
+        response = {
+            'id': 'vku_' + str(self.id),
+            'accessStatus': self.check_status(),
+        }
+        if not self.valid:
+            return {
+                **response,
+                'url': self.url,
+                'img': 'https://vk.com/images/deactivated_100.png?ava=1',
+                'name': 'Пользователь не валиден',
+                'valid': False,
+                'properties': {
+                    'sex': self.full_data['sex'] if self.valid else 2,
+                    'weight': 0,
+                    'connections': [],
+                }
+            }
+        return {
+            **response,
+            'url': self.url,
+            'img': self.full_data.get('photo_100', 'https://vk.com/images/camera_100.png?ava=1'),
+            'name': self.name,
+            'username': self.full_data.get("screen_name", 'id' + str(self.id)),
+            'nativeID': self.id,
+            'valid': True,
+            'verified': self.full_data.get('verified', False),
+            'accessStatus': self.check_status(),
+            'private': self.check_status() == ACCOUNT_STATUS_PRIVATE,
+            'properties': {
+                'sex': self.full_data['sex'],
+                'weight': 1,
+                'connections': []
+            }
+        }
+
+    def get_params(self):
+        return {
+            'baseType': 'users',
+            'service': 'vk',
+            'type': 'user',
+            'fullEntitiesCount': 1,
+            'id': self.hash,
+            'name': self.full_data['first_name'] if self.valid else 'Не валиден',
+            'query': f'vkuser {self.full_data["screen_name"]}' if self.valid else ''
+        }
+
+    def represent(self):
+        self.preload()
+        return {
+            'clusters':
+                [
+                    {
+                        'properties': self.get_properties(),
+                        'params': self.get_params(),
+                        'entities': [self.get_entity()],
+                        'id': self.hash
+                    }
+                ]
+        }

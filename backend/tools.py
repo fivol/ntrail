@@ -17,7 +17,6 @@ from app_data import most_frequent_english_words, most_frequent_russian_words, e
 
 morph = pymorphy2.MorphAnalyzer()
 
-
 most_frequent_words = set('абвгдежзийклмнопстуфхцчшщъыьэюяё') | \
                       set(most_frequent_english_words) | \
                       set(most_frequent_russian_words) | \
@@ -208,9 +207,10 @@ def split_list(list_object, segment_size):
 
 def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True):
     dicts_list = filter(lambda x: key in x, dicts_list)
-    result = map(lambda x: x[key], dicts_list)
+    result = [x[key] for x in dicts_list]
     if ignore_zero:
         result = filter(lambda x: bool(x), result)
+    # print([item for item in result])
     if counter:
         res = Counter(result)
         if most_common:
@@ -254,6 +254,43 @@ def calculate_array_common(arr):
     return np.array(common_elements)
 
 
+def is_good_username(username):
+    if len(username) < 2:
+        return False
+    bad_characters = re.sub('[a-zA-Z0-9_\-.]', '', username)
+    if bad_characters == '':
+        return True
+    # logger.debug('Find bad username: %s', username)
+    return False
+
+
+def find_phones(phones_string):
+    phones_string = phones_string.replace(' ', '')
+    exp = r'\+?(?:(?:[0-9]{1,3}\([0-9]{3}\))|(?:[0-9]{4,6}))[0-9]{7}'
+    return list(re.findall(exp, phones_string))
+
+
+def get_normal_phone_number(phone_string):
+    if len(phone_string) > 20:
+        return None
+    numbers = re.sub('[^0-9]', '', phone_string)
+    if len(numbers) == 11 and numbers[0] == '8':
+        numbers = '7' + numbers[1:]
+
+    if len(numbers) == 10:
+        numbers = '7' + numbers
+
+    if len(numbers) < 11:
+        return None
+
+    phone_code = numbers[:-10]
+    if len(phone_code) > 3:
+        return None
+
+    phone = '+' + numbers
+    return phone
+
+
 def prepare_list(list_object, mean=True, median=True, fourth=True,
                  max=True, min=True, common=True, count=True, clean=False):
     res = {}
@@ -262,7 +299,7 @@ def prepare_list(list_object, mean=True, median=True, fourth=True,
         l = l[l != 0]
     if not len(l):
         return {}
-
+    res['list'] = list(list_object)[::-1]
     if mean: res['mean'] = np.mean(l)
     if max: res['max'] = np.max(l)
     if min: res['min'] = np.min(l)
@@ -291,6 +328,11 @@ def list_get(tuple_list, key):
         for item in tuple_list
         if item[0] == key
     ]
+
+
+def align_string(text, size):
+    text = str(text)
+    return text + ' ' * max(1, size - len(text) - 1)
 
 
 def clear_list(list_obj, unique=True):
@@ -436,3 +478,78 @@ class ThreadResult:
     def execute(self):
         self.thread.join()
         return self.result
+
+
+### Языковые функции
+import pymorphy2
+
+
+def to_string_time_period(timedelta):
+    translate_dict = {
+        's': {
+            1: 'секунда',
+            2: 'секунды',
+            5: 'секунд',
+        },
+        'm': {
+            1: 'минута',
+            2: 'минуты',
+            5: 'минут',
+        },
+        'h': {
+            1: 'час',
+            2: 'часа',
+            5: 'часов',
+        },
+        'd': {
+            1: 'день',
+            2: 'дня',
+            5: 'денй',
+        },
+        'y': {
+            1: 'год',
+            2: 'года',
+            5: 'лет',
+        },
+
+    }
+
+    seconds = (timedelta, 's')
+    minutes = (seconds[0] / 60, 'm')
+    hours = (minutes[0] / 60, 'h')
+    days = (hours[0] / 24, 'd')
+    years = (days[0] / 365, 'y')
+    periods = [years, days, hours, minutes, seconds]
+
+    for period in periods:
+        r = round(period[0])
+        if 0 < r and (abs(r - period[0]) < 0.2 or r > 1) or period[1] == 's':
+            t = round(period[0]) % 10
+            time_name = period[1]
+            name = 'unknown'
+            if t == 1:
+                name = translate_dict[time_name][1]
+            if t >= 2:
+                name = translate_dict[time_name][2]
+            if t >= 5 or t == 0:
+                name = translate_dict[time_name][5]
+            if r == 1:
+                return name
+            return f'{r} {name}'
+
+
+def name_to_gent(name):
+    if not name:
+        logger.warning('Name type: %s, %s in name_to_gent', type(name), name)
+        return str(name)
+    word = morph.parse(name)[0]
+    try:
+        return word.inflect({'gent'}).word.capitalize()
+    except:
+        return name.capitalize()
+
+def concatenate_lists(lists_array):
+    res = []
+    for item in lists_array:
+        res = item + res
+    return res

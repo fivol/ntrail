@@ -2,6 +2,7 @@ from query_object import BasicQuery
 from local_cache import LocalCache
 from api_server_call import APIServerCall
 from glbal import logger
+from errors.api_errors import APIError
 
 
 class APIQueries:
@@ -15,20 +16,18 @@ class APIQueries:
             self.add_query(query)
         return self
 
-    def one(self, service, method, key, params=None, exe=True):
-        self.add_query(BasicQuery(service, method, key, params))
-        if exe:
-            return self.execute()
+    def one(self, service, method, key, params=None):
+        self.add_query(BasicQuery(service, method, key, params=params))
+        return self.execute()[0]
 
-    def many(self, service, method, keys, exe=False):
+    def many(self, service, method, keys):
         assert isinstance(service, str)
         assert isinstance(method, str)
         assert isinstance(keys, list)
         for key in keys:
             self.add_query(BasicQuery(service, method, key))
 
-        if exe:
-            return self.execute()
+        return self.execute()
 
     def add_query(self, query):
         assert isinstance(query, BasicQuery)
@@ -64,5 +63,6 @@ class APIQueries:
             cached_queries |= result_queries
 
         result = self.right_order_queries(cached_queries)
+        result = [APIError(item) if APIError.is_error(item) else item for item in result]
         assert len(result) == len(self.queries)
         return result

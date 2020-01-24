@@ -43,9 +43,11 @@
 
 import random
 
+from frontend_preparing import normalize_list_format
 from many_objects import ManyObjects
-from tools import once_property
-from vkgroups import VKGroups
+from tied_value import TiedValue
+from tools import once_property, find_phones, get_normal_phone_number, name_to_gent, concatenate_lists
+from vkgroup import VKGroups
 import numpy as np
 import networkx as nx
 import collections
@@ -55,10 +57,9 @@ from time import time
 from vkuser import VKUser
 import math
 from itertools import groupby
-from tools import clear_list, prepare_list, counter_top, get_sites, list_get, list_from_dicts
+from tools import clear_list, prepare_list, counter_top, get_sites, list_get, list_from_dicts, is_good_username
 import re
 from vkapi import VKAPI
-from db_logic import DB
 import bisect
 from constants import ACCOUNT_STATUS_PUBLIC
 
@@ -80,14 +81,16 @@ vk_connections_names = ['skype', 'livejournal', 'instagram', 'facebook', 'twitte
 class VKCommunity(ManyObjects, VKAPI):
     base_class = VKUser
 
-    def __init__(self, users=None, main_user=None, clear=False, save_features=True):
+    def __init__(self, users=None, main_user=None, clear=False, save_features=True, target=None):
         super().__init__()
+
         if isinstance(users, set):
             users = list(users)
         assert main_user is None or isinstance(main_user, VKUser), main_user
         self.main_user = main_user
         self.nodes = []
         self.counter = Counter()
+        self.target = target
 
         if isinstance(users, Counter):
             self.counter = users
@@ -122,7 +125,6 @@ class VKCommunity(ManyObjects, VKAPI):
             self.removed_nodes = [node for node in self.nodes if node not in clean_community.nodes]
             self.nodes = clean_community.nodes
             self.counter = clean_community.counter
-        self.size = len(self.nodes)
         if 3 < self.size < 800 and save_features:
             self.save_features()
 
@@ -152,6 +154,7 @@ class VKCommunity(ManyObjects, VKAPI):
 
     @once_property
     def short_data(self):
+        return self.full_data
         return self.get_users(self.nodes, full=False)
 
     @once_property
@@ -237,8 +240,7 @@ class VKCommunity(ManyObjects, VKAPI):
         }
 
         def time_delta(timestamp_list, dev=1):
-            delta = time() - np.array(timestamp_list)
-            delta = delta / dev
+            delta = [-(item - time()) / dev for item in timestamp_list]
             return delta
 
         def prepare_username_list(username_list, service_name):
@@ -247,30 +249,31 @@ class VKCommunity(ManyObjects, VKAPI):
                 for url in username_list:
                     url = url.strip('/ ')
                     site_items = url.split('/')
-                    if len(site_items) > 1 and self.is_good_username(site_items[-1]):
+                    if len(site_items) > 1 and is_good_username(site_items[-1]):
                         usernames.append(site_items[-1])
-                    elif len(site_items) == 1 and self.is_good_username(site_items[0]):
+                    elif len(site_items) == 1 and is_good_username(site_items[0]):
                         usernames.append(site_items[0])
             elif service_name in ['livejournal']:
                 for url in username_list:
                     url = url.strip('/ ')
                     url = url.split('//')[-1]
                     site_items = url.split('.')
-                    if len(site_items) == 3 and self.is_good_username(site_items[0]):
+                    if len(site_items) == 3 and is_good_username(site_items[0]):
                         usernames.append(site_items[0])
-                    elif len(site_items) == 1 and self.is_good_username(site_items[0]):
+                    elif len(site_items) == 1 and is_good_username(site_items[0]):
                         usernames.append(site_items[0])
 
             elif service_name in ['skype']:
                 for username in username_list:
-                    if self.is_good_username(username):
+                    if is_good_username(username):
                         usernames.append(username)
             return clear_list(usernames)
 
         age = time_delta(params['bdate'], dev=31536000)
         data['age'] = {
             'all_count': len(age),
-            **prepare_list(age[(age > 6) & (age < 80)], clean=True)
+            **prepare_list([item for item in age if (item.value > 6) & (item.value < 80)], clean=True),
+            'source_list': age
         }
         data['city'] = {
             'all_count': len(params['city']),
@@ -281,7 +284,7 @@ class VKCommunity(ManyObjects, VKAPI):
             'common_list': counter_top(params['country'])
         }
         data['followers_count'] = {
-            **prepare_list(params['followers_count'], clean=True),
+            **prepare_list(params['followers_count'], count=False, clean=True),
         }
         data['home_town'] = {
             'all_count': len(params['home_town']),
@@ -289,7 +292,7 @@ class VKCommunity(ManyObjects, VKAPI):
         }
         last_seen = time_delta(params['last_seen'], dev=3600)
         data['last_seen'] = {
-            **prepare_list(last_seen)
+            **prepare_list(last_seen, count=False)
         }
         data['online'] = {
             'count': params['online']
@@ -346,8 +349,8 @@ class VKCommunity(ManyObjects, VKAPI):
         }
         data['username'] = usernames_dict
 
-        phones_list = params['home_phone'] + params['mobile_phone'] + self.find_phones(' '.join(params['status']))
-        phones_list = clear_list([self.get_normal_phone_number(phone) for phone in phones_list])
+        phones_list = params['home_phone'] + params['mobile_phone'] + find_phones(' '.join(params['status']))
+        phones_list = clear_list([get_normal_phone_number(phone) for phone in phones_list])
         data['phone'] = {
             'list': phones_list,
             'count': len(phones_list)
@@ -414,7 +417,7 @@ class VKCommunity(ManyObjects, VKAPI):
                 sum_count = sum(map(lambda x: x[1], feature_common_list))
                 features[feature] = \
                     sum(map(lambda x: x[0] * x[1], feature_common_list)) / sum_count
-                features[feature + '_count'] = sum_count
+                features[feature + '_count'] = sum_count / size
 
         for username, value in data['username'].items():
             features[f'username.{username}'] = value['count'] / size
@@ -428,56 +431,6 @@ class VKCommunity(ManyObjects, VKAPI):
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
 
-    def collect_archive(self, count=200):
-        assert isinstance(count, int)
-        features = self.get_features()
-        archive = DB.get_json_lines(count, 'vkcommunity')
-        return {
-            name: (value, sorted(list_from_dicts(archive, name)))
-            for name, value in features.items()
-        }
-
-    def order_features(self, archive_size=200, version=1):
-        assert isinstance(archive_size, int)
-        assert isinstance(version, int)
-
-        def calculate_priority(archive_list, value):
-            # archive_list = sorted(list(set(archive_list)))
-            ordered_list = archive_list
-            if len(archive_list) < max(archive_size / 4, 50):
-                return -1
-            half_len = len(feature_list) // 2
-            # print(len(ordered_list))
-            if version == 0:
-                index_left = bisect.bisect_left(ordered_list, value)
-                index_right = bisect.bisect_right(ordered_list, value)
-                if index_left <= half_len <= index_right:
-                    return 0
-
-                return min(abs(index_left - half_len),
-                           abs(index_right - half_len)) \
-                       / max(half_len, 1)
-            if version == 1:
-                median = ordered_list[half_len - 1]
-                f1 = ordered_list[half_len // 2 - 1]
-                f2 = ordered_list[half_len // 2 * 3 - 1]
-                if f2 == f1:
-                    return -1
-                return (value - median) / (f2 - f1)
-
-            raise NotImplementedError
-
-        features_collection = self.collect_archive(archive_size)
-        features_priority = []
-        for feature_name, (feature_value, feature_list) in features_collection.items():
-            if feature_list:
-                priority = calculate_priority(feature_list, feature_value)
-                features_priority.append((priority, feature_value, feature_name))
-            else:
-                features_priority.append((-1, feature_value, feature_name))
-
-        return sorted(features_priority, reverse=True)
-
     @once_property
     def params(self):
         params = {}
@@ -486,9 +439,11 @@ class VKCommunity(ManyObjects, VKAPI):
             res = list(
                 filter(
                     lambda x: bool(x),
-                    [user[field]
-                     for user in self.full_data
-                     if field in user]
+                    [
+                        TiedValue(user[field], 'vku_' + str(user['id']))
+                        for user in self.full_data
+                        if field in user
+                    ]
                 )
             )
             return res
@@ -506,26 +461,26 @@ class VKCommunity(ManyObjects, VKAPI):
         params['sex'] = Counter(get_field_values('sex')).most_common()
         params['mobile_phone'] = get_field_values('mobile_phone')
         params['home_phone'] = get_field_values('home_phone')
+        # print([item['title'] for item in get_field_values('city')])
         params['city'] = list_from_dicts(get_field_values('city'), 'title', counter=True)
         params['country'] = list_from_dicts(get_field_values('country'), 'title', counter=True)
-        params['online'] = sum(get_field_values('online'))
-        params['online_mobile'] = sum(get_field_values('online_mobile'))
-        params['verified'] = sum(get_field_values('verified'))
+        params['online'] = get_field_values('online')
+        params['online_mobile'] = get_field_values('online_mobile')
+        params['verified'] = get_field_values('verified')
         params['last_seen'] = sorted(list_from_dicts(get_field_values('last_seen'), 'time'))
         params['site'] = get_field_values('site')
         params['followers_count'] = sorted(get_field_values('followers_count'), reverse=True)
         params['home_town'] = Counter(get_field_values('home_town')).most_common()
         params['status'] = get_field_values('status')
         params['relation'] = Counter(get_field_values('relation')).most_common()
-        params['bdate'] = sorted([int(datetime.datetime.strptime(bdate, '%d.%m.%Y').timestamp())
+        params['bdate'] = sorted([TiedValue(datetime.datetime.strptime(bdate.value, '%d.%m.%Y').timestamp(), bdate.id)
                                   for bdate in get_field_values('bdate') if
-                                  len(bdate.split('.')) == 3 and true_date(bdate)])
-
-        relatives_list = sum(get_field_values('relatives'), [])
+                                  len(bdate.value.split('.')) == 3])
+        relatives_list = concatenate_lists(get_field_values('relatives'))
         params['relatives'] = Counter(list_from_dicts(relatives_list, 'type')).most_common()
 
         personal_list = get_field_values('personal')
-        params['personal_langs'] = Counter(sum(list_from_dicts(personal_list, 'langs'), [])).most_common()
+        params['personal_langs'] = Counter(concatenate_lists(list_from_dicts(personal_list, 'langs'))).most_common()
         for item in ['smoking', 'people_main', 'life_main', 'alcohol', 'political', 'religion', 'inspired_by']:
             params['personal_' + item] = list_from_dicts(personal_list, item, counter=True, ignore_zero=True)
 
@@ -536,47 +491,146 @@ class VKCommunity(ManyObjects, VKAPI):
         ]
         params['occupation'] = sorted(occupation_data, key=lambda x: -x[1][0][1])
 
-        schools_list = sorted(sum(get_field_values('schools'), []), key=lambda x: x['id'])
+        schools_list = sorted(concatenate_lists(get_field_values('schools')), key=lambda x: x['id'])
 
         schools_data = []
-        for school_id, schools in groupby(schools_list, lambda x: x['id']):
-            schools = list(schools)
-            school = schools[0]
-            schools_data.append(
-                {
-                    'count': len(schools),
-                    'id': school_id,
-                    'name': school['name'],
-                    'city': school['city'],
-                    'class': Counter(list_from_dicts(schools, 'class', ignore_zero=True)).most_common(),
-                    'year_from': Counter(list_from_dicts(schools, 'year_from', ignore_zero=True)).most_common(),
-                    'year_to': Counter(list_from_dicts(schools, 'year_to', ignore_zero=True)).most_common(),
-                    'year_graduated': Counter(list_from_dicts(schools,
-                                                              'year_graduated', ignore_zero=True)).most_common(),
-                    'speciality': Counter(list_from_dicts(schools, 'speciality', ignore_zero=True)).most_common(),
-                    'type': school.get('type', ''),
-                    'country': school['country']
-                }
-            )
-        params['schools'] = sorted(schools_data, key=lambda x: -x['count'])
-
-        universities_list = sorted(sum(list(get_field_values('universities')), []), key=lambda x: x['id'])
-        universities_data = []
-        for university_id, universities in groupby(universities_list, lambda x: x['id']):
-            universities = list(universities)
-            university = universities[0]
-            universities_data.append(
-                {
-                    'id': university_id,
-                    'count': len(universities),
-                    'name': university['name'],
-                    'faculty_name': Counter(list_from_dicts(universities, 'faculty_name')).most_common(),
-                    'chair_name': Counter(list_from_dicts(universities, 'chair_name')).most_common(),
-                    'graduation': Counter(list_from_dicts(universities, 'graduation')).most_common(),
-                    'education_form': Counter(list_from_dicts(universities, 'education_form')).most_common(),
-                    'education_status': Counter(list_from_dicts(universities, 'education_status')).most_common()
-                }
-            )
-        params['universities'] = sorted(universities_data, key=lambda x: -x['count'])
+        # for school_id, schools in groupby(schools_list, lambda x: x['id']):
+        #     schools = list(schools)
+        #     school = schools[0]
+        #     schools_data.append(
+        #         {
+        #             'count': len(schools),
+        #             'id': school_id,
+        #             'name': school['name'],
+        #             'city': school['city'],
+        #             'class': Counter(list_from_dicts(schools, 'class', ignore_zero=True)).most_common(),
+        #             'year_from': Counter(list_from_dicts(schools, 'year_from', ignore_zero=True)).most_common(),
+        #             'year_to': Counter(list_from_dicts(schools, 'year_to', ignore_zero=True)).most_common(),
+        #             'year_graduated': Counter(list_from_dicts(schools,
+        #                                                       'year_graduated', ignore_zero=True)).most_common(),
+        #             'speciality': Counter(list_from_dicts(schools, 'speciality', ignore_zero=True)).most_common(),
+        #             'type': school.get('type', ''),
+        #             'country': school['country']
+        #         }
+        #     )
+        # params['schools'] = sorted(schools_data, key=lambda x: -x['count'])
+        #
+        # universities_list = sorted(sum(list(get_field_values('universities')), []), key=lambda x: x['id'])
+        # universities_data = []
+        # for university_id, universities in groupby(universities_list, lambda x: x['id']):
+        #     universities = list(universities)
+        #     university = universities[0]
+        #     universities_data.append(
+        #         {
+        #             'id': university_id,
+        #             'count': len(universities),
+        #             'name': university['name'],
+        #             'faculty_name': Counter(list_from_dicts(universities, 'faculty_name')).most_common(),
+        #             'chair_name': Counter(list_from_dicts(universities, 'chair_name')).most_common(),
+        #             'graduation': Counter(list_from_dicts(universities, 'graduation')).most_common(),
+        #             'education_form': Counter(list_from_dicts(universities, 'education_form')).most_common(),
+        #             'education_status': Counter(list_from_dicts(universities, 'education_status')).most_common()
+        #         }
+        #     )
+        # params['universities'] = sorted(universities_data, key=lambda x: -x['count'])
 
         return params
+
+    def get_all_properties(self):
+        def gen_prop(id_, name_, value_, **kwargs):
+            return {
+                'id': id_,
+                'name': name_,
+                'value': value_,
+                **kwargs
+            }
+
+        data = self.process_data()
+        params = self.params
+        return [{
+            'id': self.hash + '_age',
+            'name': 'Возраст',
+            'plot': {
+                'type': 'line',
+                'data': sorted(normalize_list_format(data['age']['source_list']))
+            },
+            'values': [
+                gen_prop('age_mean', 'Средний', data['age']['mean']),
+                gen_prop('age_max', 'Максимальный', data['age']['max']),
+                gen_prop('age_min', 'Минимальный', data['age']['min']),
+                gen_prop('age_median', 'Медианный', data['age']['median']),
+                gen_prop('age_common_median', 'Наисреднейший', data['age']['common_mean']),
+            ]
+        }]
+
+    @staticmethod
+    def get_interesting_properties():
+        return []
+
+    def get_important_properties(self):
+        return [
+            {
+                'id': 0,
+                'name': 'Количество',
+                'value': self.size
+            },
+            {
+                'id': 2,
+                'name': 'Тип кластера',
+                'value': 'Пользователи VK'
+            }
+        ]
+
+    def get_properties(self):
+        return {
+            'all': self.get_all_properties(),
+            'interesting': self.get_interesting_properties(),
+            'important': self.get_important_properties()
+        }
+
+    def get_entities(self):
+        return [user.get_entity() for user in self.objects]
+
+    def preload(self):
+        a = self.full_data
+
+    def get_name(self):
+        if self.target == 'friends':
+            return 'Друзья ' + name_to_gent(self.main_user.full_data['first_name'])
+        else:
+            mod = self.size % 10
+            persons_form = 'человек'
+            if 2 <= mod <= 4:
+                persons_form = 'человека'
+            return f'{self.size} {persons_form}'
+
+    def get_query(self):
+        if self.target == 'friends':
+            return 'vkUser ' + self.main_user.full_data['screen_name'] + ' friends'
+        else:
+            return 'vkUsers ( ' + ' '.join(['vku_' + str(i) for i in self.nodes]) + ' )'
+
+    def get_params(self):
+        return {
+            'baseType': 'users',
+            'service': 'vk',
+            'type': 'community',
+            'fullEntitiesCount': 1,
+            'id': self.hash,
+            'name': self.get_name(),
+            'query': self.get_query()
+        }
+
+    def represent(self):
+        self.preload()
+        return {
+            'clusters':
+                [
+                    {
+                        'properties': self.get_properties(),
+                        'params': self.get_params(),
+                        'entities': self.get_entities(),
+                        'id': self.hash
+                    }
+                ]
+        }

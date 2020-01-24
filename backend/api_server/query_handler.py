@@ -1,6 +1,7 @@
 from query_object import ComplexQuery, BasicQuery
 from collections import defaultdict
 from tools import split_list
+from errors.api_errors import APIError
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
 # составные запросы для наибыстрейшего выполнение всех
@@ -17,12 +18,12 @@ user_fields = ['photo_200', 'about', 'activities', 'bdate', 'books', 'career', '
 
 users_fields_string = ','.join(user_fields)
 service_token_methods = {'friends', 'resolve', 'friends',
-                         'members', 'user_short', 'group_short'}
+                         'members', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids'}
 
 user_token_methods = {'groups', 'search',
-                      'user_full', 'group_full'}
+                      'user_full', 'group_full', 'photos_ids'}
 
-methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full'}
+methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full', 'posts', 'photos_ids', 'albums_ids'}
 
 available_execute = {'friends', 'groups', 'resolve'}
 
@@ -167,8 +168,10 @@ class VKHandler:
         elif convert_type == 1 or convert_type == 2:
             queries = complex_query.basic_queries
             values = complex_query.value
+            if APIError.is_error(values):
+                values = [values] * len(queries)
             assert isinstance(queries, list)
-            assert isinstance(values, list)
+            assert isinstance(values, list), values
             assert len(queries) == len(values), f'{len(queries)} {len(values)}'
             for query, value in zip(queries, values):
                 query.value = value
