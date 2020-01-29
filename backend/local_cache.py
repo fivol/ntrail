@@ -1,5 +1,5 @@
 from query_object import BasicQuery
-from models import QueryModel, db
+from models import QueryModel, db, EXCLUDED
 import datetime
 from config import CACHE_TYPE
 from constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE, CACHE_TYPE_FULL_USE
@@ -27,7 +27,6 @@ class LocalCache:
     @staticmethod
     @local_cache_command('read')
     def get_cached_queries_set(queries):
-        # return set()
         if not queries:
             return set()
         assert isinstance(queries, set)
@@ -49,11 +48,10 @@ class LocalCache:
     @staticmethod
     @local_cache_command('write')
     def cache_queries_set(queries):
-        # return
         if not queries:
             return
+        # print(queries)
         assert isinstance(queries, set)
-        models_list = []
         with db.atomic():
             for query in queries:
                 assert isinstance(query, BasicQuery)
@@ -63,7 +61,10 @@ class LocalCache:
                                   method=query.method,
                                   key=query.key,
                                   value=query.value,
-                                  params=query.params).on_conflict_ignore().execute()
+                                  params=query.params).on_conflict(
+                    conflict_target=[QueryModel.identity_hash],
+                    preserve=[QueryModel.value]
+                ).execute()
 
     @classmethod
     def remove_queries_from_time(cls, time):

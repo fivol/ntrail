@@ -50,7 +50,7 @@ class IGCommunity(ManyObjects):
     @once_property
     def full_data(self):
         self.load_media_data(full=True)
-        return [user.full_data for user in self.objects]
+        return [user.data_list for user in self.objects]
 
     def get_key_words(self):
         result = {}

@@ -28,22 +28,23 @@ def log_query(func):
 
 class VKAPI:
     @classmethod
-    def get_users(cls, vk_ids, full=False):
+    def get_users(cls, vk_ids, full=False, **kwargs):
+        print('get users data', kwargs, len(vk_ids))
         if not vk_ids:
             return []
         assert isinstance(vk_ids, list)
         assert isinstance(vk_ids[0], int)
         method = 'user_' + ('full' if full else 'short')
         vk_ids = [str(item) for item in vk_ids]
-        result = APIQueries().many(service, method, vk_ids)
+        result = APIQueries().many(service, method, vk_ids, **kwargs)
         assert isinstance(result, list)
         assert len(result) == len(vk_ids)
         return result
 
     @classmethod
-    def get_user(cls, vk_id, full=False):
+    def get_user(cls, vk_id, full=False, **kwargs):
         assert isinstance(vk_id, int)
-        user = cls.get_users([vk_id], full=full)[0]
+        user = cls.get_users([vk_id], full=full, **kwargs)[0]
         return user
 
     @classmethod
@@ -241,6 +242,13 @@ class VKAPI:
     @classmethod
     def get_group_data(cls, group_id, full):
         return cls.get_groups_data([group_id], one_by_one=full)[0]
+
+    @classmethod
+    def get_apps_data(cls, apps_id):
+        assert isinstance(apps_id, list)
+        if not apps_id:
+            return []
+        return APIQueries().many(service, 'apps', apps_id)
 
     @classmethod
     def search(cls, string, offset=0, limit=100, filters='', users_ids=None):

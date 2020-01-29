@@ -11,6 +11,7 @@ warnings.filterwarnings("ignore")
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
+# app.config['RESTPLUS_JSON'] = {'indent': None, 'separators': (',', ':')}
 
 
 @app.route('/')

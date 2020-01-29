@@ -133,6 +133,11 @@ class VKAPI:
         return api.groups.getById(group_ids=group_ids)
 
     @classmethod
+    def apps(cls, apps_id):
+        res = api_app.apps.get(app_ids=apps_id)
+        return res.get('items', None)
+
+    @classmethod
     def friends(cls, vkid):
         res = api_app.friends.get(user_id=vkid)
         assert isinstance(res, dict) or isinstance(res, str)

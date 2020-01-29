@@ -85,9 +85,10 @@ class APIServerEmulator:
                 res['status'] = res.get('status', 'ok')
             logger.debug('* Request %s %s', method, query.key)
         except Exception as e:
+            assert internet_on(), 'NO INTERNET'
+
             if isinstance(e, AssertionError):
                 raise e
-            assert internet_on(), 'NO INTERNET'
             logger.exception('Fail to execute api method: %s', query.to_dict())
             res = ServerError(0)
 

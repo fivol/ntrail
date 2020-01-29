@@ -16,18 +16,19 @@ class APIQueries:
             self.add_query(query)
         return self
 
-    def one(self, service, method, key, params=None):
+    def one(self, service, method, key, params=None, force=False):
         self.add_query(BasicQuery(service, method, key, params=params))
-        return self.execute()[0]
+        return self.execute(force)[0]
 
-    def many(self, service, method, keys):
+    def many(self, service, method, keys, force=False):
         assert isinstance(service, str)
         assert isinstance(method, str)
         assert isinstance(keys, list)
         for key in keys:
             self.add_query(BasicQuery(service, method, key))
 
-        return self.execute()
+        if keys:
+            return self.execute(force)
 
     def add_query(self, query):
         assert isinstance(query, BasicQuery)
@@ -48,10 +49,13 @@ class APIQueries:
         assert isinstance(queries, set)
         return set([query for query in queries if query.can_cache])
 
-    def execute(self):
+    def execute(self, force):
         assert self.valid
         self.valid = False
-        cached_queries = LocalCache.get_cached_queries_set(queries=self.queries)
+        if force:
+            cached_queries = set()
+        else:
+            cached_queries = LocalCache.get_cached_queries_set(queries=self.queries)
         # logger.debug('Find cached queries: %s', len(cached_queries))
         assert isinstance(cached_queries, set)
         unknown_queries = self.queries - cached_queries

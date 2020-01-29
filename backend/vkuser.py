@@ -17,19 +17,28 @@ from vkpost import VKPosts
 
 
 class VKUser(OneObject, VKAPI):
+    id_prefix = 'vku_'
+    available_attributes = ['friends', 'follows', 'followers']
+
     @staticmethod
     def me():
         return VKUser('boris2000n')
 
-    def __init__(self, user):
+    def __init__(self, user, **kwargs):
+        print(user)
         super().__init__()
         self.id = None
         self.status = None
 
+        if isinstance(user, list):
+            if len(user) > 1:
+                raise ValueError(f'User list length = {len(user)}. Must be 1')
+            user = user[0]
+
         if isinstance(user, str):
             if not user:
                 self.status = ACCOUNT_STATUS_ABSENT
-            elif user.startswith('vku_'):
+            elif user.startswith(self.id_prefix):
                 self.id = int(user[4:])
             else:
                 username = VKUser.get_username(user)
@@ -46,10 +55,13 @@ class VKUser(OneObject, VKAPI):
             if user < 0:
                 raise ValueError('User id < 0', user)
             self.id = user
+
         elif isinstance(user, dict):
+            print('dict')
             if 'id' not in user:
                 raise ValueError('Wrong user dict')
             self.id = user['id']
+            self.full_data_ = user
         else:
             raise TypeError(f'VKUser {user} type is {type(user)}')
 
@@ -141,6 +153,9 @@ class VKUser(OneObject, VKAPI):
     def full_data(self):
         return self.get_user(self.id, full=True)
 
+    def get_full_data(self, force):
+        return self.get_user(self.id, full=True, force=force)
+
     @valid_object_method
     def posts(self):
         return VKPosts(self.get_user_posts(self.id))
@@ -154,8 +169,17 @@ class VKUser(OneObject, VKAPI):
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    def preload(self):
-        a = self.full_data
+    def preload(self, force=False):
+        self.get_full_data(force)
+
+    @classmethod
+    def gen_id(cls, plain_id):
+        if isinstance(plain_id, str) and plain_id.startswith(cls.id_prefix):
+            return plain_id
+        return cls.id_prefix + str(plain_id)
+
+    def get_id(self):
+        return self.gen_id(self.id)
 
     @valid_object_method
     def get_key_words(self):
@@ -194,7 +218,7 @@ class VKUser(OneObject, VKAPI):
         from vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
-        return VKCommunity(friends_ids, main_user=self, clear=True, target='friends')
+        return VKCommunity(friends_ids, main_user=self, target='friends')
 
     @once_property
     @valid_object_method
@@ -327,7 +351,7 @@ class VKUser(OneObject, VKAPI):
 
     def get_entity(self):
         response = {
-            'id': 'vku_' + str(self.id),
+            'id': self.get_id(),
             'accessStatus': self.check_status(),
         }
         if not self.valid:
@@ -369,11 +393,11 @@ class VKUser(OneObject, VKAPI):
             'fullEntitiesCount': 1,
             'id': self.hash,
             'name': self.full_data['first_name'] if self.valid else 'Не валиден',
-            'query': f'vkuser {self.full_data["screen_name"]}' if self.valid else ''
+            'query': f'GET vk.user {self.full_data["screen_name"]}' if self.valid else ''
         }
 
-    def represent(self):
-        self.preload()
+    def represent(self, force=False):
+        self.preload(force=force)
         return {
             'clusters':
                 [

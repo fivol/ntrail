@@ -1,5 +1,11 @@
 import logging
 
+import logging
+logger = logging.getLogger('peewee')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+
 logger = logging.getLogger('base_logger')
 logger.setLevel(logging.DEBUG)
 

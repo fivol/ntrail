@@ -14,12 +14,12 @@ import warnings
 from vkpost import VKPosts
 from vkpost import VKPost
 from constants import ACCOUNT_STATUS_ABSENT, ACCOUNT_STATUS_PUBLIC
-
+from selective_query_execute import execute_query, get_query_tokens, TokensGenerator, collect_query_dat
 
 logger.setLevel(logging.WARNING)
 
 
-# @unittest.skip
+@unittest.skip
 class ToolsTest(unittest.TestCase):
     def test_get_obj(self):
         n = 321321
@@ -52,7 +52,7 @@ class ToolsTest(unittest.TestCase):
         self.assertEqual(dict_from_dicts([{1: 1}, {}, {}], 1),
                          {1: {1: 1}})
 
-
+@unittest.skip
 class QueriesTest(unittest.TestCase):
     def setUp(self):
         self.begin_time = datetime.datetime.now()
@@ -63,7 +63,7 @@ class QueriesTest(unittest.TestCase):
         LocalCache.remove_queries_from_time(self.begin_time)
         self.assertEqual(self.queries_count, LocalCache.count_cached_queries())
 
-
+@unittest.skip
 class VKUserTest(QueriesTest):
     def test_user_init(self):
         self.assertTrue(VKUser('https://vk.com/jolex009').valid)
@@ -101,8 +101,7 @@ class VKUserTest(QueriesTest):
         self.assertIsInstance(VKUser.me().follows(), VKCommunity)
         self.assertIsInstance(VKUser.me().followers(), VKCommunity)
 
-
-# @unittest.skip
+@unittest.skip
 class VKCommunityTest(QueriesTest):
 
     def test_community_init(self):
@@ -133,7 +132,7 @@ class VKCommunityTest(QueriesTest):
         for i in range(5):
             self.assertEqual(VKCommunity.generate_random(20).only_valid().size, 20)
 
-
+@unittest.skip
 class VKGroupTest(QueriesTest):
     def test_init(self):
         self.assertEqual(VKGroup('https://vk.com/stfivt').valid, True)
@@ -148,7 +147,7 @@ class VKGroupTest(QueriesTest):
         self.assertRaises(TypeError, VKGroup, ([1, 2, 3],))
         self.assertRaises(TypeError, VKGroup, ({1: 2, 3: 4},))
 
-
+@unittest.skip
 class VKPostsTest(QueriesTest):
     def test_init(self):
         pass
@@ -160,6 +159,11 @@ class VKPostsTest(QueriesTest):
         self.assertIsInstance(VKUser('boris2000n').posts(), VKPosts)
         self.assertEqual(VKUser('boris2000n').posts().size, 0)
         self.assertGreater(VKUser('https://vk.com/id91888646').posts().size, 7)
+
+
+# class QueryParser(unittest.TestCase):
+#     def test_
+
 
 
 if __name__ == '__main__':

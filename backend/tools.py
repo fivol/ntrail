@@ -14,6 +14,7 @@ import json
 import math
 import pymorphy2
 from app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
+from tied_value import TiedValue
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -36,6 +37,14 @@ execution_locked_func = {}
 # def get(name, save=False):
 #     return MemoryCache.get(name, save)
 
+def get_random_color():
+    r = lambda x, y: random.randint(x, y)
+    return '#%02X%02X%02X' % (r(0, 255), r(0, 20), r(100, 255))
+
+
+def bool_filter(l):
+    return [item for item in l if bool(item)]
+
 
 def valid_object_method(method):
     def wrapper(obj, *args, **kwargs):
@@ -56,6 +65,19 @@ def once_property(func):
         if hasattr(class_obj, class_value_name):
             return getattr(class_obj, class_value_name)
         method_result = func(class_obj)
+        setattr(class_obj, class_value_name, method_result)
+        return method_result
+
+    return wrapper
+
+
+def memorize(func):
+    def wrapper(class_obj, *args, **kwargs):
+        func_name = func.__name__
+        class_value_name = f'{func_name}_'
+        if hasattr(class_obj, class_value_name):
+            return getattr(class_obj, class_value_name)
+        method_result = func(class_obj, *args, **kwargs)
         setattr(class_obj, class_value_name, method_result)
         return method_result
 
@@ -102,7 +124,7 @@ def timeit(func):
         t = time()
         result = func(*args, **kwargs)
         eps = time() - t
-        print(f'# timeit {func.__name__} eps:{eps:.5f} time:{str(time())[7:]}')
+        print(f'# timeit {func.__name__} eps: {eps:.5f} time: {str(time())[7:]}')
         return result
 
     return wrapper
@@ -226,12 +248,16 @@ def make_json_serializable(obj):
         return [make_json_serializable(item) for item in obj]
     if isinstance(obj, tuple):
         return tuple([make_json_serializable(item) for item in obj])
+    if obj is None:
+        return obj
 
     try:
         if float(obj) == int(obj):
             return int(obj)
         return float(obj)
     except:
+        if not isinstance(obj, str):
+            logger.warning('Strange object type in json %s %s', type(obj), obj)
         return str(obj)
 
 
@@ -294,26 +320,36 @@ def get_normal_phone_number(phone_string):
 def prepare_list(list_object, mean=True, median=True, fourth=True,
                  max=True, min=True, common=True, count=True, clean=False):
     res = {}
-    l = np.array(list_object)
+    l = sorted(list_object)
+    basic_list = [item.value for item in l]
     if clean:
-        l = l[l != 0]
+        l = [item for item in l if item != 0]
     if not len(l):
-        return {}
+        return {
+            'count': 0,
+            # 'list': [],
+            # 'max': None,
+            # 'min': None,
+            # 'median': None,
+            # 'common_mean': None,
+            # 'common_median': None,
+            # 'fourth': None,
+            # 'fourth2': None
+        }
     res['list'] = list(list_object)[::-1]
-    if mean: res['mean'] = np.mean(l)
-    if max: res['max'] = np.max(l)
-    if min: res['min'] = np.min(l)
-    if count: res['count'] = len(l)
-    if median: res['median'] = np.median(l)
+    if mean: res['mean'] = sum(basic_list) / len(l)
+    if max: res['max'] = l[-1]
+    if min: res['min'] = l[0]
+    if count: res['count'] = TiedValue(len(basic_list), [item.id for item in l])
+    if median: res['median'] = l[len(l) // 2]
     if common:
-        common_array = calculate_array_common(l)
-        res['common_mean'] = np.mean(common_array)
-        res['common_median'] = np.median(common_array)
+        common_array = calculate_array_common(basic_list)
+        res['commonMean'] = np.mean(common_array)
+        res['commonMedian'] = np.median(common_array)
 
     if fourth:
-        ordered_list = sorted(l)
-        res['fourth'] = ordered_list[int(len(l) / 4)]
-        res['fourth2'] = ordered_list[int(len(l) / 4 * 3)]
+        res['fourth'] = l[len(l) // 4]
+        res['fourth2'] = l[len(l) // 4 * 3]
 
     return res
 
@@ -547,6 +583,7 @@ def name_to_gent(name):
         return word.inflect({'gent'}).word.capitalize()
     except:
         return name.capitalize()
+
 
 def concatenate_lists(lists_array):
     res = []

@@ -18,12 +18,13 @@ user_fields = ['photo_200', 'about', 'activities', 'bdate', 'books', 'career', '
 
 users_fields_string = ','.join(user_fields)
 service_token_methods = {'friends', 'resolve', 'friends',
-                         'members', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids'}
+                         'members', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids', 'apps'}
 
 user_token_methods = {'groups', 'search',
                       'user_full', 'group_full', 'photos_ids'}
 
-methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full', 'posts', 'photos_ids', 'albums_ids'}
+methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full', 'posts', 'photos_ids', 'albums_ids',
+                     'apps'}
 
 available_execute = {'friends', 'groups', 'resolve'}
 
