@@ -29,7 +29,7 @@ def log_query(func):
 class VKAPI:
     @classmethod
     def get_users(cls, vk_ids, full=False, **kwargs):
-        print('get users data', kwargs, len(vk_ids))
+        # print('get users data', kwargs, len(vk_ids), vk_ids[0])
         if not vk_ids:
             return []
         assert isinstance(vk_ids, list)

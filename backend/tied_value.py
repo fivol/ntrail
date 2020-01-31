@@ -12,6 +12,9 @@ class TiedValue:
     def with_value(self, new_value):
         return TiedValue(new_value, self.id)
 
+    def capitalize(self):
+        return self.with_value(self.value.capitalize())
+
     def to_dict(self, round_digits=None):
         if round_digits is not None and is_number(self.value):
             return {
@@ -23,10 +26,14 @@ class TiedValue:
             'ids': self.get_ids()
         }
 
-    def get_ids(self):
+    def get_ids(self, prefix=None):
         if isinstance(self.id, list):
-            return self.id
-        return [self.id]
+            ids = self.id
+        else:
+            ids = [self.id]
+        if prefix:
+            ids = [f'{prefix}{id_}' for id_ in ids]
+        return ids
 
     def __add__(self, other):
         if isinstance(other, list):
@@ -79,3 +86,8 @@ class TiedValue:
 
     def __ge__(self, other):
         return self.value >= other.value
+
+
+def get_tied_array_size(arr):
+    return TiedValue(len(arr), sum([item.get_ids() for item in arr], []))
+

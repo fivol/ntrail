@@ -25,7 +25,6 @@ class VKUser(OneObject, VKAPI):
         return VKUser('boris2000n')
 
     def __init__(self, user, **kwargs):
-        print(user)
         super().__init__()
         self.id = None
         self.status = None
@@ -57,7 +56,6 @@ class VKUser(OneObject, VKAPI):
             self.id = user
 
         elif isinstance(user, dict):
-            print('dict')
             if 'id' not in user:
                 raise ValueError('Wrong user dict')
             self.id = user['id']
@@ -177,6 +175,12 @@ class VKUser(OneObject, VKAPI):
         if isinstance(plain_id, str) and plain_id.startswith(cls.id_prefix):
             return plain_id
         return cls.id_prefix + str(plain_id)
+
+    @classmethod
+    def parse_id(cls, id_):
+        if not id_.startswith(VKUser.id_prefix):
+            return None
+        return int(id_[len(VKUser.id_prefix):])
 
     def get_id(self):
         return self.gen_id(self.id)

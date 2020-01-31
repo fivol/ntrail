@@ -227,11 +227,14 @@ def split_list(list_object, segment_size):
     return result_list
 
 
-def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True):
+def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True, capitalize=False):
     dicts_list = filter(lambda x: key in x, dicts_list)
     result = [x[key] for x in dicts_list]
     if ignore_zero:
         result = filter(lambda x: bool(x), result)
+
+    if capitalize:
+        result = [item.capitalize() for item in result]
     # print([item for item in result])
     if counter:
         res = Counter(result)
@@ -259,6 +262,10 @@ def make_json_serializable(obj):
         if not isinstance(obj, str):
             logger.warning('Strange object type in json %s %s', type(obj), obj)
         return str(obj)
+
+
+def merge_lists(lists):
+    return sum(lists, [])
 
 
 def calculate_array_common(arr):
@@ -518,6 +525,11 @@ class ThreadResult:
 
 ### Языковые функции
 import pymorphy2
+
+def round_num(value):
+    if isinstance(value, str):
+        return value
+    return round(value, 2)
 
 
 def to_string_time_period(timedelta):

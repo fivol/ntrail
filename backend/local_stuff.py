@@ -27,8 +27,8 @@ q = 'vkuser id123241667 friends'
 # print(collect_query_data('GET vk.user boris2000n'))
 # print(collect_query_data('GET vk.users (boris2000n)'))
 # print(collect_query_data('GET vk.user boris2000n'))
-print(collect_query_data('GET vk.user boris2000n'))
-
+# print(collect_query_data('GET vk.user boris2000n'))
+print(VKUser.parse_id('vku_123'))
 # from vkapi import VKAPI
 # print(VKAPI.get_apps_data([2274003]))
 #

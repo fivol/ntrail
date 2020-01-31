@@ -144,9 +144,10 @@ class ManyObjects(AnyObject):
 
     @once_property
     def objects(self):
-        if hasattr(self, 'get_data'):
-            data_dict = self.get_data()
+        if hasattr(self, 'data_dict'):
+            data_dict = self.data_dict()
             return [self.__class__.base_class(data_dict[node]) for node in self.nodes]
+
         return [self.__class__.base_class(username) for username in self.nodes]
 
     def select(self, k=-1, break_point=1, rand=False):

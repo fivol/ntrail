@@ -45,9 +45,9 @@ import random
 
 from many_objects import ManyObjects
 from tied_counter import TiedCounter
-from tied_value import TiedValue
+from tied_value import TiedValue, get_tied_array_size
 from tools import once_property, find_phones, get_normal_phone_number, name_to_gent, concatenate_lists, \
-    get_random_color, bool_filter, timeit, memorize
+    get_random_color, bool_filter, timeit, memorize, merge_lists, round_num
 from vkgroup import VKGroups
 import numpy as np
 import networkx as nx
@@ -85,7 +85,6 @@ class VKCommunity(ManyObjects, VKAPI):
 
     def __init__(self, users=None, main_user=None, clear=False, save_features=False, target=None, **kwargs):
         super().__init__()
-        print(users)
         if isinstance(users, set):
             users = list(users)
         assert main_user is None or isinstance(main_user, VKUser), main_user
@@ -105,11 +104,15 @@ class VKCommunity(ManyObjects, VKAPI):
                 elif isinstance(users[0], int):
                     self.nodes = users
                 elif isinstance(users[0], str):
-                    usernames = [VKUser.get_username(url) for url in users]
-                    usernames = clear_list(usernames)
-                    self.resolve_screen_names(usernames)
-                    self.nodes = [VKUser(username).id for username in usernames]
-                    self.nodes = clear_list(self.nodes)
+                    id_ = VKUser.parse_id(users[0])
+                    if id_:
+                        self.nodes = [VKUser.parse_id(id_) for id_ in users]
+                    else:
+                        usernames = [VKUser.get_username(url) for url in users]
+                        usernames = clear_list(usernames)
+                        self.resolve_screen_names(usernames)
+                        self.nodes = [VKUser(username).id for username in usernames]
+                        self.nodes = clear_list(self.nodes)
                 else:
                     raise TypeError('user instance must be int or string, but' + str(type(users[0])))
             self.counter = Counter(self.nodes)
@@ -129,8 +132,6 @@ class VKCommunity(ManyObjects, VKAPI):
         #     self.counter = clean_community.counter
         if 3 < self.size < 800 and save_features:
             self.save_features()
-
-        print('end init')
 
     @staticmethod
     def parse_usernames(usernames_string):
@@ -287,7 +288,7 @@ class VKCommunity(ManyObjects, VKAPI):
                 return value
 
             res = [
-                TiedValue(prepare_value(user[field]), VKUser.gen_id(user['id']))
+                TiedValue(prepare_value(user[field]), user['id'])
                 for user in self.data_list()
                 if field in user
             ]
@@ -314,35 +315,35 @@ class VKCommunity(ManyObjects, VKAPI):
         params['home_town'] = TiedCounter(get_field_values('home_town', capitalize=True, clean=True))
         params['online_app'] = TiedCounter(get_field_values('online_app'))
         params['followers_count'] = sorted(get_field_values('followers_count'))
-
         last_seen = get_field_values('last_seen')
         params['last_seen_platform'] = TiedCounter(list_from_dicts(last_seen, 'platform'))
         params['last_seen_time'] = sorted(list_from_dicts(last_seen, 'time'))
-
-        params['mobile_phone'] = get_field_values('mobile_phone')
-        params['home_phone'] = get_field_values('home_phone')
-        params['site'] = get_field_values('site')
-        params['status'] = get_field_values('status')
-        params['relation'] = Counter(get_field_values('relation')).most_common()
         params['bdate'] = sorted([TiedValue(datetime.datetime.strptime(bdate.value, '%d.%m.%Y').timestamp(), bdate.id)
                                   for bdate in get_field_values('bdate') if
                                   len(bdate.value.split('.')) == 3])
-        relatives_list = concatenate_lists(get_field_values('relatives'))
-        params['relatives'] = Counter(list_from_dicts(relatives_list, 'type')).most_common()
         params['deactivated'] = TiedCounter(get_field_values('deactivated'))
         params['is_closed'] = TiedCounter(get_field_values('is_closed', clean=False))
-
+        params['relation'] = TiedCounter(get_field_values('relation'))
+        relatives_list = concatenate_lists(get_field_values('relatives'))
+        params['relatives'] = TiedCounter(list_from_dicts(relatives_list, 'type'))
         personal_list = get_field_values('personal')
-        params['personal_langs'] = Counter(concatenate_lists(list_from_dicts(personal_list, 'langs'))).most_common()
-        for item in ['smoking', 'people_main', 'life_main', 'alcohol', 'political', 'religion', 'inspired_by']:
-            params['personal_' + item] = list_from_dicts(personal_list, item, counter=True, ignore_zero=True)
+        params['personal_langs'] = TiedCounter(concatenate_lists(list_from_dicts(personal_list, 'langs')))
+        params['personal_religion'] = TiedCounter(list_from_dicts(personal_list, 'religion', capitalize=True))
+        for item in ['smoking', 'people_main', 'life_main', 'alcohol', 'political', 'inspired_by']:
+            params['personal_' + item] = TiedCounter(list_from_dicts(personal_list, item, ignore_zero=True))
 
-        occupation = sorted(get_field_values('occupation'), key=lambda x: x['type'])
-        occupation_data = [
-            (occupation_type, Counter(list_from_dicts(occupations, 'name')).most_common())
-            for occupation_type, occupations in groupby(occupation, lambda x: x['type'])
-        ]
-        params['occupation'] = sorted(occupation_data, key=lambda x: -x[1][0][1])
+        occupation = sorted(get_field_values('occupation'), key=lambda x: x['type'].get_value())
+        params['occupation_type'] = TiedCounter(list_from_dicts(occupation, 'type'))
+        occupations_dict = {
+            occupation_type: TiedCounter(list_from_dicts(occupations, 'name'))
+            for occupation_type, occupations in groupby(occupation, lambda x: x['type'].get_value())
+        }
+        params['occupation'] = occupations_dict
+
+        params['mobile_phone'] = get_field_values('mobile_phone', clean=True)
+        params['home_phone'] = get_field_values('home_phone', clean=True)
+        params['site'] = get_field_values('site', clean=True)
+        params['status'] = get_field_values('status', clean=True)
 
         schools_list = sorted(concatenate_lists(get_field_values('schools')), key=lambda x: x['id'])
 
@@ -425,7 +426,7 @@ class VKCommunity(ManyObjects, VKAPI):
                         usernames.append(username)
             return clear_list(usernames)
 
-        all_ids_set = set(self.get_ids())
+        all_ids_set = set(self.nodes)
 
         age = sorted(time_delta(params['bdate'], dev=31536000))
         data['age'] = {
@@ -434,7 +435,7 @@ class VKCommunity(ManyObjects, VKAPI):
             'source_list': age
         }
         data['followers_count'] = {
-            **prepare_list(params['followers_count'], clean=True),
+            **prepare_list(params['followers_count'], clean=True, count=False),
             'source_list': params['followers_count']
         }
         data['city'] = {
@@ -458,9 +459,21 @@ class VKCommunity(ManyObjects, VKAPI):
             'count': params['home_town'].size,
             'source_list': common_towns,
         }
-        last_seen = time_delta(params['last_seen_time'], dev=3600)
+        last_seen = time_delta(params['last_seen_time'], dev=86400)
         data['last_seen_time'] = {
-            **prepare_list(last_seen, count=False)
+            **prepare_list(last_seen, count=False),
+            'source_list': sorted(last_seen)
+        }
+
+        data['phone'] = {
+            'mobile': get_tied_array_size(params['mobile_phone']),
+            'home': get_tied_array_size(params['home_phone']),
+        }
+        data['status'] = {
+            'count': get_tied_array_size(params['status'])
+        }
+        data['site'] = {
+            'count': get_tied_array_size(params['site'])
         }
 
         data['last_seen_platform'] = {
@@ -492,22 +505,23 @@ class VKCommunity(ManyObjects, VKAPI):
         }
         # occupation personal_inspired_by
         # ? personal_religion relation
-        data['status'] = {
-            'count': len(params['status']),
-            'len_median': np.median([len(status) for status in params['status']])
+        data['personal_religion'] = {
+            'source_list': params['personal_religion'].most_common(),
+            'count': params['personal_religion'].size
         }
-        data['personal'] = {
-            'alcohol': counter_top(params['personal_alcohol']),
-            'langs': counter_top(params['personal_langs']),
-            'life_main': counter_top(params['personal_life_main']),
-            'people_main': counter_top(params['personal_people_main']),
-            'political': counter_top(params['personal_political']),
-            'religion': counter_top(params['personal_religion']),
-            'smoking': counter_top(params['personal_smoking'])
-        }
+        for item in ['langs', 'alcohol', 'life_main', 'people_main', 'political', 'smoking', 'inspired_by']:
+            item_name = 'personal_' + item
+            data[item_name] = {
+                'source_list': params[item_name].most_common(),
+                'count': params[item_name].size
+            }
 
-        data['relation'] = counter_top(params['relation'])
-        data['relatives'] = params['relatives']
+        data['relation'] = {
+            'source_list': params['relation'].most_common()
+        }
+        data['relatives'] = {
+            'source_list': params['relatives'].most_common()
+        }
         data['sex'] = {
             'man': params['sex'][2],
             'woman': params['sex'][1],
@@ -515,6 +529,22 @@ class VKCommunity(ManyObjects, VKAPI):
         }
         data['verified'] = {
             'count': params['verified'].size
+        }
+        data['occupation_type'] = {
+            'source_list': params['occupation_type'].most_common(),
+            'count': params['occupation_type'].size
+        }
+        data['occupation_school'] = {
+            'source_list': params['occupation'].get('school', TiedCounter([])).most_common(),
+            'count': params['occupation'].get('school', TiedCounter([])).size
+        }
+        data['occupation_work'] = {
+            'source_list': params['occupation'].get('work', TiedCounter([])).most_common(),
+            'count': params['occupation'].get('work', TiedCounter([])).size
+        }
+        data['occupation_university'] = {
+            'source_list': params['occupation'].get('university', TiedCounter([])).most_common(),
+            'count': params['occupation'].get('university', TiedCounter([])).size
         }
         # sites_sites = get_sites(' '.join(params['site']))
         # sites_status = get_sites(' '.join(params['status']))
@@ -590,7 +620,7 @@ class VKCommunity(ManyObjects, VKAPI):
 
         def gen_prop(id_, name_, value_, ids=None):
             if isinstance(value_, TiedValue):
-                value_, ids = value_.value, value_.get_ids()
+                value_, ids = value_.value, value_.get_ids(VKUser.id_prefix)
             if ids and len(ids) > 1:
                 value_ = f'{value_} ({int(float(value_) / size * 100)} %)'
 
@@ -611,7 +641,7 @@ class VKCommunity(ManyObjects, VKAPI):
             return [
                 {
                     'value': count,
-                    'ids': value.get_ids(),
+                    'ids': value.get_ids(VKUser.id_prefix),
                     'name': name(value),
                     'color': color(value)
                 }
@@ -621,9 +651,9 @@ class VKCommunity(ManyObjects, VKAPI):
         def gen_line_plot(items, name=None):
             return [
                 {
-                    'ids': item.get_ids(),
+                    'ids': item.get_ids(VKUser.id_prefix),
                     'value': round(item.get_value(), 2),
-                    'name': data_dict[item.get_ids()[0]].get('name', 'Нет имени')
+                    'name': VKUser(data_dict[item.get_ids()[0]]).name
                 }
                 for item in items]
 
@@ -660,7 +690,7 @@ class VKCommunity(ManyObjects, VKAPI):
                         if name_func:
                             sub_prop_name = name_func(sub_prop_name)
                         sup_properties.append(gen_prop(f'top_{idx}', sub_prop_name, source_list[idx][1],
-                                                       source_list[idx][0].get_ids()))
+                                                       source_list[idx][0].get_ids(VKUser.id_prefix)))
             added_sub_keys = set()
             props += default_props
             for sub_property in props:
@@ -680,13 +710,30 @@ class VKCommunity(ManyObjects, VKAPI):
 
         data = self.process_data()
         data_dict = self.data_dict()
-        print([x[1] for x in data['online']['source_list']])
         size = data['size']
         account_status_dict = {
             0: ('Открытый', '#00682E'),
             1: ('Приватный', '#8D1E00'),
             'deleted': ('Удаленный', '#000000'),
             'banned': ('Забаненный', '#530742'),
+        }
+        relation_dict = {
+            1: 'Не женат',
+            2: 'Есть друг',
+            3: 'Помолвлен',
+            4: 'Женат',
+            5: 'Всё сложно',
+            6: 'В активном поиске',
+            7: 'Влюблён',
+            8: 'В гражданском браке',
+            0: 'Не указано',
+        }
+        relatives_dict = {
+            'child': 'Сын / Дочь',
+            'sibling': 'Брат / Сестра',
+            'parent': 'Отец / Мать',
+            'grandparent': 'Дедушка / Бабушка',
+            'grandchild': 'Внук / Внучка',
         }
         last_seen_platform_dict = {
             1: 'Мобильная версия',
@@ -697,19 +744,62 @@ class VKCommunity(ManyObjects, VKAPI):
             6: 'Windows 10',
             7: 'Сайт',
         }
+        political_dict = {
+            1: 'Коммунистические',
+            2: 'Социалистические',
+            3: 'Умеренные',
+            4: 'Либеральные',
+            5: 'Консервативные',
+            6: 'Монархические',
+            7: 'Ультраконсервативные',
+            8: 'Индифферентные',
+            9: 'Либертарианские',
+        }
+        people_main_dict = {
+            1: 'Ум и креативность',
+            2: 'Доброта и честность',
+            3: 'Красота и здоровье',
+            4: 'Власть и богатство',
+            5: 'Смелость и упорство',
+            6: 'Юмор и жизнелюбие',
+        }
+        life_main_dict = {
+            1: 'Семья и дети',
+            2: 'Карьера и деньги',
+            3: 'Развлечения и отдых',
+            4: 'Наука и исследования',
+            5: 'Совершенствование мира',
+            6: 'Саморазвитие',
+            7: 'Красота и искусство',
+            8: 'Слава и влияние',
+        }
+        smoking_dict = {
+            1: 'Резко негативное',
+            2: 'Негативное',
+            3: 'Компромиссное',
+            4: 'Нейтральное',
+            5: 'Положительное',
+        }
+        alcohol_dict = {
+            1: 'Резко негативное',
+            2: 'Негативное',
+            3: 'Компромиссное',
+            4: 'Нейтральное',
+            5: 'Положительное',
+        }
+        occupation_type_dict = {
+            'work': 'Работа',
+            'school': 'Школа',
+            'university': 'Университет'
+        }
+
         properties = [
             gen_property_category(
                 'age', 'Возраст',
                 [
                     ('commonMean', 'Наисреднейший'),
                 ],
-                PLOT_LINE,
-                [{
-                    'ids': item.get_ids(),
-                    'value': round(item.get_value(), 2),
-                    'name': VKUser(item.get_ids()[0]).name
-                }
-                    for item in data['age']['source_list']]
+                PLOT_LINE
             ),
             gen_property_category(
                 'sex', 'Пол',
@@ -721,11 +811,46 @@ class VKCommunity(ManyObjects, VKAPI):
                 gen_circular_plot(data['sex']['source_list'],
                                   name=lambda value: 'Мужской' if value.get_value() == 2 else 'Женский',
                                   color=lambda value: '#989FFF' if value.get_value() == 2 else '#FD8DA6')
-
             ),
             gen_property_category('city', 'Город', [], PLOT_CIRCULAR, common_count=3),
             gen_property_category('verified', 'Верификация', [('count', 'Количество')], None),
+            gen_property_category('status', 'Статус', [], None),
+            gen_property_category('site', 'Сайт', [], None),
+            gen_property_category('phone', 'Телефон', [('mobile', 'Мобильный'), ('home', 'Домашний')], None),
             gen_property_category('country', 'Страна', [], PLOT_CIRCULAR, common_count=3),
+            gen_property_category('relatives', 'Среди родственников есть', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: relatives_dict[x],
+                                  common_count=3),
+            gen_property_category('occupation_type', 'Род занятий', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: occupation_type_dict[x],
+                                  common_count=3),
+            gen_property_category('occupation_work', 'Работа', [], PLOT_CIRCULAR, common_count=3),
+            gen_property_category('occupation_school', 'Школа', [], PLOT_CIRCULAR, common_count=3),
+            gen_property_category('occupation_university', 'Университет', [], PLOT_CIRCULAR, common_count=3),
+            gen_property_category('personal_political', 'Политические предпочтения', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: political_dict[x],
+                                  common_count=3),
+            gen_property_category('personal_people_main', 'Главное в людях', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: people_main_dict[x],
+                                  common_count=3),
+            gen_property_category('personal_life_main', 'Главное в жизни', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: life_main_dict[x],
+                                  common_count=3),
+            gen_property_category('personal_smoking', 'Отношение к курению', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: smoking_dict[x],
+                                  common_count=3),
+            gen_property_category('personal_alcohol', 'Отношение к алкоголю', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: alcohol_dict[x],
+                                  common_count=3),
+            gen_property_category('relation', 'Семейное положение', [], PLOT_CIRCULAR,
+                                  name_func=lambda x: relation_dict[x],
+                                  common_count=5),
+            gen_property_category('last_seen_time', 'Время последнего посещения (в днях)', [
+                ('mean', 'Среднее'),
+                ('max', 'Максимальное'),
+                ('min', 'Минимальное'),
+                ('median', 'Медианное'),
+            ], PLOT_LINE),
             gen_property_category('home_town', 'Родной город', [], PLOT_CIRCULAR, common_count=3),
             gen_property_category(
                 'is_closed', 'Статус аккаунта',
@@ -741,11 +866,12 @@ class VKCommunity(ManyObjects, VKAPI):
                                       x: account_status_dict.get(x, ['Неизвестный тип'])[0],
                                   color=lambda x: account_status_dict.get(x, ['#ffffff'])[1])),
             gen_property_category('online', 'Онлайн', [], PLOT_CIRCULAR, common_count=5),
+            gen_property_category('personal_langs', 'Языки', [], PLOT_CIRCULAR, common_count=5),
+            gen_property_category('personal_religion', 'Мировоззрение', [], PLOT_CIRCULAR, common_count=5),
             gen_property_category('last_seen_platform', 'Последнее посещение', [], PLOT_CIRCULAR, common_count=5,
                                   name_func=lambda x: last_seen_platform_dict[x]),
             gen_property_category('followers_count', 'Количество подписчиков',
                                   [
-                                      ('count', 'Не нулевое'),
                                       ('max', 'Максимальное'),
                                       ('min', 'Минимальное'),
                                       ('mean', 'Среднее'),
@@ -754,9 +880,30 @@ class VKCommunity(ManyObjects, VKAPI):
         ]
         return bool_filter(properties)
 
-    @staticmethod
-    def get_interesting_properties():
-        return []
+    def get_interesting_properties(self, all_props):
+        print(type(all_props), all_props)
+
+        def importance_metrics(prop):
+            value = str(prop['value'])
+            percentage = re.search(r'\((\S+) %\)', value)
+            if percentage:
+                return int(percentage.group(1))
+            return float(value)
+
+        base_id = self.hash
+        return sorted(merge_lists([
+
+            [
+                {
+                    'id': f"{prop['id']}.{sub_prop['id']}",
+                    'name': f"{prop['name']} {sub_prop['name'].lower()}",
+                    'value': round_num(sub_prop['value']),
+                    'ids': sub_prop['ids']
+                }
+                for sub_prop in prop['values']
+            ]
+            for prop in all_props
+        ]), key=lambda prop: importance_metrics(prop), reverse=True)
 
     def get_important_properties(self):
         return [
@@ -773,15 +920,14 @@ class VKCommunity(ManyObjects, VKAPI):
         ]
 
     def get_properties(self):
-        print('get properties')
+        all_properties = self.get_all_properties()
         return {
-            'all': self.get_all_properties(),
-            'interesting': self.get_interesting_properties(),
+            'all': all_properties,
+            'interesting': self.get_interesting_properties(all_properties),
             'important': self.get_important_properties()
         }
 
     def get_entities(self):
-        print('entities')
         return [user.get_entity() for user in self.objects]
 
     def preload(self, force=False):
@@ -804,7 +950,6 @@ class VKCommunity(ManyObjects, VKAPI):
             return f"GET vk.users ({' '.join(self.get_ids())})"
 
     def get_params(self):
-        print('get params')
         return {
             'baseType': 'users',
             'service': 'vk',
