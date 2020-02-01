@@ -1,0 +1,15 @@
+MANIFEST.in
+README.md
+VERSION
+setup.py
+slmpy/__init__.py
+slmpy/network.cpp
+slmpy/slmpy.cpp
+slmpy/slmpy.h
+slmpy.egg-info/PKG-INFO
+slmpy.egg-info/SOURCES.txt
+slmpy.egg-info/dependency_links.txt
+slmpy.egg-info/not-zip-safe
+slmpy.egg-info/requires.txt
+slmpy.egg-info/top_level.txt
+test/test_modularity_optimizer.py

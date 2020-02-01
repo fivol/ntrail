@@ -1,0 +1,54 @@
+Metadata-Version: 1.2
+Name: slmpy
+Version: 0.3.3
+Summary: Smart local moving (SLM) community detection in Python/C++
+Home-page: https://github.com/iosonofabio/slmpy
+Author: Fabio Zanini
+Author-email: fabio.zanini@stanford.edu
+Maintainer: Fabio Zanini
+Maintainer-email: fabio.zanini@fastmail.fm
+License: MIT
+Description: 
+        Smart local moving (SLM) community detection in Python/C++, modeled on the Java
+        version on https://github.com/mneedham/slm.
+        
+        - **Development**: https://github.com/iosonofabio/slmpy
+        - **Author**: Fabio Zanini
+        - **License**: MIT
+        - **Requirements**: ``pybind11>=2.2``, ``numpy``, ``pkgconfig`` (see ``requirements.txt``)
+        
+        
+        
+        .. code-block:: python
+        
+            from slmpy import ModularityOptimzer
+        
+            edges = [
+                     [0, 1],
+                     [0, 2],
+                     [0, 3],
+                     [1, 2],
+                     [1, 3],
+                     [2, 3],
+                     [3, 4],
+                     [4, 5],
+                     [4, 6],
+                     [5, 6],
+                     [7, 8],
+                    ]
+        
+            mo = ModularityOptimzer(edges)
+            mo.fixed_nodes = [0, 4]  # This fixes nodes 0 and 4 to be in different communities
+            communities = mo(algorithm='smart_local_moving')
+        
+            # Check answer
+            assert((communities == [0, 0, 0, 0, 1, 1, 1]).all())
+        
+              
+Platform: UNKNOWN
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python

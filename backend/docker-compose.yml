@@ -1,0 +1,18 @@
+version: "3.1"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    env_file:
+      - env_file
+    ports:
+      - 8888:5432
+
+  web:
+    build: ./flask
+    restart: always
+    env_file:
+      - env_file
+    ports:
+      - 6050:5000
