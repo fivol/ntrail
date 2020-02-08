@@ -1,0 +1,11 @@
+/*******************************
+     User Global Variables
+*******************************/
+
+@pageBackground      : #E3EEFF;
+
+@primaryColor        : teal;
+@secondaryColor      : grey;
+
+@lightPrimaryColor   : @lightBlue;
+@lightSecondaryColor : @lightGrey;

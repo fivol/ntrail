@@ -1,0 +1,72 @@
+@import "../../_variables.less";
+
+.clusterObject {
+  display: flex;
+  position: absolute;
+  flex-direction: column;
+  border: @itemsBorder;
+  border-radius: @itemBorderRadius;
+  min-height: 60px;
+  padding: 10px;
+  min-width: 90px;
+  align-items: center;
+}
+
+.selectedCluster {
+  border: @selectedItemBorder;
+  background-color: @selectedItemColor;
+}
+.highlightedCluster{
+  border: 1px solid grey;
+}
+.overlayCluster{
+  //border: 1px solid grey;
+  border: @selectedItemBorder;
+  background-color: @selectedItemColor;
+}
+.clusterObject:hover {
+  //box-shadow: 1px 1px 3px black;
+}
+
+.imagesContainer {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 45px;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+
+}
+
+.previewClusterImage {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  float: left;
+  background-color: grey;
+  border-radius: 50%;
+  border: 1px solid black;
+}
+
+.clustersField {
+  //display: flex;
+    position: absolute;
+  //align-items: flex-start;
+  //flex-wrap: wrap;
+  //min-height: 300px;
+}
+
+.clustersPanel{
+  min-height: 300px;
+  //display: flex;
+  //flex-direction: column;
+}
+.svgContainer{
+
+}
+.clustersAnimationsContainer{
+  //background-color: palegreen;
+  margin-top: 10px;
+  width: 100%;
+}
+

@@ -1,0 +1,59 @@
+{
+  "name": "ntrail",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^4.2.4",
+    "@testing-library/react": "^9.4.0",
+    "@testing-library/user-event": "^7.2.1",
+    "axios": "^0.19.0",
+    "bootstrap": "^4.4.1",
+    "gh-pages": "^2.1.1",
+    "make-action-creator": "^0.4.1",
+    "normalizr": "^3.4.1",
+    "prop-types": "^15.7.2",
+    "random-seed": "^0.3.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-graph-vis": "^1.0.5",
+    "react-redux": "^7.1.3",
+    "react-scripts": "3.3.0",
+    "react-sigma": "^1.2.34",
+    "recharts": "^2.0.0-beta.1",
+    "redux": "^4.0.5",
+    "redux-form": "^8.2.6",
+    "redux-thunk": "^2.3.0",
+    "semantic-ui-react": "^0.88.2",
+    "util": "^0.12.1"
+  },
+  "homepage": ".",
+  "scripts": {
+    "deploy": "sudo npm run build; ./gh-pages/uploadmaster.sh",
+    "testdeploy": "sudo npm run build; ./gh-pages/uploadtest.sh",
+    "push": "sudo ./commit.sh",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "craco eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@craco/craco": "^5.6.2",
+    "@semantic-ui-react/craco-less": "^1.2.1",
+    "semantic-ui-less": "^2.4.1"
+  }
+}
