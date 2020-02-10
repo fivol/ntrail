@@ -31,7 +31,7 @@ function ClusterImages(props) {
     );
 }
 
-const Cluster = ({clusterData, chooseCluster, selected, pos: {x, y}, dragCluster, ...props}) => {
+const Cluster = ({clusterData, chooseCluster, selected, x, y, dragCluster, ...props}) => {
     const {photos} = clusterData;
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
 
