@@ -33,13 +33,16 @@ const queryGenerateAttrs = (attrs) => {
     if (!attrs)
         return '';
     if (typeof attrs === 'object')
-        return attrs.join(' ')
+        return attrs.join(' ');
     return attrs;
 };
 
 export const queryCreator = (actionName, args, attrs = null, queryType = 'GET') => {
     if (typeof args === 'object')
         args = queryList(args);
+
+    if(!args.match(/[a-zA-Zа-яА-Я]+/))
+        args = `"${args}"`;
 
     return `${queryType} ${actionName} ${args} ${queryGenerateAttrs(attrs)}`;
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import {Field, reduxForm} from "redux-form";
 import {Button, Form} from "semantic-ui-react";
-import FormComponentWrapper from "../../utils/ReduxFormComponentWrapper";
+import formComponentGenerator from "../../utils/ReduxFormComponentWrapper";
 import {connect} from "react-redux";
 import {extractFromString} from "../../../store/actions";
 
@@ -12,7 +12,7 @@ const StringSearch = props => {
             <p>Можете сделать <b>поиск</b> с помощью вк, нажать правой кнопкой мыши на странице, затем <b>Page
                 source</b>, скопировать весь текст и вставить сюда (или просто ctrl + U)</p>
             <Field name={'text'}
-                   component={FormComponentWrapper(Form.TextArea)}
+                   component={formComponentGenerator(Form.TextArea)}
             />
             <Button type={'submit'} content={'Извлечь'}
                     style={{marginTop: '0.2rem'}} fluid basic/>

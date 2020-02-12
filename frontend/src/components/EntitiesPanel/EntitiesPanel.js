@@ -1,12 +1,11 @@
 import React, {useEffect, useState} from "react";
 import {Checkbox, Dimmer, Input, Loader, Radio, Segment} from "semantic-ui-react";
 
-import UserAvatar from "./UserAvatar/User";
 import {connect} from "react-redux";
 import './style.less'
 import NoContent from "../utils/NoContent";
 import {selectEntities, setEntitiesSearchValue, toggleEntitySelection} from "../../store/entitiesReducer";
-import {getObj, getObjects} from "../../store/utils";
+import {getObjects} from "../../store/utils";
 import SearchIcon from "../utils/SearchIcon";
 import EntitiesGraph from "./EntitiesGraph";
 import EntitiesList from "./EntitiesList";
@@ -42,8 +41,8 @@ const EntitiesPanel = ({searchValue, selectEntities, entitiesIDS, entities, isLo
 
     const visibleEntities = entities.filter(item => isEntityVisible(item));
 
-    if (!visibleEntities.length && isNotValidHidden)
-        changeNotValidHiddenMode(false);
+    // if (!visibleEntities.length && isNotValidHidden)
+    //     changeNotValidHiddenMode(false);
 
     const menuItemStyle = {display: 'flex', alignItems: 'center'};
     return (

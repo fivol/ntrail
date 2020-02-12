@@ -28,14 +28,19 @@ export function clusters(state = initialData, action) {
                 highlightedClusters: action.payload
             };
         case addClusters.type:
-            const newClustersID = action.payload.items;
-            const newClustersConnections = action.payload.connections;
-            const sourceID = action.payload.source;
+            let newClustersIDS = action.payload.items;
+            let newClustersConnections = action.payload.connections;
+            let sourceID = action.payload.source;
             let newClustersMainID = action.payload.mainID;
-            if(!newClustersMainID && newClustersID.length === 1)
-                newClustersMainID = newClustersID[0];
 
-            if(sourceID && newClustersMainID){
+            const getConnID = (connection) => {
+                return connection.from + '_' + connection.to;
+            };
+
+            if (!newClustersMainID && newClustersIDS.length === 1)
+                newClustersMainID = newClustersIDS[0];
+
+            if (sourceID && newClustersMainID) {
                 newClustersConnections.push(
                     {
                         'from': sourceID,
@@ -43,10 +48,14 @@ export function clusters(state = initialData, action) {
                     }
                 )
             }
+            newClustersConnections = newClustersConnections.map(item => ({...item, id: getConnID(item)}));
+            const existConnectionsIDS = state.connections.map(item => item.id);
+            newClustersConnections = newClustersConnections.filter(item => !(existConnectionsIDS.includes(item.id)));
+
             return {
                 ...state,
                 items: [
-                    ...new Set([...state.items, ...newClustersID])
+                    ...new Set([...state.items, ...newClustersIDS])
                 ],
                 connections: [
                     ...state.connections,
@@ -65,6 +74,9 @@ export function clusters(state = initialData, action) {
             const remainingClusters = state.items.filter(id => !removeClustersIds.includes(id));
             return {
                 ...state,
+                connections: state.connections.filter(
+                    conn => !removeClustersIds.includes(conn.from) && !removeClustersIds.includes(conn.to)
+                ),
                 items: remainingClusters,
                 selectedClusterID: removeClustersIds.includes(selectedCluster) ? -1 : selectedCluster,
                 highlightedClusters: state.highlightedClusters.filter(id => !removeClustersIds.includes(id))

@@ -172,7 +172,6 @@ export const executeQuery = (queryString, source=undefined) => (
             executeSelectiveQuery(queryString).then(
                 response => {
                     dispatch(removeLoader());
-                    console.log(response);
                     response.result.clusters.items = response.result.clusters.items.filter(
                         id => response.entities.clusters[id].entities.items.length > 0);
                     if (response.result.clusters.items.length === 0) {

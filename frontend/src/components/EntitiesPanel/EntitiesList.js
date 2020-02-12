@@ -20,6 +20,7 @@ const EntitiesList = ({visibleEntities, toggleItemSelection, ...props}) => {
     const entitiesToShow = visibleEntities.slice(0, visibleItemsCount);
     return (
         <div className="entitiesContainer" style={{maxHeight: '70vh', overflow: 'auto'}}
+             onMouseMove={e => e.preventDefault()}
              onScroll={(e) => onScroll(e.target.scrollTop / (e.target.scrollHeight - e.target.clientHeight))}>
 
 

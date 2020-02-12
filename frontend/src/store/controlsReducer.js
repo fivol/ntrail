@@ -1,6 +1,8 @@
 import {selectEntities} from "./entitiesReducer";
 import {produceActionCreator} from "./utils";
 import {setHighlightedClusters} from "./clustersReducer";
+import {executeQuery, showMessage} from "./searchReducer";
+import {queryCreator} from "../api/queryStringCreators";
 
 const SELECT_MENU = 'SELECT_MENU';
 
@@ -58,5 +60,22 @@ export function controls(state = initialData, action) {
     }
 }
 
+export const submitFilterSearch = (form) =>
+    (dispatch, getState) => {
+        const limit = Number(form.limit);
+        console.log("SUBMIT FORM", form);
+        if(form.commonQueryString)
+            dispatch(showMessage('Ошибка запроса', 'Данный тип запроса пока не поддерживается, воспользуйтесь поиском по определенной социальной сети', false, true))
+        else if(form.vkSearchQuery){
+            dispatch(executeQuery(queryCreator('vk.user', form.vkSearchQuery)));
+        }
+        else{
+            dispatch(showMessage('Ошибка запроса', 'Не найдено поисховой строки, введите необходимые данные в поля', false, true))
+        }
+    };
+
 export const selectMenu = (menuName) => ({type: SELECT_MENU, name: menuName});
+
+
+
 

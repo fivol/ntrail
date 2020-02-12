@@ -9,16 +9,17 @@ import {shuffle} from "../../utils";
 import {getObj} from "../../store/utils";
 
 const ClustersPanel = (props) => {
-    console.log('Clusters connections', props.connections)
     const noContent = <NoContent
         popup={"Создайте объект в рабочем поле (центральное), чтобы добавить кластер"}
         text={'Кластеров пока нет'}
     />;
 
     return (
-        <Segment className={'clustersPanel'}>{
+        <Segment className={'clustersPanel'}
+
+        >{
             props.haveControlButtons &&
-            (<Button.Group compact size={'tiny'} widths='3'>
+            (<Button.Group compact size={'tiny'} widths='3' style={{marginBottom: '2rem'}}>
                 <Button onClick={props.clearAll} basic color={'red'} icon={'delete'} content={'Очистить'}/>
                 <Button onClick={props.deleteCluster} basic color={'orange'} icon={'trash alternate outline'}
                         content={'Удалить'}/>

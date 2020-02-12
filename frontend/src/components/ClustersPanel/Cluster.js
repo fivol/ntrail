@@ -36,6 +36,7 @@ const Cluster = ({clusterData, chooseCluster, selected, x, y, dragCluster, ...pr
     const [dimensions, setDimensions] = useState({width: 0, height: 0});
 
     const clusterCss = {
+        // transition: 'left 0.07s, top 0.07s',
         zIndex: selected ? 100 : 0,
         left: x - dimensions['width'] / 2 + 'px',
         top: y - dimensions['height'] / 2 + 'px',

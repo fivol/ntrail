@@ -3,182 +3,152 @@ import Cluster from "./Cluster";
 import Arrow from "./Arrow";
 import {rand} from '../../utils'
 import ClustersGraph from "./ClustersGraph";
-import {Graph} from "./graphLogic";
-
-// getNearestCluster(clusterID) {
-//     const positions = this.state.positions;
-//     const {x, y} = positions[clusterID];
-//     let minDist = 9999999;
-//     let nearestItemKey = -1;
-//     for (let [key, item] of Object.entries(positions)) {
-//         if (key !== clusterID) {
-//             const elemX = item.x;
-//             const elemY = item.y;
-//             const dist = Math.sqrt(Math.pow(x - elemX, 2) + Math.pow(y - elemY, 2));
-//             if (dist < minDist) {
-//                 minDist = dist;
-//                 nearestItemKey = key;
-//             }
-//         }
-//     }
-//     return {
-//         nearestClusterID: nearestItemKey,
-//         dist: minDist
-//     }
-// }
-
-// dragCluster = (x, y) => {
-//     if (!this.state.mousePressed)
-//         return;
-//     const {positions, selectedCluster} = this.state;
-//     const clusterID = selectedCluster;
-//     const newX = positions[clusterID].x + x;
-//     const newY = positions[clusterID].y + y;
-//     const border = 50;
-//
-//     const {nearestClusterID, dist} = this.getNearestCluster(clusterID);
-//     if (this.movedDist !== undefined)
-//         this.movedDist += dist;
-//     this.setState(
-//         {
-//             overlayClusterID: dist < 30 ? nearestClusterID : null
-//         }
-//     );
-//
-//     const checkBorder = (value, maxValue) => (value > border && value < maxValue - border);
-//     if (checkBorder(newX, this.state.width) && checkBorder(newY, this.state.height))
-//         this.setState(
-//             {
-//                 positions:
-//                     {
-//                         ...positions,
-//                         [clusterID]: {
-//                             x: newX,
-//                             y: newY
-//                         }
-//                     }
-//             }
-//         )
-// };
-
-// toggleClusterHighlight(id) {
-//     if (!this.props.highlightedClusters.includes(id))
-//         this.props.setHighlightedClusters([
-//             ...this.props.highlightedClusters,
-//             id
-//         ]);
-//     else
-//         this.props.setHighlightedClusters([
-//             ...this.props.highlightedClusters.filter(item => item !== id)
-//         ]);
-// }
-
-// stopDrag() {
-//     this.setState({
-//         mousePressed: false
-//     });
-//     this.checkOverlay();
-// }
-
-// checkOverlay() {
-//     if (this.state.overlayClusterID && this.props.selectedClusterID) {
-//         this.props.setHighlightedClusters([this.state.overlayClusterID, this.props.selectedClusterID])
-//     }
-//     this.setState({overlayClusterID: null});
-//     if (this.movedDist && this.movedDist > 3)
-//         this.updateState(this.state.width);
-// }
+import {getDist, Graph} from "./graphLogic";
 
 
-const makeGraphIteration = (graph, sizes,) => {
-    const {nodes, edgesDict} = graph;
-    const positionGenerator
-    return {...graph, nodes: [...nodes]}
+const makeGraphIteration = (graph) => {
+    if (!graph)
+        return;
+    graph.applyForces();
+    return graph
 };
 
 const updateGraphWith = (graph, clusters, connections, sizes) => {
-    const generateRandomPosition = (width, height) => ({
-        x: Math.random() * width,
-        y: Math.random() * height
-    });
+    let existingNodesDict = {};
+    if (graph)
+        existingNodesDict = graph.nodesDict;
 
-    const newGraph = {
-        nodes: [
-            ...graph.nodes,
-            ...clusters.map(cluster => ({...cluster, ...generateRandomPosition(sizes.width, sizes.height)}))
-        ],
-        edges: [
-            ...graph.edges
-        ]
-    };
+    const newClustersIDS = clusters.map(item => item.id);
 
-    const edgesDict = {};
-    for (let node of newGraph.nodes)
-        edgesDict[node.id] = [];
-
-    for (let edge of newGraph.edges) {
-        let id1 = edge.from.id;
-        let id2 = edge.to.id;
-        edgesDict[id1].push(id2);
-        edgesDict[id2].push(id1);
-    }
-
-    return {
-        ...newGraph,
-        edgesDict
-    }
+    const newNodes = clusters.map(
+        cluster => (cluster.id in existingNodesDict) ? existingNodesDict[cluster.id].getData() : cluster
+    ).filter(node => newClustersIDS.includes(node.id));
+    return new Graph(newNodes, connections, sizes)
 };
 
 
+const updateClustersPositionsTimeout = 25;
+const stopUpdateGraphCutoff = 90;
+
 class ClustersAnimate extends React.Component {
     state = {
-        graph: {
-            nodes: [],
-            edges: []
-        },
+        graph: null,
         sizes: {
             width: 0,
             height: 0
         },
         overlayClusterID: null,
         selectedCluster: null,
-        mousePressed: false
+        mousePressed: false,
+        liveUpdate: false,
+        selectedClusterObject: null,
+        trajectory: 0
     };
 
     updateGraphFrame() {
         this.setState({
-            graph: makeGraphIteration(this.state.graph, this.state.sizes)
+            graph: makeGraphIteration(this.state.graph)
         });
+    }
+
+    calculateHeight(){
+        return (this.props.clusters.length - this.props.connections.length / 2 + 5) * 40;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.clustersID !== this.props.clustersID) {
+            const width = this.containerRef.current.offsetWidth;
+            const height = this.calculateHeight();
+            this.setState({
+                    sizes: {
+                        width, height
+                    },
+                    liveUpdate: true,
+                    mousePressed: false,
+                    overlayClusterID: false,
+                    selectedCluster: this.props.selectedClusterID,
+                    graph: updateGraphWith(this.state.graph, this.props.clusters, this.props.connections, {width, height})
+                }
+            )
+        } else if (this.state.liveUpdate) {
+            if (this.state.graph.getCompletePercents() >= stopUpdateGraphCutoff)
+                this.setState({liveUpdate: false});
+            else
+                setTimeout(this.updateGraphFrame.bind(this), updateClustersPositionsTimeout);
+        }
     }
 
     componentDidMount() {
         const width = this.containerRef.current.offsetWidth;
-        const height = this.props.clusters.length * 100;
+        const height = this.calculateHeight();
         this.setState({
             sizes: {width, height},
-            graph: updateGraphWith(this.state.graph, this.props.clusters, this.props.connections, {width, height})
-        })
+            graph: updateGraphWith(this.state.graph, this.props.clusters, this.props.connections, {width, height}),
+            liveUpdate: true
+        });
     }
 
     selectCluster(id) {
-        // this.movedDist = 0;
+        let nearestNode = this.state.graph.nodesDict[id];
+        nearestNode.lockMovement();
+        this.state.graph.wornToChange();
         this.setState({
+            mousePressed: true,
             selectedCluster: id,
-            // mousePressed: true
+            selectedClusterObject: nearestNode,
+            trajectory: 0
         });
-        this.props.selectCluster(id)
+    }
+
+    stopDrag() {
+        if(this.state.selectedClusterObject){
+            if(this.state.trajectory < 5){
+                this.props.selectCluster(this.state.selectedCluster)
+            }
+            this.state.selectedClusterObject.unlockMovement();
+            this.setState({
+                mousePressed: false,
+                selectedClusterObject: null,
+                liveUpdate: true
+            });
+        }
+    }
+
+    dragCluster(x, y){
+        if (this.state.selectedClusterObject) {
+            this.state.selectedClusterObject.shiftBy(x, y);
+            this.setState({
+                graph: this.state.graph,
+                trajectory: this.state.trajectory + getDist(x, y)
+            })
+        }
+    }
+
+    toggleClusterHighlight(id) {
+        if (!this.props.highlightedClusters.includes(id))
+            this.props.setHighlightedClusters([
+                ...this.props.highlightedClusters,
+                id
+            ]);
+        else
+            this.props.setHighlightedClusters([
+                ...this.props.highlightedClusters.filter(item => item !== id)
+            ]);
     }
 
     render() {
         this.containerRef = createRef();
         return (
-            <div ref={this.containerRef} style={{margin: '25px'}}>
+            <div ref={this.containerRef} style={{margin: '35px'}}>
                 <ClustersGraph
-                    graph={this.state.graph.}
+                    graph={this.state.graph}
                     sizes={this.state.sizes}
+                    dragCluster={this.dragCluster.bind(this)}
+                    stopDrag={this.stopDrag.bind(this)}
                     selectCluster={this.selectCluster.bind(this)}
                     selectedClusterID={this.props.selectedClusterID}
                     highlightedClusters={this.props.highlightedClusters}
+                    toggleClusterHighlight={this.toggleClusterHighlight.bind(this)}
                 />
             </div>
         )

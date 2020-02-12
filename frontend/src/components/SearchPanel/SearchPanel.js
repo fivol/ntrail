@@ -45,7 +45,6 @@ const SearchPanel = (props) => {
                 value={value}
                 icon={{
                     name: "search",
-                    circular: false,
                     link: true,
                     onClick: e => beginExecuteQueryString(props.value)
                 }}
