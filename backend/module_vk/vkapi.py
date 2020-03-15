@@ -4,7 +4,7 @@ from api_query import APIQueries
 from query_object import BasicQuery
 from tools import list_from_dicts
 
-service = 'vk'
+service = 'module_k'
 
 
 def get_items(func):

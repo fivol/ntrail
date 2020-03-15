@@ -1,3 +1,5 @@
+import re
+
 from frontend_preparing import is_number
 
 
@@ -11,6 +13,15 @@ class TiedValue:
 
     def with_value(self, new_value):
         return TiedValue(new_value, self.id)
+
+    def split(self):
+        return [TiedValue(word, self.id) for word in self.value.split()]
+
+    def lower(self):
+        return self.with_value(self.value.lower())
+
+    def sub(self, source, target):
+        return self.with_value(re.sub(source, target, self.value))
 
     def capitalize(self):
         return self.with_value(self.value.capitalize())

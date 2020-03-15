@@ -1,5 +1,5 @@
 from media_object import MediaObject
-from vkapi import VKAPI
+from module_k.vkapi import VKAPI
 from tools import once_property, valid_object_method
 from collections import defaultdict
 from many_objects import ManyObjects

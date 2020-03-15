@@ -1,6 +1,5 @@
 from tools import once_property
 from instagram.entities import Account
-from glbal import logger
 from one_object import OneObject
 
 
@@ -69,12 +68,12 @@ class IGUser(OneObject):
             super().print(*args, **kwargs)
 
     def followers(self, count=300):
-        from igcommunity import IGCommunity
+        from ig.igcommunity import IGCommunity
         nodes = self.get_followers(self.username, count=count)
         return IGCommunity(nodes)
 
     def follows(self, count=300):
-        from igcommunity import IGCommunity
+        from ig.igcommunity import IGCommunity
         nodes = self.get_follows(self.username, count=count)
         return IGCommunity(nodes)
 
@@ -83,7 +82,7 @@ class IGUser(OneObject):
         return self.full_data['is_private']
 
     def friends(self):
-        from igcommunity import IGCommunity
+        from ig.igcommunity import IGCommunity
         return self.follows() + self.followers() + IGCommunity([self.username])
 
     @once_property

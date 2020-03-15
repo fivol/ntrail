@@ -19,11 +19,11 @@ REQUEST_STATUS_FAIL = 'REQUEST_STATUS_FAIL'
 dead_agents = set()
 
 try:
-    with open('data/dead_agents', 'r') as f:
+    with open('../data/dead_agents', 'r') as f:
         globals()['dead_agents'] = set(f.read().split(','))
 except:
     logger.debug('dead_agents file not found')
-    with open('data/dead_agents', 'w') as f:
+    with open('../data/dead_agents', 'w') as f:
         f.write('')
 
 
@@ -199,7 +199,7 @@ class InstRequest:
     def process_agent(cls, agent):
         agent_status = agent.status()
         if agent_status == STATUS_DEAD_AGENT:
-            with open('data/dead_agents', 'a') as f:
+            with open('../data/dead_agents', 'a') as f:
                 f.write(agent.username + ',')
             logger.error('DEAD agent: %s', agent)
             if agent in cls.wait_agents:

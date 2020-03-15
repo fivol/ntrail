@@ -1,8 +1,7 @@
-from tools import once_property, timeit
-from iguser import IGUser
+from tools import once_property
+from ig.iguser import IGUser
 import instagram
 from collections import Counter
-import networkx as nx
 from instagram.entities import Account
 from many_objects import ManyObjects
 

@@ -7,6 +7,21 @@ class OneObject(AnyObject):
     def __init__(self):
         self.id = None
 
+    def get_id(self):
+        return self.gen_id(self.id)
+
+    @classmethod
+    def parse_id(cls, id_):
+        if not id_.startswith(cls.id_prefix):
+            return None
+        return int(id_[len(cls.id_prefix):])
+
+    @classmethod
+    def gen_id(cls, plain_id):
+        if isinstance(plain_id, str) and plain_id.startswith(cls.id_prefix):
+            return plain_id
+        return cls.id_prefix + str(plain_id)
+
     @property
     def valid(self):
         raise NotImplementedError

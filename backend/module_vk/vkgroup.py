@@ -6,7 +6,7 @@ import networkx as nx
 import math
 from glbal import logger
 from tools import dict_from_dicts, list_from_dicts, counter_top, prepare_list
-from vkapi import VKAPI
+from module_k.vkapi import VKAPI
 import numpy as np
 from one_object import OneObject
 from errors.api_errors import APIError, INVALID_ID_ERROR
@@ -45,7 +45,7 @@ class VKGroup(OneObject, VKAPI):
 
     @valid_object_method
     def get_members(self, count=1000):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         if count == -1:
             count = 30000
         members = self.get_group_members(self.id, count=count)
@@ -178,7 +178,7 @@ class VKGroups(ManyObjects, VKAPI):
         return g
 
     def get_members(self, each_amount=1000):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         return VKCommunity(sum([group.get_members(each_amount) for group in self.objects], []))
 
     def load_media_data(self, groups=None):

@@ -46,23 +46,22 @@ import random
 from many_objects import ManyObjects
 from tied_counter import TiedCounter
 from tied_value import TiedValue, get_tied_array_size
-from tools import once_property, find_phones, get_normal_phone_number, name_to_gent, concatenate_lists, \
-    get_random_color, bool_filter, timeit, memorize, merge_lists, round_num
-from vkgroup import VKGroups
+from tools import once_property, name_to_gent, concatenate_lists, \
+    get_random_color, bool_filter, memorize, merge_lists, round_num
+from module_k.vkgroup import VKGroups
 import numpy as np
 import networkx as nx
 import collections
 from collections import Counter
 import datetime
 from time import time
-from vkuser import VKUser
+from module_k.vkuser import VKUser
 import math
 from itertools import groupby
-from tools import clear_list, prepare_list, counter_top, get_sites, list_get, list_from_dicts, is_good_username
+from tools import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
-from vkapi import VKAPI
-import bisect
-from constants import ACCOUNT_STATUS_PUBLIC, PLOT_LINE, PLOT_CIRCULAR
+from module_k.vkapi import VKAPI
+from constants import PLOT_LINE, PLOT_CIRCULAR
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан
@@ -135,7 +134,7 @@ class VKCommunity(ManyObjects, VKAPI):
 
     @staticmethod
     def parse_usernames(usernames_string):
-        usernames = re.findall(r'vk.com/([0-9a-z._]+)', usernames_string)
+        usernames = re.findall(r'module_k.com/([0-9a-z._]+)', usernames_string)
         return list(set(usernames))
 
     def get_deactivated(self):
@@ -150,7 +149,6 @@ class VKCommunity(ManyObjects, VKAPI):
         counter = Counter(all_groups)
         return VKGroups(counter)
 
-    @once_property
     def short_info(self):
         return ''
 
@@ -171,7 +169,10 @@ class VKCommunity(ManyObjects, VKAPI):
 
     def get_connections(self):
         connections = self.get_users_friends(self.nodes)
-        return dict(zip(self.nodes, connections))
+        return {
+            first_id: [second_id for second_id in connected_list if second_id in self.nodes]
+            for (first_id, connected_list) in zip(self.nodes, connections)
+        }
 
     def only_valid(self):
         self.preload()
@@ -402,7 +403,7 @@ class VKCommunity(ManyObjects, VKAPI):
 
         def prepare_username_list(username_list, service_name):
             usernames = []
-            if service_name in ['vk', 'instagram', 'facebook', 'twitter']:
+            if service_name in ['module_k', 'instagram', 'facebook', 'twitter']:
                 for url in username_list:
                     url = url.strip('/ ')
                     site_items = url.split('/')
@@ -566,8 +567,8 @@ class VKCommunity(ManyObjects, VKAPI):
         #         'list': usernames_list,
         #         'count': len(usernames_list)
         #     }
-        # vk_usernames = prepare_username_list(list_get(sites, 'vk'), 'vk')
-        # usernames_dict['vk'] = {
+        # vk_usernames = prepare_username_list(list_get(sites, 'module_k'), 'module_k')
+        # usernames_dict['module_k'] = {
         #     'list': vk_usernames,
         #     'count': len(vk_usernames)
         # }
@@ -928,7 +929,15 @@ class VKCommunity(ManyObjects, VKAPI):
         }
 
     def get_entities(self):
-        return [user.get_entity() for user in self.objects]
+        return {
+            'connections': {
+                VKUser.gen_id(first_id): [VKUser.gen_id(id_) for id_ in connected_list]
+                for (first_id, connected_list) in
+                self.get_connections().items()
+            }
+            ,
+            'items': [user.get_entity() for user in self.objects]
+        }
 
     def preload(self, force=False):
         self.data_dict(force)
@@ -945,14 +954,14 @@ class VKCommunity(ManyObjects, VKAPI):
 
     def get_query(self):
         if self.target == 'friends':
-            return f"GET vk.user {self.main_user.full_data['screen_name']} friends"
+            return f"GET module_k.user {self.main_user.full_data['screen_name']} friends"
         else:
-            return f"GET vk.users ({' '.join(self.get_ids())})"
+            return f"GET module_k.users ({' '.join(self.get_ids())})"
 
     def get_params(self):
         return {
             'baseType': 'users',
-            'service': 'vk',
+            'service': 'module_k',
             'type': 'community',
             'main': VKUser.gen_id(self.main_user),
             'fullEntitiesCount': 1,
@@ -961,16 +970,22 @@ class VKCommunity(ManyObjects, VKAPI):
             'query': self.get_query()
         }
 
+    def clusters(self):
+        return
+
     def represent(self, force=False):
         self.preload(force)
         return {
-            'clusters':
-                [
+            'clusters': {
+                'items': [
                     {
                         'properties': self.get_properties(),
                         'params': self.get_params(),
                         'entities': self.get_entities(),
                         'id': self.hash
                     }
-                ]
+                ],
+                'mainID': None,
+                'connections': []
+            },
         }

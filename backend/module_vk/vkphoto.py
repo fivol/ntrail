@@ -1,7 +1,7 @@
 from media_object import MediaObject
 from many_objects import ManyObjects
 from tools import once_property, valid_object_method, align_string
-from vkapi import VKAPI
+from module_k.vkapi import VKAPI
 from glbal import logger
 
 
@@ -105,7 +105,7 @@ class VKPhoto(MediaObject):
         return self.get_photo_tags(self.id)
 
     def tagged_users(self):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         return VKCommunity([int(item['user_id']) for item in self.tags()])
 
     def comments(self):

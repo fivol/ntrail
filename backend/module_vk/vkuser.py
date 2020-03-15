@@ -5,15 +5,15 @@ from tools import once_property, valid_object_method, get_sites, to_string_time_
 import matplotlib.pyplot as plt
 import io
 import re
-from vkgroup import VKGroups
+from module_k.vkgroup import VKGroups
 from glbal import logger
-from vkapi import VKAPI
-from vkphoto import VKPhotos, VKAlbum, VKAlbums
+from module_k.vkapi import VKAPI
+from module_k.vkphoto import VKPhotos, VKAlbums
 from errors.api_errors import APIError, INVALID_ID_ERROR
 from constants import ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
     ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, \
     ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
-from vkpost import VKPosts
+from module_k.vkpost import VKPosts
 
 
 class VKUser(OneObject, VKAPI):
@@ -42,6 +42,7 @@ class VKUser(OneObject, VKAPI):
             else:
                 username = VKUser.get_username(user)
                 user_dict = self.resolve_screen_name(username)
+                print(user_dict)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
                     self.status = ACCOUNT_STATUS_ABSENT
@@ -68,7 +69,7 @@ class VKUser(OneObject, VKAPI):
         url = url.lower()
         if re.fullmatch(r'[0-9a-z._]+', url):
             return url
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         usernames = VKCommunity.parse_usernames(url)
         if not usernames:
             return None
@@ -121,14 +122,14 @@ class VKUser(OneObject, VKAPI):
 
     @valid_object_method
     def followers(self):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         followers = self.get_user_followers(self.id)
         assert isinstance(followers, list)
         return VKCommunity(followers)
 
     @valid_object_method
     def follows(self):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         subscriptions = self.get_user_subscriptions(self.id)
         assert isinstance(subscriptions, list)
         return VKCommunity(subscriptions)
@@ -139,7 +140,7 @@ class VKUser(OneObject, VKAPI):
 
     @classmethod
     def generate_random(cls):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         return VKCommunity.generate_random(1).objects[0]
 
     @once_property
@@ -219,7 +220,7 @@ class VKUser(OneObject, VKAPI):
 
     @valid_object_method
     def friends(self):
-        from vkcommunity import VKCommunity
+        from module_k.vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
         return VKCommunity(friends_ids, main_user=self, target='friends')
@@ -392,24 +393,34 @@ class VKUser(OneObject, VKAPI):
     def get_params(self):
         return {
             'baseType': 'users',
-            'service': 'vk',
+            'service': 'module_k',
             'type': 'user',
             'fullEntitiesCount': 1,
             'id': self.hash,
             'name': self.full_data['first_name'] if self.valid else 'Не валиден',
-            'query': f'GET vk.user {self.full_data["screen_name"]}' if self.valid else ''
+            'query': f'GET module_k.user {self.full_data["screen_name"]}' if self.valid else ''
         }
 
     def represent(self, force=False):
+        from selective_query_execute import QueryDataException
+        if not self.valid:
+            raise QueryDataException('такого пользователя не существует или страница более не валидна')
+
         self.preload(force=force)
         return {
-            'clusters':
-                [
+            'clusters': {
+                'items': [
                     {
                         'properties': self.get_properties(),
                         'params': self.get_params(),
-                        'entities': [self.get_entity()],
+                        'entities': {
+                            'items': [self.get_entity()],
+                            'connections': []
+                        },
                         'id': self.hash
                     }
-                ]
+                ],
+                'connections': [],
+                'mainID': self.get_id()
+            }
         }

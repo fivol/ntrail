@@ -1,7 +1,8 @@
 import bisect
 # from slmpy import ModularityOptimzer
 from any_object import AnyObject
-from tools import once_property, counter_top, get_color
+from clusters import Clusters
+from tools import once_property, counter_top, get_color, memorize, cache_method
 from collections import Counter
 import networkx as nx
 import random
@@ -30,7 +31,10 @@ class ManyObjects(AnyObject):
         raise NotImplementedError
 
     def get_connections(self, **kwargs):
-        raise NotImplementedError
+        return {}
+
+    def get_id_prefix(self):
+        return self.__class__.base_class.id_prefix
 
     @classmethod
     def communities_from_graph(cls, graph_, algorithm, remove_node=None):
@@ -142,13 +146,28 @@ class ManyObjects(AnyObject):
         obj_hash = hashlib.sha1(str(sorted(self.nodes)).encode('UTF-8')).hexdigest()[-16:]
         return obj_hash
 
+    def get_ids(self):
+        return [self.__class__.base_class.gen_id(id_) for id_ in self.nodes]
+
     @once_property
     def objects(self):
-        if hasattr(self, 'data_dict'):
-            data_dict = self.data_dict()
-            return [self.__class__.base_class(data_dict[node]) for node in self.nodes]
+        data_dict = self.data_dict()
+        return [self.__class__.base_class(data_dict[node]) for node in self.nodes]
 
-        return [self.__class__.base_class(username) for username in self.nodes]
+    @cache_method
+    def data_list(self, force=False):
+        raise NotImplementedError()
+
+    @cache_method
+    def data_dict(self, force=False):
+        data = self.data_list(force)
+        return {
+            item['id']: item
+            for item in data
+        }
+
+    def preload(self, force):
+        self.data_list(force)
 
     def select(self, k=-1, break_point=1, rand=False):
         if rand and k > 0:
@@ -241,7 +260,7 @@ class ManyObjects(AnyObject):
 
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
                             color_patches=None, save_path=None):
-        from vkgroup import VKGroups
+        from module_vk.vkgroup import VKGroups
 
         weights = np.array([d['weight'] for (u, v, d) in graph.edges(data=True)])
         ordered_weights = np.sort(weights)
@@ -367,7 +386,7 @@ class ManyObjects(AnyObject):
 
     @property
     def name(self):
-        return f'{self.short_info} size: {self.size} id: {self.hash}'
+        return f'{self.short_info()} size: {self.size} id: {self.hash}'
 
     def collect_archive(self, count=200):
         assert isinstance(count, int)
@@ -435,3 +454,6 @@ class ManyObjects(AnyObject):
 
     def process_data(self):
         raise NotImplementedError
+
+    def clusters(self):
+        return Clusters(self)
