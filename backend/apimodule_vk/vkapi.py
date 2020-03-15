@@ -1,10 +1,10 @@
 import math
 from glbal import logger
-from api_query import APIQueries
+from ntapimodule.api_query import APIQueries
 from query_object import BasicQuery
-from tools import list_from_dicts
+from ntmodule.tools import list_from_dicts
 
-service = 'module_k'
+service = 'vk'
 
 
 def get_items(func):
@@ -29,7 +29,6 @@ def log_query(func):
 class VKAPI:
     @classmethod
     def get_users(cls, vk_ids, full=False, **kwargs):
-        # print('get users data', kwargs, len(vk_ids), vk_ids[0])
         if not vk_ids:
             return []
         assert isinstance(vk_ids, list)
@@ -119,8 +118,14 @@ class VKAPI:
         return [group['items'] for group in res if isinstance(group, dict)]
 
     @classmethod
-    def get_user_groups(cls, vkid):
-        return cls.get_users_groups([vkid])[0]
+    def get_user_groups(cls, vkid, count=None):
+        params = {}
+        if count:
+            params['count'] = count
+
+        res = APIQueries().one(service, 'groups', str(vkid), params=params)
+        assert isinstance(res, dict)
+        return res.get('items', [])
 
     @classmethod
     def resolve_screen_names(cls, screen_names):
@@ -224,24 +229,27 @@ class VKAPI:
 
     @classmethod
     def resolve_screen_name(cls, screen_name):
-        return cls.resolve_screen_names([screen_name])[0]
+        res = cls.resolve_screen_names([screen_name])[0]
+        if not res:
+            return {}
+        return res
 
     @classmethod
-    def get_groups_data(cls, group_ids, one_by_one=False):
+    def get_groups_data(cls, group_ids, one_by_one=False, **kwargs):
         if not group_ids:
             return []
         assert isinstance(group_ids[0], int)
         group_ids = [str(group) for group in group_ids]
         method = 'group_' + ('full' if one_by_one else 'short')
-        res = APIQueries().many(service, method, group_ids)
+        res = APIQueries().many(service, method, group_ids, **kwargs)
         assert isinstance(res, list)
         assert len(res) == len(group_ids)
         assert isinstance(res[0], dict), res
         return res
 
     @classmethod
-    def get_group_data(cls, group_id, full):
-        return cls.get_groups_data([group_id], one_by_one=full)[0]
+    def get_group_data(cls, group_id, full, **kwargs):
+        return cls.get_groups_data([group_id], one_by_one=full, **kwargs)[0]
 
     @classmethod
     def get_apps_data(cls, apps_id):
@@ -262,7 +270,7 @@ class VKAPI:
         return APIQueries().one(service, 'search', string, params=params)
 
     @classmethod
-    def get_group_members(cls, group_id, count=1000, offset=0, items=True):
+    def get_group_members(cls, group_id, count=1000, offset=0, items=True, force=False):
         assert isinstance(group_id, int)
         assert count > 0
         query_count = 1000
@@ -280,7 +288,7 @@ class VKAPI:
             count -= query_count
             offset += query_count
 
-        results = queries.execute()
+        results = queries.execute(force)
         assert len(results) == queries_count, len(results)
         if not isinstance(results[0], dict):
             return {

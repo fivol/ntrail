@@ -1,8 +1,7 @@
 from query_object import BasicQuery
 from local_cache import LocalCache
 from api_server_call import APIServerCall
-from glbal import logger
-from errors.api_errors import APIError
+from apimodule_vk.api_errors import APIError
 
 
 class APIQueries:
@@ -56,10 +55,8 @@ class APIQueries:
             cached_queries = set()
         else:
             cached_queries = LocalCache.get_cached_queries_set(queries=self.queries)
-        # logger.debug('Find cached queries: %s', len(cached_queries))
         assert isinstance(cached_queries, set)
         unknown_queries = self.queries - cached_queries
-        # logger.debug('Find unknown queries: %s %s', len(unknown_queries), unknown_queries)
         if unknown_queries:
             result_queries = APIServerCall(unknown_queries).execute()
             queries_to_cache = self.get_queries_to_cache(result_queries)

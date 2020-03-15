@@ -10,11 +10,11 @@ from threading import Thread
 import difflib
 import string
 import transliterate
-import json
 import math
 import pymorphy2
 from app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
-from tied_value import TiedValue
+from netmodule.tied_counter import TiedCounter
+from netmodule.tied_value import TiedValue
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -66,6 +66,19 @@ def once_property(func):
             return getattr(class_obj, class_value_name)
         method_result = func(class_obj)
         setattr(class_obj, class_value_name, method_result)
+        return method_result
+
+    return wrapper
+
+
+def cache_method(func):
+    def wrapper(self, *args, **kwargs):
+        func_name = func.__name__
+        class_value_name = f'{func_name}_{args}_{kwargs}'
+        if hasattr(self, class_value_name):
+            return getattr(self, class_value_name)
+        method_result = func(self, *args, **kwargs)
+        setattr(self, class_value_name, method_result)
         return method_result
 
     return wrapper
@@ -130,68 +143,6 @@ def timeit(func):
     return wrapper
 
 
-class MemoryCache:
-    stored_data = {}
-    last_save_time = 0
-    get_data_locked = False
-
-    @classmethod
-    def get(cls, name, save=False):
-        while cls.get_data_locked:
-            sleep(0.05)
-        if time() - cls.last_save_time > 3 or save:
-            cls.save_memory()
-        default = {}
-        if name not in cls.stored_data:
-            # logger.warning('ITEM %s not in stored_data', name)
-            cls.stored_data[name] = default
-
-        return cls.stored_data[name]
-
-    @classmethod
-    def save_memory(cls):
-        cls.get_data_locked = True
-        try:
-            with open('data/data', 'wb') as f:
-                pickle.dump(cls.stored_data, f)
-        except:
-            logger.exception('Fail to save memory')
-
-        cls.last_save_time = time()
-        cls.get_data_locked = False
-
-    @classmethod
-    def load_memory(cls):
-        import pickle
-        try:
-            with open('data/data', 'rb') as f:
-                cls.stored_data = pickle.load(f)
-        except FileNotFoundError:
-            logger.warning('Memory file not found!')
-            cls.save_memory()
-
-    @classmethod
-    def clear_memory(cls):
-        cls.stored_data.clear()
-        cls.save_memory()
-
-
-def reset_colors():
-    random.shuffle(colors)
-
-
-def get_obj(id):
-    return objects.get(id, None)
-
-
-def get_objs(ids):
-    return reduce((lambda x, y: x + y), [get_obj(id) for id in ids])
-
-
-def set_obj(id, obj):
-    objects[id] = obj
-
-
 def get_color(i, size=None):
     if size == 1:
         return '#000000'
@@ -225,6 +176,28 @@ def split_list(list_object, segment_size):
         if begin < len(list_object):
             result_list.append(list_object[begin:end])
     return result_list
+
+
+def get_field_values(data_list, field, capitalize=False, clean=False, counter=False, key=None):
+    def prepare_value(value):
+        # print(value)
+        if key:
+            value = value[key]
+        if capitalize:
+            return value.capitalize()
+        return value
+
+    res = [
+        TiedValue(prepare_value(user[field]), user['id'])
+        for user in data_list
+        if field in user
+    ]
+    if clean:
+        res = list(filter(lambda x: bool(x), res))
+    if counter:
+        return TiedCounter(res)
+
+    return res
 
 
 def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True, capitalize=False):
@@ -490,18 +463,19 @@ def get_common_texts_terms(texts):
     assert isinstance(texts, list)
 
     def normalize_word(word):
-        return re.sub('ия$|ический$', '', morph.parse(word)[0].normal_form)
+        word = word.with_value(morph.parse(word.get_value())[0].normal_form)
+        return word.sub('ия$|ический$', '')
 
     texts_words = []
     for text in texts:
         text = text.lower()
-        text = re.sub('http\S+', ' ', text)
-        text = re.sub('[^а-яa-z]', ' ', text)
+        text = text.sub('http\S+', ' ')
+        text = text.sub('[^а-яa-z]', ' ')
         words = set([normalize_word(word) for word in text.split()])
         words -= most_frequent_words
         texts_words += list(words)
 
-    return counter_top(Counter(texts_words).most_common())
+    return TiedCounter(texts_words)
 
 
 class ThreadResult:
@@ -524,7 +498,6 @@ class ThreadResult:
 
 
 ### Языковые функции
-import pymorphy2
 
 def round_num(value):
     if isinstance(value, str):

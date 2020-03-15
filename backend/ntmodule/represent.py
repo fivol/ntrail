@@ -1,5 +1,5 @@
 from selective_query_exeptions import QueryDataException
-from tools import merge_lists
+from netmodule.tools import merge_lists
 
 
 class Represent:

@@ -1,5 +1,5 @@
-from any_object import AnyObject
-from tools import align_string, once_property
+from netmodule.any_object import AnyObject
+from netmodule.tools import align_string, once_property
 import hashlib
 
 

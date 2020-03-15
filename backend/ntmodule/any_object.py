@@ -1,7 +1,7 @@
 
 import hashlib
 from pprint import pprint
-from tools import *
+from netmodule.tools import *
 
 
 class AnyObject:

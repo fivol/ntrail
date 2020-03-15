@@ -1,5 +1,5 @@
 import hashlib
-from errors.api_errors import APIError
+from ntapimodule.api_errors import APIError
 
 
 class BasicQuery:

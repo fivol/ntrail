@@ -1,8 +1,8 @@
 from glbal import logger
-from represent.tied_value import TiedValue
+from netmodule.tied_value import TiedValue
 import numpy as np
 
-from tools import bool_filter, get_random_color
+from netmodule.tools import bool_filter, get_random_color
 from constants import PLOT_LINE, PLOT_CIRCULAR
 
 

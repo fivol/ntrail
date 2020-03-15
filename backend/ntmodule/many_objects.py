@@ -1,12 +1,12 @@
 import bisect
 # from slmpy import ModularityOptimzer
-from any_object import AnyObject
-from clusters import Clusters
-from tools import once_property, counter_top, get_color, memorize, cache_method
+from netmodule.any_object import AnyObject
+from netmodule.clusters import Clusters
+from netmodule.tools import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 import random
-from tools import self_replace
+from netmodule.tools import self_replace
 import numpy as np
 import re
 from db_logic import DB

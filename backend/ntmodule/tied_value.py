@@ -1,6 +1,6 @@
 import re
 
-from frontend_preparing import is_number
+from netmodule.frontend_preparing import is_number
 
 
 class TiedValue:

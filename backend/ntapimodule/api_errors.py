@@ -63,8 +63,8 @@ class ServerError(APIError):
 
 class VKError(APIError):
     errors = {
-        UNKNOWN_ERROR: 'Unknown error code from vk api',
-        VK_API_UNKNOWN_ERROR: 'Unknown error occurred on vk servers',
+        UNKNOWN_ERROR: 'Unknown error code from module_vk api',
+        VK_API_UNKNOWN_ERROR: 'Unknown error occurred on module_vk servers',
         ACCESS_DENIED_ERROR: 'Access denied: this content is private',
         PRIVATE_PROFILE_ERROR: 'This profile is private',
         INVALID_ID_ERROR: 'Invalid input data: object does not exist',
@@ -73,10 +73,10 @@ class VKError(APIError):
     request_result_errors = {ACCESS_DENIED_ERROR,
                              PRIVATE_PROFILE_ERROR,
                              INVALID_ID_ERROR}
-    service = 'vk'
+    service = 'module_vk'
 
 
 services = {
-    'vk': VKError,
+    'module_vk': VKError,
     'server': ServerError
 }
