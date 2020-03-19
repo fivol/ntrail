@@ -1,14 +1,12 @@
 import vk
 from vk.exceptions import VkAPIError
 import time
-import math
 from glbal import logger
-import os
-from errors.api_errors import VKError, INVALID_ID_ERROR, APIError
+from ntapimodule.api_errors import VKError, INVALID_ID_ERROR, APIError
 
 
-# vk app client_id 7091370
-# service vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
+# module_vk app client_id 7091370
+# service module_vk app key 7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1
 # my user access_token 5bfaab47e81d46f1a1484571b5116939a4b142eb3253b715fa6af897018fd6662e7c41ada3ac04a63ed61
 
 
@@ -74,6 +72,19 @@ api = API(session=vk.Session(access_token=user_token), v='5.103', lang='ru', tim
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
 api_app = API(session=vk.Session(access_token=app_token), v='5.103', lang='ru', timeout=10)
 
+groups_full_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
+                      'main_section', 'members_count', 'place',
+                      'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
+                      'description', 'site', 'start_date']
+
+users_full_fields = [
+    'photo_200', 'photo_100', 'photo_max', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
+    'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
+    'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
+    'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
+    'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed',
+]
+
 
 class VKAPI:
 
@@ -93,19 +104,11 @@ class VKAPI:
                 else:
                     if result[i].get('id') != id:
                         result.insert(i, VKError(INVALID_ID_ERROR).to_dict())
-        # print(result)
         return result
 
     @classmethod
     def user_full(cls, users_ids):
-        fields = [
-            'photo_200', 'photo_100', 'photo_max', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
-            'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
-            'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
-            'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
-            'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed',
-        ]
-        return cls.user(users_ids, fields=fields)
+        return cls.user(users_ids, fields=users_full_fields)
 
     @classmethod
     def user_short(cls, users_ids):
@@ -119,18 +122,13 @@ class VKAPI:
     @classmethod
     def group_full(cls, group_ids):
         assert len(group_ids) <= 500
-        fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
-                  'main_section', 'members_count', 'place',
-                  'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
-                  'description', 'site', 'start_date']
-
-        res = api.groups.getById(group_ids=group_ids, fields=fields)
+        res = api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
         return res
 
     @classmethod
     def group_short(cls, group_ids):
         assert len(group_ids) <= 500
-        return api.groups.getById(group_ids=group_ids)
+        return api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
 
     @classmethod
     def apps(cls, apps_id):

@@ -1,5 +1,5 @@
-from one_object import OneObject
-from module_vk.vkapi import VKAPI
+from ntmodule.one_object import OneObject
+from apimodule_vk.vkapi import VKAPI
 
 
 class MediaObject(OneObject, VKAPI):

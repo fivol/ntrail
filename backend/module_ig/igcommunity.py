@@ -1,9 +1,9 @@
-from tools import once_property
-from ig.iguser import IGUser
+from ntmodule.tools import once_property
+from module_ig.iguser import IGUser
 import instagram
 from collections import Counter
 from instagram.entities import Account
-from many_objects import ManyObjects
+from ntmodule.many_objects import ManyObjects
 
 
 class IGCommunity(ManyObjects):

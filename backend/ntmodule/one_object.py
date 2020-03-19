@@ -1,9 +1,11 @@
-from netmodule.any_object import AnyObject
-from netmodule.tools import align_string, once_property
+from ntmodule.any_object import AnyObject
+from ntmodule.tools import align_string, once_property
 import hashlib
 
 
 class OneObject(AnyObject):
+    many_objects_class = None
+
     def __init__(self):
         self.id = None
 

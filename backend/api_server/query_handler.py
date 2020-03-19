@@ -1,7 +1,7 @@
 from query_object import ComplexQuery, BasicQuery
 from collections import defaultdict
-from tools import split_list
-from errors.api_errors import APIError
+from ntmodule.tools import split_list
+from ntapimodule.api_errors import APIError
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
 # составные запросы для наибыстрейшего выполнение всех
@@ -17,16 +17,15 @@ user_fields = ['photo_200', 'about', 'activities', 'bdate', 'books', 'career', '
                'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed', ]
 
 users_fields_string = ','.join(user_fields)
-service_token_methods = {'friends', 'resolve', 'friends',
-                         'members', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids', 'apps'}
+service_token_methods = {'friends', 'resolve', 'friends', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids', 'apps'}
 
-user_token_methods = {'groups', 'search',
+user_token_methods = {'groups', 'search', 'members',
                       'user_full', 'group_full', 'photos_ids'}
 
 methods_group_key = {'user_short', 'user_full', 'group_short', 'group_full', 'posts', 'photos_ids', 'albums_ids',
                      'apps'}
 
-available_execute = {'friends', 'groups', 'resolve'}
+available_execute = {'friends', 'groups', 'resolve', 'members'}
 
 execute_queries_count = 25
 service_token_queries_count = 26  # 20
@@ -83,6 +82,10 @@ class VKHandler:
             if query.method == 'user_full':
                 assert isinstance(query.key, list)
                 return 'API.users.get({"fields":"' + users_fields_string + '","user_ids":"%s"})' % ','.join(query.key)
+            if query.method == 'members':
+                return 'API.groups.getById({"group_id":"%s","offset":"%s","count":"%s"})' % (
+                    query.key, query.params.get('offset', 0), query.params.get('count', 200))
+
             raise NotImplementedError(query.method)
 
         assert len(queries) <= 25

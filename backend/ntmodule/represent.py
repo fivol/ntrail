@@ -1,8 +1,27 @@
-from selective_query_exeptions import QueryDataException
-from netmodule.tools import merge_lists
+from ntmodule.many_objects import ManyObjects
+from ntmodule.selective_query_exeptions import QueryDataException
+from ntmodule.tools import merge_lists
+
+# Этот класс отвечает за отображение модуля на интерфейс NTrail.
+# Если модуль нужнается в визуальном отображении, нужну унаследовать этот класс и переопределить некоторые методы
+# при необходимости. Но без этого тоже будет работать, просто запрос вернет пустой json нужного формата
 
 
-class Represent:
+def try_base_analog(func):
+    def wrapper(self, *args, **kwargs):
+        func_name = func.__name__
+        print('func_name', func_name)
+        base_class = self.__class__.base_class
+        if base_class and func_name in base_class.available_attributes and self.size == 1:
+            obj = base_class(self.data_list()[0])
+            return getattr(obj, func_name)(*args, **kwargs)
+
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
+class Represent(ManyObjects):
 
     def get_sub_properties_categories(self):
         categories = {
@@ -77,23 +96,19 @@ class Represent:
     def get_all_properties(self):
         return []
 
+    def get_description(self):
+        return ''
+
     def get_properties(self):
         return {
             'all': self.get_all_properties(),
             'interesting': self.get_interesting_properties(),
-            'important': self.get_important_properties()
+            'important': self.get_important_properties(),
+            'description': self.get_description()
         }
 
     def get_params(self, parent=None):
         return {}
-
-    @property
-    def valid(self):
-        return True
-
-    @property
-    def hash(self):
-        raise NotImplementedError()
 
     def get_id(self):
         raise NotImplementedError()
@@ -119,7 +134,7 @@ class Represent:
             'items': self.get_items()
         }
 
-    def get_cluster_actions(self):
+    def get_actions(self):
         return []
 
     def main_cluster_data(self, parent=None):
@@ -128,15 +143,19 @@ class Represent:
             'params': self.get_params(parent),
             'entities': self.get_entities(),
             'id': self.hash,
-            'actions': self.get_cluster_actions()
+            'actions': self.get_actions()
         }
-
-    def preload(self, force=False):
-        pass
 
     def represent(self, force=False):
         if not self.valid:
             raise QueryDataException('такого объекта не существует')
+
+        if not self.size:
+            return {
+                'warning': {
+                    'text': 'Запрашиваемый кластер не содержит 0 объектов'
+                }
+            }
 
         self.preload(force=force)
         return {

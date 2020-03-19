@@ -2,21 +2,29 @@ import logging
 import warnings
 from glbal import logger
 from flask import Flask, request, jsonify
-from tools import make_json_serializable
+from ntmodule.tools import make_json_serializable
 
 from config import VERSION
 from selective_query_execute import execute_query
+from flask_cors import CORS
 
 warnings.filterwarnings("ignore")
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
+CORS(app)
 # app.config['RESTPLUS_JSON'] = {'indent': None, 'separators': (',', ':')}
 
 
 @app.route('/')
 def index():
     return VERSION
+
+
+@app.route('/feedback/', methods=['post'])
+def feedback():
+    print('FEEDBACK JSON', request.get_json())
+    return 'OK'
 
 
 @app.route('/query/', methods=['get'])
@@ -59,4 +67,4 @@ def query_string():
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(host='localhost', port='5050')

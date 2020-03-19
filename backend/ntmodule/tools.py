@@ -13,8 +13,8 @@ import transliterate
 import math
 import pymorphy2
 from app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
-from netmodule.tied_counter import TiedCounter
-from netmodule.tied_value import TiedValue
+from ntmodule.tied_counter import TiedCounter
+from ntmodule.tied_value import TiedValue
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -198,6 +198,71 @@ def get_field_values(data_list, field, capitalize=False, clean=False, counter=Fa
         return TiedCounter(res)
 
     return res
+
+
+class MemoryCache:
+    stored_data = {}
+    last_save_time = 0
+    get_data_locked = False
+
+    @classmethod
+    def get(cls, name, save=False):
+        while cls.get_data_locked:
+            sleep(0.05)
+        if time() - cls.last_save_time > 3 or save:
+            cls.save_memory()
+        default = {}
+        if name not in cls.stored_data:
+            # logger.warning('ITEM %s not in stored_data', name)
+            cls.stored_data[name] = default
+
+        return cls.stored_data[name]
+
+    @classmethod
+    def save_memory(cls):
+        cls.get_data_locked = True
+        try:
+            with open('data/data', 'wb') as f:
+                pickle.dump(cls.stored_data, f)
+        except:
+            logger.exception('Fail to save memory')
+
+        cls.last_save_time = time()
+        cls.get_data_locked = False
+
+    @classmethod
+    def load_memory(cls):
+        import pickle
+        try:
+            with open('data/data', 'rb') as f:
+                cls.stored_data = pickle.load(f)
+        except FileNotFoundError:
+            logger.warning('Memory file not found!')
+            cls.save_memory()
+
+    @classmethod
+    def clear_memory(cls):
+        cls.stored_data.clear()
+        cls.save_memory()
+
+
+def reset_colors():
+    random.shuffle(colors)
+
+
+def get_obj(id):
+    return objects.get(id, None)
+
+
+def get_objs(ids):
+    return reduce((lambda x, y: x + y), [get_obj(id) for id in ids])
+
+
+def set_obj(id, obj):
+    objects[id] = obj
+
+def get(name, save=False):
+    return MemoryCache.get(name, save)
 
 
 def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_common=True, capitalize=False):

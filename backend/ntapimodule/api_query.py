@@ -1,7 +1,7 @@
 from query_object import BasicQuery
 from local_cache import LocalCache
-from api_server_call import APIServerCall
-from apimodule_vk.api_errors import APIError
+from ntapimodule.api_server_call import APIServerCall
+from ntapimodule.api_errors import APIError
 
 
 class APIQueries:

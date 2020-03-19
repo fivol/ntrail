@@ -1,38 +1,18 @@
 import time
 import re
-from tools import timeit
+
+from ntmodule.selective_query_exeptions import QueryLexicalException, QuerySyntaxException, QuerySemanticException, \
+    WrongQueryException, QueryProgrammingException
+from ntmodule.tools import timeit
 from glbal import logger
 
-from module_vk import ModuleVK
+from module_vk.module import ModuleVK
+from module_query.module import ModuleQuery
 
-
-class WrongQueryException(Exception):
-    def __init__(self, text, code=400):
-        self.text = text
-        self.code = code
-
-    def get_text(self):
-        return self.text
-
-
-class QuerySyntaxException(WrongQueryException):
-    def get_text(self):
-        return f'Синтаксическая ошибка: {self.text}'
-
-
-class QuerySemanticException(WrongQueryException):
-    def get_text(self):
-        return f'Семантическая ошибка: {self.text}'
-
-
-class QueryProgrammingException(WrongQueryException):
-    def get_text(self):
-        return f'Ошибка не сервере: {self.text}'
-
-
-class QueryLexicalException(WrongQueryException):
-    def get_text(self):
-        return f'Лексическая ошибка: {self.text}'
+modules_dict = {
+    'vk': ModuleVK,
+    'query': ModuleQuery
+}
 
 
 TOKEN_WORD = 'word'
@@ -104,7 +84,7 @@ class QueryParser:
         self.g = tokens_generator
 
     def read_value(self):
-        return self.g.next(TOKEN_WORD, to_lower_case=False).value
+        return self.g.next(to_lower_case=False).value
 
     def read_parameters(self):
         begin_sign = '['
@@ -200,9 +180,10 @@ def get_query_tokens(query):
 
 
 def get_module(module_name):
-    if module_name == 'vk':
-        return ModuleVK
-    raise QuerySemanticException(f'неизвестный модуль "{module_name}"')
+    if module_name not in modules_dict:
+        raise QuerySemanticException(f'неизвестный модуль "{module_name}"')
+
+    return modules_dict[module_name]
 
 
 def execute_action(action):
@@ -218,7 +199,6 @@ def execute_action(action):
 
     try:
         action_object = getattr(module, method_name)(args, **params)
-        result = action_object
         for attribute in attrs:
             attribute_name = attribute['attribute']
             parameters = attribute['parameters']
@@ -226,11 +206,12 @@ def execute_action(action):
                 raise QuerySemanticException(f'метод "{method_name}" не поддерживает атрибут "{attribute_name}"')
 
             try:
-                result = getattr(result, attribute_name)(**parameters)
+                action_object = getattr(action_object, attribute_name)(**parameters)
             except TypeError:
+                logger.exception('не корректные аргументы')
                 raise QuerySemanticException(f'не корректные аргументы: "{parameters}" для метода "{attribute_name}"')
 
-        return result
+        return action_object
 
     except Exception as e:
         if not isinstance(e, WrongQueryException):
@@ -280,7 +261,7 @@ def collect_query_data(q):
     elif method_name == 'load':
         return query_load(method_parameters, parser)
     else:
-        raise SyntaxError(
+        raise QuerySyntaxException(
             f'неизвесный тип запроса "{method_name}".\
              Возможные значения: GET, LOAD и другие (полное описание читайте в документации)'
         )

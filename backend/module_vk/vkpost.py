@@ -1,8 +1,8 @@
-from media_object import MediaObject
-from module_k.vkapi import VKAPI
-from tools import once_property, valid_object_method
+from module_vk.media_object import MediaObject
+from apimodule_vk.vkapi import VKAPI
+from ntmodule.tools import once_property, valid_object_method
 from collections import defaultdict
-from many_objects import ManyObjects
+from ntmodule.many_objects import ManyObjects
 
 
 class VKPost(MediaObject, VKAPI):

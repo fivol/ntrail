@@ -21,7 +21,7 @@ class QuerySemanticException(WrongQueryException):
 
 class QueryProgrammingException(WrongQueryException):
     def get_text(self):
-        return f'Ошибка не сервере: {self.text}'
+        return f'Ошибка программиста: {self.text}'
 
 
 class QueryLexicalException(WrongQueryException):

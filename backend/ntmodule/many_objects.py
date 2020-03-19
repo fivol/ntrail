@@ -1,12 +1,12 @@
 import bisect
 # from slmpy import ModularityOptimzer
-from netmodule.any_object import AnyObject
-from netmodule.clusters import Clusters
-from netmodule.tools import once_property, counter_top, get_color, cache_method
+from ntmodule.any_object import AnyObject
+from ntmodule.clusters import Clusters
+from ntmodule.tools import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 import random
-from netmodule.tools import self_replace
+from ntmodule.tools import self_replace
 import numpy as np
 import re
 from db_logic import DB
@@ -18,8 +18,9 @@ import hashlib
 
 
 class ManyObjects(AnyObject):
+    base_class = None
+
     def __init__(self):
-        self.base_class = None
         self.counter = None
         self.nodes = None
 
@@ -107,6 +108,13 @@ class ManyObjects(AnyObject):
 
         return res
 
+    @property
+    def valid(self):
+        return True
+
+    def preload(self, full=False, force=False):
+        self.data_list(force=force)
+
     def print(self, k=50, shuffle=False):
         head_line = f'Class: {self.__class__}. Size: {self.size}'
         print(head_line)
@@ -166,7 +174,7 @@ class ManyObjects(AnyObject):
             for item in data
         }
 
-    def preload(self, force):
+    def preload(self, force=False, full=False):
         self.data_list(force)
 
     def select(self, k=-1, break_point=1, rand=False):
@@ -260,7 +268,6 @@ class ManyObjects(AnyObject):
 
     def show_weighted_graph(self, graph, sizes=False, node_color='b',
                             color_patches=None, save_path=None):
-        from module_vk.vkgroup import VKGroups
 
         weights = np.array([d['weight'] for (u, v, d) in graph.edges(data=True)])
         ordered_weights = np.sort(weights)
@@ -273,6 +280,7 @@ class ManyObjects(AnyObject):
         weights *= 1 / (max(weights))
         weights[weights > 1] = 1
         node_sizes = 50
+        from module_vk.vkgroups import VKGroups
         if isinstance(self, VKGroups) and sizes:
             groups_dict = self.dict_from_dicts(self.groups_base_data(), 'id')
 

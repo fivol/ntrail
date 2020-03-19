@@ -4,7 +4,7 @@ from api_server.query_handler import QueryHandler
 from query_object import BasicQuery, ComplexQuery
 from glbal import logger
 from collections import defaultdict
-from errors.api_errors import APIError, ServerError
+from ntapimodule.api_errors import ServerError
 
 import requests
 

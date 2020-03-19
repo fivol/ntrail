@@ -1,20 +1,15 @@
 import unittest
-from tools import *
-from vkuser import VKUser
+from ntmodule.tools import *
+from module_vk.vkuser import VKUser
 from glbal import logger
 import logging
 import datetime
 from local_cache import LocalCache
-from vkcommunity import VKCommunity
-from iguser import IGUser
-from igcommunity import IGCommunity
-from vkgroup import VKGroup
-from vkgroup import VKGroups
+from module_vk.vkcommunity import VKCommunity
+from module_vk.vkgroup import VKGroup
 import warnings
-from vkpost import VKPosts
-from vkpost import VKPost
+from module_vk.vkpost import VKPosts
 from constants import ACCOUNT_STATUS_ABSENT, ACCOUNT_STATUS_PUBLIC
-from selective_query_execute import execute_query, get_query_tokens, TokensGenerator, collect_query_dat
 
 logger.setLevel(logging.WARNING)
 
@@ -163,7 +158,6 @@ class VKPostsTest(QueriesTest):
 
 # class QueryParser(unittest.TestCase):
 #     def test_
-
 
 
 if __name__ == '__main__':
