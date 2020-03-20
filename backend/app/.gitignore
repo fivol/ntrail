@@ -1,8 +1,8 @@
 env/
 __pycache__/
 *.pyc
-data/
 ntrail.ini
 .idea/
 *.jpg
 *.png
+*.svg
