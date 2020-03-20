@@ -8,14 +8,16 @@ services:
       - env_file
     ports:
       - 8888:5432
+    volumes:
+      - ./db:/var/lib/postgresql/data
 
   web:
-    build: ./flask
+    build: ./app
     restart: always
     env_file:
       - env_file
     ports:
-      - 6050:5000
+      - 5000:5000
     depends_on:
       - db
 
