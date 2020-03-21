@@ -1,6 +1,5 @@
 #!/bin/bash
 sudo rm -rf app
-mkdir app
 cp -r ../backend .
 mv backend app
 
