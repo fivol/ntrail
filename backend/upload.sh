@@ -1,7 +1,8 @@
 #!/bin/bash
 sudo rm -rf app
 mkdir app
-cp -r ../backend ./app
+cp -r ../backend .
+mv backend app
 
 git add .
 git commit -m"docker auto"
