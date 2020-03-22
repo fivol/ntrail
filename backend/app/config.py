@@ -22,7 +22,7 @@ try:
 except:
     logger.exception('Fail to get environment variables for db connection')
 
-VERSION = '2.4.5'
+VERSION = '2.4.6'
 API_SERVER_REQUEST_VERSION = 0
 
 
