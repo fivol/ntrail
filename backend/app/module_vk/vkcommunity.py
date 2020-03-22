@@ -805,6 +805,8 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
 
         if self.target == 'friends':
             return 'Друзья ' + name_to_gent(self.main_user.full_data['first_name'])
+        if self.target == 'loners':
+            return 'Без кластера'
 
         interesting_properties = self.get_interesting_properties()
         target = interesting_properties[0]

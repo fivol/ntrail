@@ -386,14 +386,8 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         return [VKGroup(group_id).get_entity() for group_id, _ in self.counter.most_common(300)]
 
     def get_actions(self):
-        return [
-            {
-                'id': 'split',
-                'name': 'Разбить на подкластеры',
-                'act': 'append',
-                'value': 'clusters',
-            },
-        ]
+        actions = self.get_template_actions(split=True)
+        return actions
 
     def get_sub_properties_categories(self):
         return {
@@ -410,7 +404,8 @@ class VKGroups(VKAPI, Represent, RepresentTools):
             'id': self.hash,
             'name': self.get_name(),
             'query': self.get_query(),
-            'parent': parent
+            'parent': parent,
+            'prefix': 'vk.groups'
         }
 
     def get_description(self):
