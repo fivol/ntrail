@@ -212,7 +212,7 @@ class VKUser(VKAPI, OneObjectRepresent):
         from module_vk.vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
-        return VKCommunity(friends_ids, main_user=self, target='friends')
+        return VKCommunity(friends_ids, main=self, target='friends')
 
     @once_property
     @valid_object_method

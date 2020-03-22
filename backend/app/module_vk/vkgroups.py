@@ -27,7 +27,7 @@ groups_types_dict = {
 
 class VKGroups(VKAPI, Represent, RepresentTools):
     base_class = VKGroup
-    available_attributes = ['clusters']
+    available_attributes = ['clusters', 'members']
 
     def __init__(self, groups=None, save_features=False, target=None, source=None, **kwargs):
         super().__init__()
@@ -73,6 +73,14 @@ class VKGroups(VKAPI, Represent, RepresentTools):
 
     def only_valid(self):
         return VKGroups([group for group in self.objects if group.valid])
+
+    def members(self):
+        members_ids = []
+        for group in self.nodes:
+            members_ids += self.get_random_group_members(group, k=100)[:100]
+
+        from module_vk.vkcommunity import VKCommunity
+        return VKCommunity(members_ids, target='members', main=self.objects[0])
 
     @cache_method
     def data_list(self, force=False, full=False):
@@ -387,7 +395,15 @@ class VKGroups(VKAPI, Represent, RepresentTools):
 
     def get_actions(self):
         actions = self.get_template_actions(split=True)
-        return actions
+
+        return actions + [
+            {
+                'id': 'members',
+                'name': 'Получить 100 подписчиков',
+                'target': 'one',
+                'value': 'members',
+            }
+        ]
 
     def get_sub_properties_categories(self):
         return {
@@ -397,7 +413,7 @@ class VKGroups(VKAPI, Represent, RepresentTools):
 
     def get_params(self, parent=None):
         return {
-            'baseType': 'users',
+            'baseType': 'groups',
             'service': 'vk',
             'type': 'community',
             'fullEntitiesCount': 1,
