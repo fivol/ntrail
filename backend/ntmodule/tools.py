@@ -127,6 +127,7 @@ def self_replace(*arg_names):
 
             return func(self, *args, **kwargs)
 
+        wrapper.__name__ = func.__name__
         return wrapper
 
     return decorator

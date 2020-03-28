@@ -68,12 +68,24 @@ class Represent(ManyObjects):
 
         return metric
 
+    def get_template_actions(self, split=False):
+        actions = []
+        if split and self.size > 1:
+            actions.append(
+                {
+                    'id': 'split',
+                    'name': 'Разбить на подкластеры',
+                    'target': 'cluster',
+                    'value': 'clusters',
+                },
+            )
+        return actions
+
     def get_interesting_properties(self):
         all_props = self.get_all_properties()
 
         # processed_data = self.process_data()
 
-        base_id = self.hash
         return sorted(merge_lists([
 
             [
@@ -145,6 +157,9 @@ class Represent(ManyObjects):
             'id': self.hash,
             'actions': self.get_actions()
         }
+
+    def cluster(self):
+        return self.main_cluster_data()
 
     def represent(self, force=False):
         if not self.valid:

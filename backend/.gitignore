@@ -1,7 +1,11 @@
-data/
+.git/
 *.pyc
+*.png
+*.svg
+__pycache__/
+*.html
+
 env/
 venv/
 /.idea
 /.ipynb_checkpoints
-*accounts_data*

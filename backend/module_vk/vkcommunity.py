@@ -43,6 +43,7 @@
 import random
 from more_itertools import unique_everseen
 
+from module_vk.vkgroup import VKGroup
 from module_vk.vkgroups import VKGroups
 from ntmodule.many_objects import ManyObjects
 from ntmodule.represent import try_base_analog, Represent
@@ -167,12 +168,12 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
     base_class = VKUser
     available_attributes = ['friends', 'clusters', 'groups']
 
-    def __init__(self, users=None, main_user=None, clear=False, save_features=False, target=None, **kwargs):
+    def __init__(self, users=None, main=None, clear=False, save_features=False, target=None, **kwargs):
         super().__init__()
         if isinstance(users, set):
             users = list(users)
-        assert main_user is None or isinstance(main_user, VKUser), main_user
-        self.main_user = main_user
+        assert main is None or isinstance(main, VKUser) or isinstance(main, VKGroup), main
+        self.main = main
         self.nodes = []
         self.counter = Counter()
         self.target = target
@@ -790,16 +791,6 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             }
             ,
             'items': [user.get_entity() for user in self.objects],
-            'actions': [
-                {
-                    'id': 'friends',
-                    'name': 'Получить друзей',
-                    'selection': 'any',
-                    'act': 'selected',
-                    'prefix': 'vk.users',
-                    'value': 'friends'
-                },
-            ]
         }
 
     def get_name(self):
@@ -814,7 +805,11 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             return VKUser(self.data_list()[0]).name
 
         if self.target == 'friends':
-            return 'Друзья ' + name_to_gent(self.main_user.full_data['first_name'])
+            return 'Друзья ' + name_to_gent(self.main.full_data['first_name'])
+        if self.target == 'loners':
+            return 'Без кластера'
+        if self.target == 'members':
+            return f'Подписчики {self.main.name}'
 
         interesting_properties = self.get_interesting_properties()
         target = interesting_properties[0]
@@ -827,7 +822,7 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
 
     def get_query(self):
         if self.target == 'friends':
-            return f"GET vk.user {self.main_user.full_data['screen_name']} friends"
+            return f"GET vk.user {self.main.full_data['screen_name']} friends"
         else:
             return f"GET vk.users ({' '.join(self.get_ids())})"
 
@@ -836,29 +831,32 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             'baseType': 'users',
             'service': 'vk',
             'type': 'community',
-            'main': VKUser.gen_id(self.main_user),
+            'main': VKUser.gen_id(self.main),
             'fullEntitiesCount': 1,
             'id': self.hash,
             'name': self.get_name(),
             'query': self.get_query(),
+            'prefix': 'vk.users',
             'parent': parent
         }
 
     def get_actions(self):
-        return [
-            {
-                'id': 'split',
-                'name': 'Разбить на подкластеры',
-                'act': 'append',
-                'value': 'clusters',
-            },
+        actions = self.get_template_actions(split=True)
+        actions += [
             {
                 'id': 'groups',
                 'name': 'Получить группы',
-                'act': 'append',
+                'target': 'any',
                 'value': 'groups'
-            }
+            },
+            {
+                'id': 'friends',
+                'name': 'Получить друзей',
+                'target': 'one',
+                'value': 'friends'
+            },
         ]
+        return actions
 
     def represent(self, force=False):
         self.preload(force)

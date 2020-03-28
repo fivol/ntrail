@@ -7,13 +7,13 @@ from ntmodule.tools import make_json_serializable
 from config import VERSION
 from selective_query_execute import execute_query
 from flask_cors import CORS
+import os
 
 warnings.filterwarnings("ignore")
 logger.setLevel(logging.DEBUG)
 
 app = Flask(__name__)
 CORS(app)
-# app.config['RESTPLUS_JSON'] = {'indent': None, 'separators': (',', ':')}
 
 
 @app.route('/')
@@ -66,5 +66,10 @@ def query_string():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='localhost', port='5050')
+    if os.environ.get('ENV', 'UNKNOWN') == 'DOCKER':
+        app.run(host='0.0.0.0', port='5000', debug=False)
+        print('DOCKER ENVIRONMENT')
+    else:
+        app.run(host='localhost', port='5050', debug=True)
+        print('LOCAL ENVIRONMENT')
+
