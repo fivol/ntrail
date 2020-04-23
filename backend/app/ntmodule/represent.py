@@ -86,7 +86,6 @@ class Represent(ManyObjects):
 
         # processed_data = self.process_data()
 
-        base_id = self.hash
         return sorted(merge_lists([
 
             [
@@ -158,6 +157,9 @@ class Represent(ManyObjects):
             'id': self.hash,
             'actions': self.get_actions()
         }
+
+    def cluster(self):
+        return self.main_cluster_data()
 
     def represent(self, force=False):
         if not self.valid:

@@ -1,3 +1,7 @@
+from ntmodule.cross_connections import CrossConnections, NodeImportance
+from ntmodule.tools import cache_method
+
+
 class Clusters:
     def __init__(self, objects):
         self.objects = objects
@@ -8,16 +12,22 @@ class Clusters:
         pools_nodes = set(sum([pool.nodes for pool in pools], []))
         all_nodes = self.objects.nodes
         single_nodes = [node for node in all_nodes if node not in pools_nodes]
-        pools.append(self.objects.__class__(single_nodes, target='loners'))
+        single_nodes_obj = self.objects.__class__(single_nodes, target='loners')
+
+        inter_clusters_obj = CrossConnections(self.objects)
+        inter_nodes_obj = NodeImportance(self.objects)
+
+        clusters = pools + [single_nodes_obj, inter_clusters_obj, inter_nodes_obj]
 
         return {
             'clusters': {
                 'items':
                     [self.objects.main_cluster_data()] +
                     [
-                        pool.main_cluster_data(self.objects.hash)
-                        for pool in pools
-                    ],
+                        cluster.main_cluster_data(self.objects.hash)
+                        for cluster in clusters
+                    ]
+                ,
                 'mainID': self.objects.hash
             }
         }

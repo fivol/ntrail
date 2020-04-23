@@ -1,10 +1,10 @@
 import bisect
 # from slmpy import ModularityOptimzer
 from ntmodule.any_object import AnyObject
-from ntmodule.clusters import Clusters
 from ntmodule.tools import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
+from functools import lru_cache
 import random
 from ntmodule.tools import self_replace
 import numpy as np
@@ -20,9 +20,9 @@ import hashlib
 class ManyObjects(AnyObject):
     base_class = None
 
-    def __init__(self):
-        self.counter = None
-        self.nodes = None
+    # def __init__(self):
+    #     self.counter = None
+    #     self.nodes = None
 
     @property
     def size(self):
@@ -137,17 +137,30 @@ class ManyObjects(AnyObject):
             else:
                 obj.print()
 
+    @lru_cache(16)
     @self_replace('graph')
     def pools(self, graph=None, algorithm='louvain'):
-        main_user = None
-        if hasattr(self, 'main_user') and self.main_user:
-            main_user = self.main_user.id
-        communities = self.communities_from_graph(graph, algorithm, remove_node=main_user)
+        main = None
+        if hasattr(self, 'main') and self.main:
+            main = self.main.id
+        communities = self.communities_from_graph(graph, algorithm, remove_node=main)
         pools = [self.__class__(pool) for pool in communities]
         return pools
 
+    @lru_cache(4)
+    def get_node_cluster_dict(self):
+        pools = self.pools()
+        all_nodes = self.nodes
+        clear_pools = list(filter(lambda x: x.size > 1, pools))
+        clusters_nodes = sum([cluster.nodes for cluster in clear_pools], [])
+        print(set(all_nodes) - set(clusters_nodes))
+        clear_pools += [self.__class__([free_node]) for free_node in set(all_nodes) - set(clusters_nodes)]
+
+        node_cluster_dict = {node: id_ + 1 for id_, cluster in enumerate(clear_pools) for node in cluster.nodes}
+        return node_cluster_dict
+
     def __hash__(self):
-        return hash(str(sorted(self.nodes)))
+        return hash(self.hash)
 
     @once_property
     def hash(self):
@@ -166,7 +179,7 @@ class ManyObjects(AnyObject):
     def data_list(self, force=False):
         raise NotImplementedError()
 
-    @cache_method
+    @lru_cache(16)
     def data_dict(self, force=False):
         data = self.data_list(force)
         return {
@@ -464,4 +477,5 @@ class ManyObjects(AnyObject):
         raise NotImplementedError
 
     def clusters(self):
+        from ntmodule.clusters import Clusters
         return Clusters(self)

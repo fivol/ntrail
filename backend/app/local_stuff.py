@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from module_vk.vkuser import VKUser
 import warnings
 
@@ -14,5 +16,5 @@ warnings.filterwarnings("ignore")
 # pprint(VKGroups([VKGroup('https://vk.com/fitnessyammy').id]).data_list(full=False))
 # VKUser('https://vk.com/id341467094').groups()
 # print(VKGroups(VKAPI.get_user_groups(VKUser('https://vk.com/id341467094').id)).full_data[4/]['name'])
-VKUser('boris2000n').print()
+(VKUser('boris2000n').friends().clusters().represent())
 

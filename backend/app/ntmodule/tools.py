@@ -3,7 +3,7 @@ from collections import Counter
 from time import time, sleep
 import numpy as np
 import re
-from functools import reduce
+from functools import reduce, wraps
 import pickle
 from glbal import logger
 from threading import Thread
@@ -47,6 +47,7 @@ def bool_filter(l):
 
 
 def valid_object_method(method):
+    @wraps(method)
     def wrapper(obj, *args, **kwargs):
         if obj.valid:
             return method(obj, *args, **kwargs)
@@ -59,6 +60,7 @@ def valid_object_method(method):
 
 def once_property(func):
     @property
+    @wraps(func)
     def wrapper(class_obj):
         func_name = func.__name__
         class_value_name = f'{func_name}_'
@@ -72,6 +74,7 @@ def once_property(func):
 
 
 def cache_method(func):
+    @wraps(func)
     def wrapper(self, *args, **kwargs):
         func_name = func.__name__
         class_value_name = f'{func_name}_{args}_{kwargs}'
@@ -117,7 +120,6 @@ def sequential_start(func):
 def self_replace(*arg_names):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
-            # print(func.__name__, kwargs)
             for arg_name in arg_names:
                 if arg_name not in kwargs:
                     obj = getattr(self, arg_name)
@@ -127,6 +129,7 @@ def self_replace(*arg_names):
 
             return func(self, *args, **kwargs)
 
+        wrapper.__name__ = func.__name__
         return wrapper
 
     return decorator

@@ -1,4 +1,5 @@
 from apimodule_vk.vkapi import VKAPI
+from module_vk.vkcommunity import VKCommunity
 from module_vk.vkgroup import VKGroup
 from module_vk.vkuser import VKUser
 import re
@@ -30,8 +31,8 @@ class QueryParser:
 
             # TODO Тут должно быть еще много типов: музыка, посты, истории
         except KeyError:
-            raise QueryDataException(
-            'Не удалось распознать ВК id (человек / группа / другое) - скорее всего такого не существует, проверьте написание')
+            raise QueryDataException('Не удалось распознать ВК id (человек / группа / другое) - скорее всего такого '
+                                     'не существует, проверьте написание')
 
         return target_class(username).represent()
 
@@ -51,6 +52,7 @@ class QueryParser:
             return self.vk_represent(username)
 
         else:
+            return VKCommunity.search_query(query).represent()
             logger.debug('Query parse fail. Match not found!!:(((')
             raise QueryDataException('Невозможно распознать тип введенного идентификатора (введите ссылку на страницу '
                                      'или юзернейм пользователя)')

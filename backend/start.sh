@@ -8,4 +8,4 @@ sudo apt install -y docker-compose
 
 echo Docker installation done!
 
-docker-compose start
+docker-compose up -d
