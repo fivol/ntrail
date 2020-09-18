@@ -13,6 +13,7 @@ services:
 
   web:
     build: ./app
+    container_name: ntrail
     restart: always
     env_file:
       - env_file
