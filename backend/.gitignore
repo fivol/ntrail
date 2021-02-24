@@ -10,3 +10,4 @@ venv/
 .idea/
 .ipynb_checkpoints/
 certs/*
+!certs/README.md
