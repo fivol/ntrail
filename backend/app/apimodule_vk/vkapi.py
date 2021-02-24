@@ -1,5 +1,5 @@
 import math
-from glbal import logger
+from glbal import logger, stack_logger
 from ntapimodule.api_query import APIQueries
 from query_object import BasicQuery
 from ntmodule.tools import list_from_dicts
@@ -26,6 +26,7 @@ def log_query(func):
     return wrapper
 
 
+@stack_logger.logit
 class VKAPI:
     @classmethod
     def get_users(cls, vk_ids, full=False, **kwargs):
@@ -259,13 +260,12 @@ class VKAPI:
         return APIQueries().many(service, 'apps', apps_id)
 
     @classmethod
-    def search(cls, string, offset=0, limit=100, filters='', users_ids=None):
-        logger.debub('Search %s', string)
+    def search(cls, string, offset=0, limit=100, filters=''):
+        logger.debug('Search %s', string)
         params = {
             'offset': offset,
             'limit': limit,
             'filters': filters,
-            'users_ids': users_ids
         }
         return APIQueries().one(service, 'search', string, params=params)
 

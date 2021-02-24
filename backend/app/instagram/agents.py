@@ -9,7 +9,6 @@ from .exceptions import (AuthException, CheckpointException, ExceptionManager,
 import json
 import re
 import requests
-from requests.exceptions import HTTPError
 from time import sleep
 
 exception_manager = ExceptionManager()

@@ -66,10 +66,13 @@ class API(vk.API):
             return VKError(e.code)
 
 
-user_token = '5211d7bcf46f21eb3e2e5bd64e75fa1199968260d81e170a8d21bb70758f14a46dd160009815ed8fcf94d'
+# user_token = '5211d7bcf46f21eb3e2e5bd64e75fa1199968260d81e170a8d21bb70758f14a46dd160009815ed8fcf94d'
+# 19.09.20
+user_token = 'e643452b7cc3fcbaf1c46540251eeffebbf1703154c498f919100c155f91fcd006300aa56f58dab88db16'
 api = API(session=vk.Session(access_token=user_token), v='5.103', lang='ru', timeout=10)
 
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
+# app_token = 'f375bcae59fa18e6fbe9f84d3f08947529ae4513c422dbdfead02901b4fc60ca05f05920311f7583e2d51'
 api_app = API(session=vk.Session(access_token=app_token), v='5.103', lang='ru', timeout=10)
 
 groups_full_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',

@@ -43,6 +43,7 @@
 import random
 from more_itertools import unique_everseen
 
+from glbal import stack_logger
 from module_vk.vkgroup import VKGroup
 from module_vk.vkgroups import VKGroups
 from ntmodule.many_objects import ManyObjects
@@ -66,6 +67,7 @@ from ntmodule.tools import clear_list, prepare_list, list_from_dicts, is_good_us
 import re
 from apimodule_vk.vkapi import VKAPI
 from constants import PLOT_LINE, PLOT_CIRCULAR
+from visual_logging import VisualLogger
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан
@@ -164,12 +166,14 @@ occupation_type_dict = {
 }
 
 
+@stack_logger.logit
 class VKCommunity(Represent, VKAPI, RepresentTools):
     base_class = VKUser
     available_attributes = ['friends', 'clusters', 'groups']
 
-    def __init__(self, users=None, main=None, clear=False, save_features=False, target=None, **kwargs):
+    def __init__(self, users=None, main=None, clear=False, save_features=False, target=None, target_value=None, **kwargs):
         super().__init__()
+        self.target_value = target_value
         if isinstance(users, set):
             users = list(users)
         assert main is None or isinstance(main, VKUser) or isinstance(main, VKGroup), main
@@ -227,7 +231,6 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
         self.data_dict()
         return VKCommunity([user for user in self.objects if not user.valid], clear=False)
 
-    @timeit
     def all_groups(self):
         all_groups_ids = sum(
             filter(
@@ -235,7 +238,6 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             [])
         return VKGroups(all_groups_ids)
 
-    @timeit
     @try_base_analog
     def groups(self):
         all_groups = sum(
@@ -436,6 +438,16 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
         params['university'] = universities_list
 
         return params
+
+    @classmethod
+    def search_query(cls, search_str):
+        return VKCommunity(
+            list(map(lambda x: x['profile']['id'],
+                     filter(lambda x: x['type'] == 'profile',
+                            cls.search(search_str, limit=20)['items']))),
+            target='search',
+            target_value=search_str
+        )
 
     @cache_method
     def process_data(self):
@@ -717,7 +729,6 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
 
         def importance_metrics(prop):
             name = prop['name']
-            # print(prop)
             prop_id = prop['id']
             category = prop_id.split('.')[1]
             prop_name = prop_id.split('.')[2]
@@ -733,20 +744,21 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                 'country': {'min_percent': 70, 'importance': 2},
                 'occupation_university': {'min_percent': 20, 'importance': 7},
                 'university': {'min_percent': 20, 'importance': 6},
+                'verified': {'min_percent': 5, 'importance': 18},
             }
             if category in categories:
                 prop_data = categories[category]
                 min_percent = prop_data['min_percent']
 
                 if percent >= min_percent:
-                    metric = (percent - min_percent) / (min_percent)
+                    metric = (percent - min_percent) / min_percent * prop_data['importance']
 
-                if prop_name != 'count':
-                    metric *= prop_data['importance']
-                else:
+                if prop_name == 'count':
                     metric /= 10
-
-                return metric
+                # if prop_name != 'count':
+                #     metric *= prop_data['importance']
+                # else:
+                #     metric /= 10
 
             return metric
 
@@ -810,6 +822,8 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             return 'Без кластера'
         if self.target == 'members':
             return f'Подписчики {self.main.name}'
+        if self.target == 'search':
+            return f'Поиск по: "{self.target_value}"'
 
         interesting_properties = self.get_interesting_properties()
         target = interesting_properties[0]

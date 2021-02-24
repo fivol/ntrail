@@ -187,7 +187,6 @@ def get_module(module_name):
 
 
 def execute_action(action):
-    print('ACTION', action)
     module_name = action['module']
     method_name = action['action']
     params = action['parameters']
@@ -223,7 +222,7 @@ def call_method(class_object, method_name, params=None):
     if not params:
         params = {}
     if not hasattr(class_object, method_name):
-        raise QueryProgrammingException(f'класс "{class_object.__name__}" не содержит метод "{method_name}"')
+        raise QueryProgrammingException(f'класс "{class_object.__class__.__name__}" не содержит метод "{method_name}"')
     return getattr(class_object, method_name)(**params)
 
 
@@ -287,5 +286,4 @@ def execute_query(query):
     response['data'] = data
     response['time'] = time.time()
 
-    print(response)
     return response

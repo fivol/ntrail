@@ -1,10 +1,8 @@
-FROM python:3
+FROM python:3.9
 
 WORKDIR /app
-
 COPY requirements.txt ./
-RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir -r requirements.txt
-
+RUN python -m pip install --upgrade pip --ignore-installed -r ./requirements.txt
+EXPOSE 5432
 COPY . .
-CMD [ "python", "./main.py" ] 
+CMD [ "python", "./main.py" ]

@@ -4,8 +4,8 @@ from glbal import logger
 
 DB_USER = 'postgres'
 DB_HOST = 'localhost'
-DB_PASS = '12345'
-DB_NAME = 'NTrailDB'
+DB_PASS = 'postgres'
+DB_NAME = 'ntrail'
 DB_PORT = '5432'
 
 try:
@@ -22,7 +22,7 @@ try:
 except:
     logger.exception('Fail to get environment variables for db connection')
 
-VERSION = '2.7'
+VERSION = '2.10'
 API_SERVER_REQUEST_VERSION = 0
 
 
