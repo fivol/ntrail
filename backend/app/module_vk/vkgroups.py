@@ -2,7 +2,6 @@ from module_vk.vkgroup import VKGroup
 from more_itertools import unique_everseen
 
 from constants import PLOT_CIRCULAR, PLOT_LINE
-from ntmodule.many_objects import ManyObjects
 from ntmodule.represent import Represent
 from ntmodule.represent_tools import RepresentTools
 from ntmodule.tools import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter

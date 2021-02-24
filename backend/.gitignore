@@ -6,6 +6,7 @@ __pycache__/
 *.html
 
 env/
-venv/
-/.idea
-/.ipynb_checkpoints
+app/venv/
+.idea/
+.ipynb_checkpoints/
+nginx/certs/

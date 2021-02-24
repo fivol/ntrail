@@ -1,23 +1,10 @@
 #!/bin/bash
-sudo rm -rf app
-cp -r ../backend .
-mv backend app
 
-git add .
-git commit -m"docker auto"
-git push origin docker
+if [[ "$1" == "" || "$1" == "root@1.2.3.4" ]]; then
+  echo -e "Please specify remote addr\nFor example:\n./upload.sh root@1.2.3.4"
+  exit 1
+fi;
 
-ssh root@185.231.245.155 "cd /app/NTrail && git pull && docker-compose build && docker-compose down && docker-compose up -d"
+ssh "$1" "cd ~/ntrail && git pull && docker-compose down && docker-compose build && docker-compose up -d"
 
 echo Done upload!
-
-
-
-
-
-
-
-
-
-
-

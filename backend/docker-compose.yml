@@ -1,4 +1,7 @@
-version: "3.1"
+version: "3.4"
+
+volumes:
+  db:
 
 services:
   db:
@@ -6,10 +9,8 @@ services:
     restart: always
     env_file:
       - env_file
-    ports:
-      - 8888:5432
     volumes:
-      - ./db:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
 
   web:
     build: ./app
