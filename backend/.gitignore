@@ -9,6 +9,6 @@ env/
 venv/
 .idea/
 .ipynb_checkpoints/
-nginx/certs/
+nginx/certs/*
 .data/
 .tmp/
