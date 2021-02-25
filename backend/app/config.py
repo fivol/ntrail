@@ -22,7 +22,7 @@ try:
 except:
     logger.exception('Fail to get environment variables for db connection')
 
-VERSION = '2.11'
+VERSION = '2.11.1'
 API_SERVER_REQUEST_VERSION = 0
 
 # Способ кеширования
