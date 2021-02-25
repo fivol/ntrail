@@ -66,6 +66,7 @@ def query_string():
 
 
 if __name__ == '__main__':
+    logger.info('Run main, version: %s', VERSION)
     if os.environ.get('ENV', 'UNKNOWN') == 'DOCKER':
         logger.info('DOCKER ENVIRONMENT')
         app.run(host='0.0.0.0', port='5000', debug=False)
