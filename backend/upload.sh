@@ -5,6 +5,6 @@ if [[ "$1" == "" || "$1" == "root@1.2.3.4" ]]; then
   exit 1
 fi;
 
-ssh "$1" "cd ~/ntrail && git pull && docker-compose down && docker-compose build && docker-compose up -d"
+ssh "$1" "cd ~/ntrail-backend && git pull && docker-compose down && docker-compose build && docker-compose up -d"
 
 echo Done upload!

@@ -9,8 +9,8 @@ Frontend лежит в отдельном репозитории
 ```shell
 apt install -y git
 cd /root
-git clone https://github.com/fivol/ntrail
-cd ntrail
+git clone git@github.com:fivol/ntrail-backend.git
+cd ntrail-backend
 chmod  x start.sh
 ./start.sh
 ```
@@ -18,7 +18,7 @@ chmod  x start.sh
 **Обновление версии из github:master С СЕРВЕРА**
 ```shell
 cd /root
-cd ntrail
+cd ntrail-backend
 ./update.sh
 ```
 
