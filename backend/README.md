@@ -5,12 +5,29 @@ Frontend лежит в отдельном репозитории
 Текущая версия репозитория является полноценным docker-compose проектом
 
 ## Запуск с сервера (подразумевается доступ по ssh)
+Сначала понадобится создать ssh ключ
+```shell
+# Переходим в папку с ssh ключами
+cd ~/.ssh 
+# Генерируем пару ключей - секретный и приватный
+ssh-keygen -f ~/.ssh/github.com
+# Добавляем config для использования github.com без пароля
+echo "Host github.com
+        Hostname github.com
+        IdentityFile ~/.ssh/github.com" > ~/.ssh/config
+```
+Добавить в аккаунт на [github](https://github.com/settings/keys) публичный ключ
+```shell
+cat ~/.ssh/github.com.pub
+```
+
 **На чистом ubuntu сервере выполнить**
 ```shell
+apt update -y
 apt install -y git
 cd /root
-git clone git@github.com:fivol/ntrail-backend.git
-cd ntrail-backend
+git clone https://github.com/fivol/ntrail
+cd ntrail
 chmod  x start.sh
 ./start.sh
 ```
