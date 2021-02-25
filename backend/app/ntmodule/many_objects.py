@@ -18,11 +18,10 @@ import hashlib
 
 
 class ManyObjects(AnyObject):
-    base_class = None
+    # TODO Сделать класс абстрактным, убрать ошибки в наследниках
+    # много полей не найдено, организовать правильную структуру
 
-    # def __init__(self):
-    #     self.counter = None
-    #     self.nodes = None
+    base_class = None
 
     @property
     def size(self):
@@ -48,11 +47,12 @@ class ManyObjects(AnyObject):
             graph.remove_node(remove_node)
 
         def algorithm_local_moving():
+            # TODO Проблема с импортом модуля, разобраться
             edges = np.array(graph.edges)
             mo = ModularityOptimzer(edges)
-            communities = mo(algorithm='local_moving')
+            graph_communities = mo(algorithm='local_moving')
             nodes = np.sort(np.array(graph.nodes()))
-            nodes = list(zip(nodes, communities))
+            nodes = list(zip(nodes, graph_communities))
             communities_lists = {}
             for id, com in nodes:
                 communities_lists[com] = communities_lists.get(com, []) + [id]
@@ -463,7 +463,6 @@ class ManyObjects(AnyObject):
         return sorted(features_priority, reverse=True)
 
     def save_features(self):
-        # data = self.process_data()
         features = self.get_features()
         identity = self.nodes
         DB.save_json(

@@ -15,7 +15,6 @@ class APIServerCall:
 
     @staticmethod
     def generate_request_json(queries):
-        # {}
         assert isinstance(queries, list)
         version = API_SERVER_REQUEST_VERSION
         request_json = {

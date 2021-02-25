@@ -12,6 +12,8 @@ venv/
 nginx/certs/*
 .data/
 .tmp/
+.dev/
+.*.py
 
 certs/*
 !certs/README.md

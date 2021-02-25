@@ -5,6 +5,7 @@ from ntapimodule.api_errors import APIError
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
 # составные запросы для наибыстрейшего выполнение всех
+
 group_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
                 'main_section', 'members_count', 'place',
                 'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
@@ -17,7 +18,8 @@ user_fields = ['photo_200', 'about', 'activities', 'bdate', 'books', 'career', '
                'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed', ]
 
 users_fields_string = ','.join(user_fields)
-service_token_methods = {'friends', 'resolve', 'friends', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids', 'apps'}
+service_token_methods = {'friends', 'resolve', 'friends', 'user_short', 'group_short', 'wall', 'posts', 'albums_ids',
+                         'apps'}
 
 user_token_methods = {'groups', 'search', 'members',
                       'user_full', 'group_full', 'photos_ids'}

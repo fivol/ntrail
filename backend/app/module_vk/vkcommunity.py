@@ -46,13 +46,12 @@ from more_itertools import unique_everseen
 from glbal import stack_logger
 from module_vk.vkgroup import VKGroup
 from module_vk.vkgroups import VKGroups
-from ntmodule.many_objects import ManyObjects
 from ntmodule.represent import try_base_analog, Represent
 from ntmodule.represent_tools import RepresentTools
 from ntmodule.tied_counter import TiedCounter
 from ntmodule.tied_value import TiedValue, get_tied_array_size
 from ntmodule.tools import once_property, name_to_gent, concatenate_lists, \
-    bool_filter, memorize, merge_lists, timeit, get_field_values
+    bool_filter, merge_lists, get_field_values
 from ntmodule.tools import cache_method
 import numpy as np
 import networkx as nx
@@ -213,12 +212,6 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             self.counter = Counter(self.nodes)
         elif not (users is None):
             raise TypeError('Wrong users type: {}'.format(type(users)))
-        self.removed_nodes = []
-        # if clear:
-        #     clean_community = self.only_valid()
-        #     self.removed_nodes = [node for node in self.nodes if node not in clean_community.nodes]
-        #     self.nodes = clean_community.nodes
-        #     self.counter = clean_community.counter
         if 3 < self.size < 800 and save_features:
             self.save_features()
 

@@ -49,7 +49,8 @@ class InstAgent:
     def __str__(self):
         return f'{self.username} {self.status()}'
 
-    def is_valid(self):
+    @staticmethod
+    def is_valid():
         return True
 
     def auth(self):
@@ -199,8 +200,8 @@ class InstRequest:
     def process_agent(cls, agent):
         agent_status = agent.status()
         if agent_status == STATUS_DEAD_AGENT:
-            with open('../data/dead_agents', 'a') as f:
-                f.write(agent.username + ',')
+            with open('../data/dead_agents', 'a') as file:
+                file.write(agent.username + ',')
             logger.error('DEAD agent: %s', agent)
             if agent in cls.wait_agents:
                 cls.wait_agents.remove(agent)

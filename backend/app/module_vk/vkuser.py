@@ -144,7 +144,6 @@ class VKUser(VKAPI, OneObjectRepresent):
     @once_property
     def short_data(self):
         return self.full_data
-        # return self.get_user(self.id, full=False)
 
     @once_property
     def full_data(self):

@@ -1,8 +1,8 @@
 from query_object import BasicQuery
-from models import QueryModel, db, EXCLUDED
+from models import QueryModel, db
 import datetime
 from config import CACHE_TYPE
-from constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE, CACHE_TYPE_FULL_USE
+from constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE
 
 
 def local_cache_command(action):
@@ -50,7 +50,6 @@ class LocalCache:
     def cache_queries_set(queries):
         if not queries:
             return
-        # print(queries)
         assert isinstance(queries, set)
         with db.atomic():
             for query in queries:

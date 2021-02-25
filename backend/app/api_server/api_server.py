@@ -10,6 +10,7 @@ import requests
 
 
 def internet_on():
+    """Return True if internet on (can ping google.com)"""
     try:
         requests.get('http://216.58.192.142', timeout=1)
         return True
@@ -20,13 +21,14 @@ def internet_on():
 api_dict = {'vk': VKAPI, 'ig': IGAPI}
 
 
-# Заменяет сервер, обрабатывающий и распределяющий входящие апи запросы
-# Нужен для теста в пределах одного скрипта
 class APIServerEmulator:
+    """
+        Заменяет сервер, обрабатывающий и распределяющий входящие апи запросы
+        Нужен для теста в пределах одного скрипта
+    """
 
     @classmethod
     def extract_query_objects(cls, request_json):
-        # {}
         assert isinstance(request_json, dict)
         version = request_json['version']
 
@@ -38,7 +40,6 @@ class APIServerEmulator:
 
     @classmethod
     def encode_complex_queries(cls, basic_queries):
-        # {}
         # Самый простой вариант. Не группируем запросы, а передаем в исходном виде
         complex_queries = []
         assert isinstance(basic_queries, set)
@@ -96,7 +97,6 @@ class APIServerEmulator:
 
     @classmethod
     def run_complex_queries(cls, complex_queries):
-        # {}
         assert len(complex_queries)
         assert isinstance(next(iter(complex_queries)), ComplexQuery)
         for query in complex_queries:
@@ -113,7 +113,8 @@ class APIServerEmulator:
 
     @classmethod
     def execute(cls, request_json):
-        # Это просто для проверки работоспособности системы. Тут должно быть релизовано декадирование запросов
+        # Это просто для проверки работоспособности системы.
+        # TODO Тут должно быть реализовано декодирование запросов
         # группировка по сервису, группировка по объему типу и отправка нужному серверу (в данном случае классу)
         basic_query_objects = cls.extract_query_objects(request_json)
 

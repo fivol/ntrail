@@ -1,5 +1,4 @@
 from ntmodule.cross_connections import CrossConnections, NodeImportance
-from ntmodule.tools import cache_method
 
 
 class Clusters:
@@ -26,8 +25,7 @@ class Clusters:
                     [
                         cluster.main_cluster_data(self.objects.hash)
                         for cluster in clusters
-                    ]
-                ,
+                    ],
                 'mainID': self.objects.hash
             }
         }

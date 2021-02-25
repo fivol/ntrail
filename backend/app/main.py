@@ -67,9 +67,10 @@ def query_string():
 
 if __name__ == '__main__':
     if os.environ.get('ENV', 'UNKNOWN') == 'DOCKER':
+        logger.info('DOCKER ENVIRONMENT')
         app.run(host='0.0.0.0', port='5000', debug=False)
-        print('DOCKER ENVIRONMENT')
     else:
+        logger.info('LOCAL ENVIRONMENT')
         app.run(host='localhost', port='5050', debug=True)
-        print('LOCAL ENVIRONMENT')
 
+    logger.info('STOP')

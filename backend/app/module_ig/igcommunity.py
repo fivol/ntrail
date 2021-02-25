@@ -7,6 +7,7 @@ from ntmodule.many_objects import ManyObjects
 
 
 class IGCommunity(ManyObjects):
+    # TODO методы не найдены, определить в родительском классе
     def __init__(self, users):
         self.base_class = IGUser
         super().__init__()

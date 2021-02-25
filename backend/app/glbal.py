@@ -1,7 +1,5 @@
 import logging
 
-import logging
-
 from visual_logging import VisualLogger
 
 logger = logging.getLogger('peewee')

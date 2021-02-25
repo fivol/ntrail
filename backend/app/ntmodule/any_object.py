@@ -30,6 +30,6 @@ class AnyObject:
 
     @once_property
     def hash(self):
-        obj_id = hashlib.sha1(str(sorted(self.__hash__())).encode('UTF-8')).hexdigest()[-16:]
+        obj_id = hashlib.sha1(str(sorted(hash(self))).encode('UTF-8')).hexdigest()[-16:]
         set_obj(obj_id, self)
         return obj_id

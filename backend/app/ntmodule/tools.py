@@ -34,16 +34,14 @@ objects = {}
 execution_locked_func = {}
 
 
-# def get(name, save=False):
-#     return MemoryCache.get(name, save)
-
 def get_random_color():
-    r = lambda x, y: random.randint(x, y)
-    return '#%02X%02X%02X' % (r(0, 255), r(0, 20), r(100, 255))
+    def rand(x, y):
+        return random.randint(x, y)
+    return '#%02X%02X%02X' % (rand(0, 255), rand(0, 20), rand(100, 255))
 
 
-def bool_filter(l):
-    return [item for item in l if bool(item)]
+def bool_filter(value):
+    return [item for item in value if bool(item)]
 
 
 def valid_object_method(method):
@@ -504,7 +502,7 @@ def get_sites(site_string):
     urls = re.findall(regex, site_string)
 
     sites = []
-    for inst_username in re.findall(r'\W@([a-zA-Z0-9_\.]+)', site_string):
+    for inst_username in re.findall(r'\W@([a-zA-Z0-9_.]+)', site_string):
         sites.append(('instagram', 'https://www.instagram.com/{}/'.format(inst_username)))
 
     for site in urls:
@@ -537,7 +535,7 @@ def get_common_texts_terms(texts):
     texts_words = []
     for text in texts:
         text = text.lower()
-        text = text.sub('http\S+', ' ')
+        text = text.sub(r'http\S+', ' ')
         text = text.sub('[^а-яa-z]', ' ')
         words = set([normalize_word(word) for word in text.split()])
         words -= most_frequent_words
@@ -565,7 +563,7 @@ class ThreadResult:
         return self.result
 
 
-### Языковые функции
+# Языковые функции
 
 def round_num(value):
     if isinstance(value, str):

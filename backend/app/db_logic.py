@@ -1,16 +1,16 @@
 import peewee
-
-from models import *
 import hashlib
+
 from ntmodule.tools import make_json_serializable
 from collections import defaultdict
 from glbal import logger
+from models import *
 
 
 class DB:
     @classmethod
     def save_json(cls, target, identity, features=None,
-                  data=None, user=None, size=None, save_lines=True):
+                  data=None, user=None, size=None):
         if not data:
             data = {}
         data = make_json_serializable(data)
@@ -77,17 +77,17 @@ class DB:
                 max_size = 20
 
         features_lines = []
+        # TODO Переписать в человеко читаемом виде
         F = FeatureModel
         for name in names:
             features_lines += \
                 F.select(F.name, F.value). \
                     join(EntityModel). \
-                    where(
-                    F.name == name,
-                    EntityModel.target == target,
-                    EntityModel.size >= min_size,
-                    EntityModel.size <= max_size
-                ). \
+                    where(F.name == name,
+                          EntityModel.target == target,
+                          EntityModel.size >= min_size,
+                          EntityModel.size <= max_size
+                          ). \
                     order_by(EntityModel.time.desc()).limit(count).dicts().execute()
 
         features_dict = defaultdict(list)

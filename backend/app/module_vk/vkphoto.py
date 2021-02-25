@@ -139,4 +139,5 @@ class VKPhotos(ManyObjects, VKAPI):
         return self.get_photos_by_ids(self.nodes)
 
     def load_media_data(self, objects=None):
+        # Эта строка не бессмысленная, она подгружает full_data, которая хранится полем класса
         self.full_data

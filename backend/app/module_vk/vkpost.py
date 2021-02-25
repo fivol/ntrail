@@ -97,5 +97,6 @@ class VKPosts(ManyObjects, VKAPI):
         return self.posts_dicts
 
     def load_media_data(self, objects=None):
+        # TODO Сделать норм загрузку, выглядит ужасно
         self.full_data
 

@@ -47,6 +47,7 @@ class ToolsTest(unittest.TestCase):
         self.assertEqual(dict_from_dicts([{1: 1}, {}, {}], 1),
                          {1: {1: 1}})
 
+
 @unittest.skip
 class QueriesTest(unittest.TestCase):
     def setUp(self):
@@ -57,6 +58,7 @@ class QueriesTest(unittest.TestCase):
     def tearDown(self):
         LocalCache.remove_queries_from_time(self.begin_time)
         self.assertEqual(self.queries_count, LocalCache.count_cached_queries())
+
 
 @unittest.skip
 class VKUserTest(QueriesTest):
@@ -96,6 +98,7 @@ class VKUserTest(QueriesTest):
         self.assertIsInstance(VKUser.me().follows(), VKCommunity)
         self.assertIsInstance(VKUser.me().followers(), VKCommunity)
 
+
 @unittest.skip
 class VKCommunityTest(QueriesTest):
 
@@ -127,6 +130,7 @@ class VKCommunityTest(QueriesTest):
         for i in range(5):
             self.assertEqual(VKCommunity.generate_random(20).only_valid().size, 20)
 
+
 @unittest.skip
 class VKGroupTest(QueriesTest):
     def test_init(self):
@@ -142,6 +146,7 @@ class VKGroupTest(QueriesTest):
         self.assertRaises(TypeError, VKGroup, ([1, 2, 3],))
         self.assertRaises(TypeError, VKGroup, ({1: 2, 3: 4},))
 
+
 @unittest.skip
 class VKPostsTest(QueriesTest):
     def test_init(self):
@@ -154,10 +159,6 @@ class VKPostsTest(QueriesTest):
         self.assertIsInstance(VKUser('boris2000n').posts(), VKPosts)
         self.assertEqual(VKUser('boris2000n').posts().size, 0)
         self.assertGreater(VKUser('https://vk.com/id91888646').posts().size, 7)
-
-
-# class QueryParser(unittest.TestCase):
-#     def test_
 
 
 if __name__ == '__main__':

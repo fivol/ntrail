@@ -18,4 +18,3 @@ CACHE_TYPE_IGNORE = 4
 PLOT_LINE = 'line'
 PLOT_HIST = 'hist'
 PLOT_CIRCULAR = 'circular'
-

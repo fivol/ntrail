@@ -1,4 +1,4 @@
-from constants import CACHE_TYPE_FULL_USE, CACHE_TYPE_IGNORE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_ONLY_WRITE
+from constants import CACHE_TYPE_FULL_USE
 import os
 from glbal import logger
 
@@ -25,13 +25,7 @@ except:
 VERSION = '2.11'
 API_SERVER_REQUEST_VERSION = 0
 
-
+# Способ кеширования
+# CACHE_TYPE_FULL_USE - максимальное возможное
+# TODO Add other ways to cache requests description
 CACHE_TYPE = CACHE_TYPE_FULL_USE
-
-# remote db
-# DB_USER = 'postgres'
-# DB_HOST = '51.79.69.179'
-# DB_PASS = 'nef441'
-# DB_NAME = 'socialsearch_db'
-# DB_PORT = '5432'
-

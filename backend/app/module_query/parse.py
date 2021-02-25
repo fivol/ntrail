@@ -1,23 +1,23 @@
-from apimodule_vk.vkapi import VKAPI
+import re
+from ntmodule.selective_query_exeptions import QueryDataException
 from module_vk.vkcommunity import VKCommunity
+from apimodule_vk.vkapi import VKAPI
 from module_vk.vkgroup import VKGroup
 from module_vk.vkuser import VKUser
-import re
 from glbal import logger
-from ntmodule.selective_query_exeptions import QueryDataException
 
 
 class QueryParser:
     available_attributes = ['']
 
     def __init__(self, query):
-        print(query)
+        logger.debug("query: %s", query)
         self.query = query
 
-    def vk_represent(self, username):
+    @staticmethod
+    def vk_represent(username):
         vk_resolved = VKAPI.resolve_screen_name(username)
-        print(vk_resolved)
-        target_class = None
+        logger.debug("%s", vk_resolved)
 
         try:
             t = vk_resolved['type']
@@ -27,7 +27,8 @@ class QueryParser:
                 target_class = VKGroup
             else:
                 logger.error('Unknown vk id type %s: %s', t, username)
-                raise QueryDataException(f'Тип ВК объекта "{t}" пока не поддерживается (введите пользователя или группу)')
+                raise QueryDataException(
+                    f'Тип ВК объекта "{t}" пока не поддерживается (введите пользователя или группу)')
 
             # TODO Тут должно быть еще много типов: музыка, посты, истории
         except KeyError:
@@ -38,7 +39,7 @@ class QueryParser:
 
     def represent(self):
         query = self.query
-        username_symbols = '[0-9a-zA-Z.\-_]+'
+        username_symbols = r'[0-9a-zA-Z.\-_]+'
         vk_username_match = re.search(F'vk.com/({username_symbols})', query)
         full_username_match = re.match(username_symbols, query)
         if vk_username_match:
@@ -53,6 +54,3 @@ class QueryParser:
 
         else:
             return VKCommunity.search_query(query).represent()
-            logger.debug('Query parse fail. Match not found!!:(((')
-            raise QueryDataException('Невозможно распознать тип введенного идентификатора (введите ссылку на страницу '
-                                     'или юзернейм пользователя)')
