@@ -27,8 +27,8 @@ cat ~/.ssh/github.com.pub
 apt update -y &&
 apt install -y git &&
 cd /root &&
-git clone https://github.com/fivol/ntrail &&
-cd ntrail &&
+git clone git@github.com:fivol/ntrail-backend.git &&
+cd ntrail-backend &&
 ./start.sh
 ```
 
