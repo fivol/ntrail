@@ -73,6 +73,6 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port='5000', debug=False)
     else:
         logger.info('LOCAL ENVIRONMENT')
-        app.run(host='localhost', port='5050', debug=True)
+        app.run(host='localhost', port='5000', debug=True)
 
     logger.info('STOP')
