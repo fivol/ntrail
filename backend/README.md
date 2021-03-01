@@ -22,15 +22,19 @@ cat ~/.ssh/github.com.pub
 ```
 
 **На чистом ubuntu сервере выполнить**
+(может потребоваться нажать enter пару раз)
 ```shell
-apt update -y
-apt install -y git
-cd /root
-git clone https://github.com/fivol/ntrail
-cd ntrail
-chmod  x start.sh
+apt update -y &&
+apt install -y git &&
+cd /root &&
+git clone https://github.com/fivol/ntrail &&
+cd ntrail &&
 ./start.sh
 ```
+
+Теперь можно проверить доступность сервера
+
+Перейдите по `http://<server_ip>:5000`
 
 **Обновление версии из github:master С СЕРВЕРА**
 ```shell
