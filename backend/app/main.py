@@ -69,7 +69,7 @@ if __name__ == '__main__':
     logger.info('Run main, version: %s', VERSION)
     if os.environ.get('ENV', 'UNKNOWN') == 'DOCKER':
         logger.info('DOCKER ENVIRONMENT')
-        app.run(host='0.0.0.0', port='5000', debug=False)
+        app.run(host='0.0.0.0', port='80', debug=False)
     else:
         logger.info('LOCAL ENVIRONMENT')
         app.run(host='localhost', port='5050', debug=True)
