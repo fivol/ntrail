@@ -18,6 +18,7 @@ Base = declarative_base()
 
 
 class BaseModel(Base, ActiveRecordMixin, ReprMixin):
+    """Модели на основе https://github.com/absent1706/sqlalchemy-mixins"""
     __abstract__ = True
     __repr__ = ReprMixin.__repr__
     pass
