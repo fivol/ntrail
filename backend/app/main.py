@@ -1,5 +1,8 @@
 import logging
 import warnings
+
+from auth.vk.logic import VKAuthorization
+from exceptions import HandledException
 from glbal import logger
 from flask import Flask, request, jsonify
 from ntmodule.tools import make_json_serializable
@@ -15,10 +18,28 @@ logger.setLevel(logging.DEBUG)
 app = Flask(__name__)
 CORS(app)
 
+# After app init!
+from api import *
+
 
 @app.route('/')
 def index():
     return VERSION
+
+
+@app.route('/auth/vk/')
+def auth_vk():
+    return APIAuth.auth_vk()
+
+
+@app.route('/auth/init/')
+def auth_init_query():
+    return APIAuth.init()
+
+
+@app.route('/auth/vk/check/')
+def auth_vk_check():
+    return APIAuth.check()
 
 
 @app.route('/feedback/', methods=['post'])
@@ -29,40 +50,7 @@ def feedback():
 
 @app.route('/query/', methods=['get'])
 def query_string():
-    try:
-        q_string = request.args.get('q')
-        if q_string:
-            response = execute_query(q_string)
-        else:
-            response = {
-                'code': 400,
-                'error': 'Неверный формат запроса. Не найден параметр q в GET зарпосе'
-            }
-
-        response = make_json_serializable(response)
-        if isinstance(response, dict):
-            if 'code' not in response:
-                response['code'] = 200
-            if 'error' not in response:
-                response['error'] = ''
-        else:
-            response = {
-                'code': 500,
-                'error': f'Неверный тип возвращаемых данных ({type(response)}). Ошибка сервера'
-            }
-
-    except:
-        logger.exception('Unknown api error')
-        response = {
-            'code': 520,
-            'error': f'Неизвестная ошибка сервера. Напишите в поддержку для оперативного исправления'
-        }
-    response_code = response['code']
-
-    response = jsonify(response)
-    response.headers.add("Access-Control-Allow-Origin", "*")
-
-    return response, response_code
+    return APIData.query_string()
 
 
 if __name__ == '__main__':

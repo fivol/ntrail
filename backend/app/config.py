@@ -1,12 +1,14 @@
 from constants import CACHE_TYPE_FULL_USE
 import os
 from glbal import logger
+from bestconfig import Config
 
 DB_USER = 'postgres'
 DB_HOST = 'localhost'
 DB_PASS = 'postgres'
 DB_NAME = 'ntrail'
 DB_PORT = '5432'
+
 
 try:
     if os.environ.get('ENV') == 'DOCKER':
@@ -50,3 +52,15 @@ API_SERVER_REQUEST_VERSION = 0
 # CACHE_TYPE_FULL_USE - максимальное возможное
 # TODO Add other ways to cache requests description
 CACHE_TYPE = CACHE_TYPE_FULL_USE
+
+# Параметры авторизации
+# ВК. Используется приложение на моем основном аккаунте NTrail (название приложения)
+config = Config('../env_file')
+
+VK_APP_ID = config.get('VK_APP_ID')
+VK_APP_SECRET = config.get('VK_APP_SECRET')
+HOST = config.get('HOST')
+
+MAIN_DB_URL = config.get('MAIN_DB_URL')
+
+DEBUG_MODE = config.bool('DEBUG_MODE')

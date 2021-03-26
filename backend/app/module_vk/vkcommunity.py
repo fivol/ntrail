@@ -663,7 +663,7 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
             self.gen_property_category('occupation_school', 'Текущая школа', [], PLOT_CIRCULAR, common_count=3),
             self.gen_property_category('occupation_university', 'Университет', [], PLOT_CIRCULAR, common_count=3),
             self.gen_property_category('personal_political', 'Политические предпочтения', [], PLOT_CIRCULAR,
-                                       name_func=lambda x: political_dict[x],
+                                       name_func=lambda x: political_dict.get(x),
                                        common_count=3),
             self.gen_property_category('personal_people_main', 'Главное в людях', [], PLOT_CIRCULAR,
                                        name_func=lambda x: people_main_dict[x],

@@ -3,3 +3,9 @@ POSTGRES_PASSWORD=postgres
 POSTGRES_DB=postgres
 APP_SECRET_KEY=USE_YOUR_SECRET_KEY
 ENV=DOCKER
+
+VK_APP_ID=7777394
+VK_APP_SECRET=YOUR_VK_APP_SECRET
+HOST=http://localhost:5000
+
+MAIN_DB_URL=postgresql://user:pass@localhost:5432/ntrail
