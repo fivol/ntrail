@@ -1,6 +1,6 @@
 from flask import request, jsonify, Response, make_response
 
-from auth.db import AuthDB
+from app.auth.db import AuthDB
 from auth.vk.logic import VKAuthorization
 from exceptions import HandledException
 from glbal import logger

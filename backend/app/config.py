@@ -25,7 +25,7 @@ except:
     logger.exception('Fail to get environment variables for db connection')
 
 VERSION_MAJOR = 2
-VERSION_MINOR = 1
+VERSION_MINOR = 2
 
 
 def inc_version_build(filename: str) -> int:

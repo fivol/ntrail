@@ -1,12 +1,15 @@
 import logging
 import warnings
+from pathlib import Path
 
 from glbal import logger
 from flask import Flask, request, jsonify
 
 from config import VERSION
 from flask_cors import CORS
+import sys
 import os
+sys.path.append(str(Path(os.getcwd()).parent))
 
 warnings.filterwarnings("ignore")
 logger.setLevel(logging.DEBUG)
