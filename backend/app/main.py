@@ -1,14 +1,10 @@
 import logging
 import warnings
 
-from auth.vk.logic import VKAuthorization
-from exceptions import HandledException
 from glbal import logger
 from flask import Flask, request, jsonify
-from ntmodule.tools import make_json_serializable
 
 from config import VERSION
-from selective_query_execute import execute_query
 from flask_cors import CORS
 import os
 
