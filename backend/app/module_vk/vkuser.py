@@ -44,11 +44,11 @@ class VKUser(VKAPI, OneObjectRepresent):
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
                     self.status = ACCOUNT_STATUS_ABSENT
-                elif not user_dict['type'] == 'user':
+                elif user_dict.get('type') == 'user':
+                    self.id = user_dict['object_id']
+                else:
                     logger.info('VKUser username type is "%s"', user_dict['type'])
                     self.status = ACCOUNT_STATUS_ABSENT
-                else:
-                    self.id = user_dict['object_id']
         elif isinstance(user, int):
             if user < 0:
                 raise ValueError('User id < 0', user)
