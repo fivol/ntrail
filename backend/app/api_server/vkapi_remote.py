@@ -61,17 +61,32 @@ class API(vk.API):
             return VKError(e.code)
 
 
+class VkApiAccessor:
+    """
+    Предоставялетс интерфейс непосредственно для работы с API VK
+    import vk
+    Использует модуль "vk"
+    Класс нужен для контроля за api сессиями и манипуляцией токенами
+    для идентификации пользователя совершающего запрос
+    """
+    pass
+
+
 user_token = 'e643452b7cc3fcbaf1c46540251eeffebbf1703154c498f919100c155f91fcd006300aa56f58dab88db16'
 api = API(session=vk.Session(access_token=user_token), v='5.103', lang='ru', timeout=10)
 
+# Токен приложения. Используется один на весь сервис
+# TODO вынести в переменные окружения
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
 api_app = API(session=vk.Session(access_token=app_token), v='5.103', lang='ru', timeout=10)
 
+# Список полей ответа API запроса, содержащего информацию о сообществах
 groups_full_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
                       'main_section', 'members_count', 'place',
                       'trending', 'verified', 'wall', 'links', 'contacts', 'counters',
                       'description', 'site', 'start_date']
 
+# Аналогично для людей. Список полей API запроса
 users_full_fields = [
     'photo_200', 'photo_100', 'photo_max', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
     'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
@@ -82,6 +97,18 @@ users_full_fields = [
 
 
 class VKAPI:
+    """
+    Производит запросы к вк на основе
+    готовых, чистых параметров запроса конкретного вида,
+    переданных в аргументах.
+    Класс содержит набор методов,
+    каждый из которых соотносится одному или ряду
+    (однородных) запросов
+    Конструируется от токена пользователя, выполняющего запросы
+    """
+
+    def __init__(self):
+        pass
 
     @classmethod
     def user(cls, users_ids, fields):
