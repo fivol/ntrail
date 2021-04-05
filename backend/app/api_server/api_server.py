@@ -68,20 +68,25 @@ class APIServerEmulator:
         return basic_queries
 
     @classmethod
-    def run_query(cls, query):
+    def run_query(cls, query: ComplexQuery):
         assert isinstance(query, ComplexQuery)
         params = query.params
         if params is None:
             params = {}
 
+        # Создаем api_remote класс
+        # Инизиализируем с помощью токена пользователя
+        # От имени которого совершаются запросы
         api_class = api_dict[query.service]
+        print(query.to_dict())
+        api_class_instance = api_class(access_token=query.access_token)
         method = query.method
 
         assert isinstance(method, str)
-        assert hasattr(api_class, method)
+        assert hasattr(api_class_instance, method)
 
         try:
-            res = getattr(api_class, method)(query.key, **params)
+            res = getattr(api_class_instance, method)(query.key, **params)
             if isinstance(res, dict):
                 res['status'] = res.get('status', 'ok')
             logger.debug('* Request %s %s', method, query.key)

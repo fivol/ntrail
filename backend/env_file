@@ -9,3 +9,4 @@ VK_APP_SECRET=YOUR_VK_APP_SECRET
 HOST=https://ntrail.fivol.space
 
 MAIN_DB_URL=postgresql://user:pass@localhost:5432/ntrail
+MY_VK_ACCESS_TOKEN=YOUR_VK_ACCESS_TOKEN

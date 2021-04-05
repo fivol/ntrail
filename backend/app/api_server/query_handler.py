@@ -49,6 +49,8 @@ class VKHandler:
     def combine_queries(cls, methods_dict):
         complex_queries = []
         for method, queries in methods_dict.items():
+            if not queries:
+                continue
             if method in methods_group_key:
                 limit = 10000
                 if method.startswith('user_'):
@@ -62,7 +64,8 @@ class VKHandler:
                 for keys_segment, queries_segment in zip(keys_list, queries_list):
                     complex_queries.append(
                         ComplexQuery(cls.service, method, keys_segment,
-                                     queries=queries_segment, convert_type=1)
+                                     queries=queries_segment, convert_type=1,
+                                     access_token=next(iter(queries)).access_token)
                     )
             else:
                 complex_queries += [ComplexQuery.from_basic_query(query) for query in queries]

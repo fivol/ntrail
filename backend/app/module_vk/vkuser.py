@@ -18,10 +18,6 @@ class VKUser(VKAPI, OneObjectRepresent):
     id_prefix = 'vku_'
     available_attributes = ['friends', 'follows', 'followers', 'groups']
 
-    @staticmethod
-    def me():
-        return VKUser('boris2000n')
-
     def __init__(self, user, **kwargs):
         super().__init__()
         # print(user)

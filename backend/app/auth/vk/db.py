@@ -40,3 +40,10 @@ class VKAuthDB:
         if not auth_model:
             return None
         return auth_model.user
+
+    @classmethod
+    def get_access_token(cls, user_id: int) -> t.Optional[str]:
+        row = DBAuthorization.query.filter(
+            DBAuthorization.user_id == user_id,
+            DBAuthorization.service == 'vk').first()
+        return row and row.token

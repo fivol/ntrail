@@ -16,10 +16,9 @@ def api_request(func):
         # Check input token
         token_header_name = 'authorization'
         token = request.headers.get(token_header_name)
-        print('token', token)
 
         if not token:
-            print('have not token')
+            pass
             # Ситуация, когда запрос был сделан не с фронта
             # От туда приходит undefined если токена нету
 
@@ -29,7 +28,6 @@ def api_request(func):
             user = AuthDB.get_user(token)
             # Если токен невалиден
             if not user:
-                print('Wrong token, create new user')
                 user = AuthDB.create_user()
             else:
                 if user.depends_on:
@@ -84,12 +82,26 @@ class APIData:
                     'code': 500,
                     'error': f'Неверный тип возвращаемых данных ({type(response)}). Ошибка сервера'
                 }
-
+        except NotImplementedError:
+            logger.exception('NotImplementedError')
+            response = {
+                'code': 400,
+                'error': f'Вызываемая часть функционала еще не реализована. Если вы считаете, что произошла '
+                         f'ошибка, напишите, пожалуйста, в поддержку с помощью кнопки "Обратная связь"'
+            }
+        except AssertionError:
+            logger.exception('AssertionError')
+            response = {
+                'code': 500,
+                'error': f'Ошибка реализации сервера (AssertionError). '
+                         f'Напишите, пожалуйста, в поддержку с помощью кнопки "Обратная связь" для исправления'
+            }
         except:
             logger.exception('Unknown api error')
             response = {
                 'code': 520,
-                'error': f'Неизвестная ошибка сервера. Напишите в поддержку для оперативного исправления'
+                'error': f'Неизвестная ошибка сервера. Напишите в поддержку, нажав на кнопку "Обратная связь" '
+                         f'для оперативного исправления'
             }
         response_code = response['code']
 

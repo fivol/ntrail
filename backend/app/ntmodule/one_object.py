@@ -34,7 +34,6 @@ class OneObject(AnyObject):
 
     def print(self, extra_data=''):
         if not self.valid:
-            print('This object is not valid')
             return
 
         print(f'{self.hash} {align_string(self.url, 35)} {self.name} {extra_data}')

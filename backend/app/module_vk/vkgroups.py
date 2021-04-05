@@ -351,7 +351,6 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         return features
 
     def get_all_properties(self):
-        # pprint(self.process_data())
         return bool_filter([
             self.gen_property_category('age_limits', 'Возрастные ограничения', [], PLOT_CIRCULAR,
                                        common_count=3, name_func=lambda x: age_limits_dict[x]),
@@ -367,13 +366,12 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         ])
 
     def get_name(self):
-        source_list = self.process_data()['name']['source_list']
-        print('name source_list', source_list, self.process_data())
+        source_list = self.process_data()['name']['source_list'] or []
 
         def name_from_words_list(items):
             return ', '.join(map(lambda x: x[0].get_value().capitalize(), items))
 
-        if source_list[0][1] <= 1:
+        if len(source_list) and len(source_list[0]) and source_list[0][1] <= 1:
             activity_pages = self.process_data()['activity_pages']['source_list']
             if activity_pages:
                 return self.process_data()['activity_pages']['source_list'][0][0].get_value().capitalize()

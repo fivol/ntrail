@@ -1,6 +1,8 @@
 import uuid
 
 from app.db import DBUser
+from app.auth.vk.db import VKAuthDB
+from functools import lru_cache
 
 
 class AuthDB:
@@ -30,3 +32,12 @@ class AuthDB:
     @classmethod
     def get_user_by_id(cls, user_id: int):
         return DBUser.find(user_id)
+
+    @classmethod
+    @lru_cache(maxsize=10)
+    def get_api_token(cls, user_id: int, service: str):
+        # TODO заменить str на enum
+        if service == 'vk':
+            return VKAuthDB.get_access_token(user_id)
+        else:
+            raise NotImplementedError

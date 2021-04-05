@@ -3,7 +3,11 @@ from ntapimodule.api_errors import APIError
 
 
 class BasicQuery:
-    def __init__(self, service, method, key, num=-1, params=None):
+    def __init__(self, service: str, method: str, key, num: int = -1, params=None, **kwargs):
+        """
+        :access_token: токен доступа к сервису
+        TODO заменить access_token на объект идентификации, включающий в себя id пользователя и access_token
+        """
         if params is None:
             params = dict()
 
@@ -15,7 +19,8 @@ class BasicQuery:
         self.key = key
         self.num = num
         self.params = params
-        self.value = None
+        self.value = kwargs.get('value')
+        self.access_token = getattr(self, 'access_token', None) or kwargs.get('access_token')
 
     def set_value(self, value):
         self.value = value
@@ -50,13 +55,14 @@ class BasicQuery:
             'method': self.method,
             'key': self.key,
             'value': self.value,
-            'params': self.params
+            'params': self.params,
+            'access_token': self.access_token
         }
 
     @classmethod
     def from_dict(cls, obj_dict):
         assert isinstance(obj_dict, dict)
-        return BasicQuery(obj_dict['service'], obj_dict['method'], obj_dict['key'], params=obj_dict['params'])
+        return BasicQuery(**obj_dict)
 
     @property
     def can_cache(self):
@@ -70,11 +76,15 @@ class BasicQuery:
 
 
 class ComplexQuery(BasicQuery):
-    def __init__(self, service, method, key, queries=None, params=None, convert_type=0):
+    def __init__(self, service, method, key, queries=None, params=None, convert_type=0, **kwargs):
         self.basic_queries = queries
         self.convert_type = convert_type
         assert len(queries)
         assert isinstance(queries, list)
+        # Добавление access_token из queries
+        if queries and len(queries):
+            first_query: BasicQuery = next(iter(queries))
+            self.access_token = first_query.access_token
 
         if convert_type == 0:
             assert len(queries) == 1
@@ -87,10 +97,9 @@ class ComplexQuery(BasicQuery):
         else:
             raise NotImplementedError
 
-        super().__init__(service, method, key, params=params)
+        super().__init__(service, method, key, params=params, **kwargs)
 
     @classmethod
-    def from_basic_query(cls, query):
+    def from_basic_query(cls, query: BasicQuery):
         return ComplexQuery(query.service, query.method, query.key,
                             queries=[query], params=query.params, convert_type=0)
-

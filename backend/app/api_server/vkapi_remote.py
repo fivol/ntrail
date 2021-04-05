@@ -4,6 +4,11 @@ import time
 from glbal import logger
 from ntapimodule.api_errors import VKError, INVALID_ID_ERROR, APIError
 
+VK_API_VERSION = '5.103'
+VK_API_LANG = 'ru'
+# 10 секунд - ограничение на время выполнения запроса к API
+VK_API_TIMEOUT = 10
+
 
 class API(vk.API):
     def __init__(self, *args, **kwargs):
@@ -72,13 +77,12 @@ class VkApiAccessor:
     pass
 
 
-user_token = 'e643452b7cc3fcbaf1c46540251eeffebbf1703154c498f919100c155f91fcd006300aa56f58dab88db16'
-api = API(session=vk.Session(access_token=user_token), v='5.103', lang='ru', timeout=10)
-
 # Токен приложения. Используется один на весь сервис
+# Токен приложения нужен для выполнения некоторых запросов
+# У него выше лимиты на простые, не требующее доступ к личной информации запросы
 # TODO вынести в переменные окружения
 app_token = '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
-api_app = API(session=vk.Session(access_token=app_token), v='5.103', lang='ru', timeout=10)
+api_app = API(session=vk.Session(access_token=app_token), v=VK_API_VERSION, lang=VK_API_LANG, timeout=VK_API_TIMEOUT)
 
 # Список полей ответа API запроса, содержащего информацию о сообществах
 groups_full_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
@@ -107,14 +111,18 @@ class VKAPI:
     Конструируется от токена пользователя, выполняющего запросы
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, access_token: str = None):
+        assert access_token
+        self.api = API(
+            session=vk.Session(access_token=access_token),
+            v=VK_API_VERSION,
+            lang=VK_API_LANG,
+            timeout=VK_API_TIMEOUT)
 
-    @classmethod
-    def user(cls, users_ids, fields):
+    def user(self, users_ids, fields):
         assert len(users_ids) <= 1000
         users_ids = [int(vkid) for vkid in users_ids]
-        result = api.users.get(user_ids=users_ids, fields=fields)
+        result = self.api.users.get(user_ids=users_ids, fields=fields)
         if VKError.is_error(result):
             return [result] * len(users_ids)
         assert isinstance(result, list), result
@@ -128,87 +136,70 @@ class VKAPI:
                         result.insert(i, VKError(INVALID_ID_ERROR).to_dict())
         return result
 
-    @classmethod
-    def user_full(cls, users_ids):
-        return cls.user(users_ids, fields=users_full_fields)
+    def user_full(self, users_ids):
+        return self.user(users_ids, fields=users_full_fields)
 
-    @classmethod
-    def user_short(cls, users_ids):
-        return cls.user(users_ids, fields=[])
+    def user_short(self, users_ids):
+        return self.user(users_ids, fields=[])
 
-    @classmethod
-    def resolve(cls, screen_name):
+    def resolve(self, screen_name):
         assert isinstance(screen_name, str)
         return api_app.utils.resolveScreenName(screen_name=screen_name)
 
-    @classmethod
-    def group_full(cls, group_ids):
+    def group_full(self, group_ids):
         assert len(group_ids) <= 500
-        res = api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
+        res = self.api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
         return res
 
-    @classmethod
-    def group_short(cls, group_ids):
+    def group_short(self, group_ids):
         assert len(group_ids) <= 500
-        return api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
+        return self.api.groups.getById(group_ids=group_ids, fields=groups_full_fields)
 
-    @classmethod
-    def apps(cls, apps_id):
+    def apps(self, apps_id):
         res = api_app.apps.get(app_ids=apps_id)
         return res.get('items', None)
 
-    @classmethod
-    def friends(cls, vkid):
+    def friends(self, vkid):
         res = api_app.friends.get(user_id=vkid)
         assert isinstance(res, dict) or isinstance(res, str)
         return res
 
-    @classmethod
-    def followers(cls, user_id, offset=0, count=1000):
+    def followers(self, user_id, offset=0, count=1000):
         return api_app.users.getFollowers(user_id=user_id, offset=offset, count=count)
 
-    @classmethod
-    def subscriptions(cls, user_id, offset=0):
+    def subscriptions(self, user_id, offset=0):
         return api_app.users.getSubscriptions(user_id=user_id, offset=offset, extended=0)
 
-    @classmethod
-    def wall(cls, obj_id, count):
+    def wall(self, obj_id, count):
         return api_app.wall.get(owner_id=obj_id, count=count, extended=0)
 
-    @classmethod
-    def posts(cls, post_ids):
+    def posts(self, post_ids):
         return api_app.wall.getById(posts=post_ids)
 
-    @classmethod
-    def likes(cls, object_id, count):
+    def likes(self, object_id, count):
         obj_type, owner_id, item_id = object_id.split('_')
         return api_app.likes.getList(type=obj_type, owner_id=owner_id, item_id=item_id, count=count)
 
-    @classmethod
-    def comments(cls, post, count):
+    def comments(self, post, count):
         owner_id, post_id = post.split('_')
         res = api_app.wall.getComments(owner_id=owner_id, post_id=post_id,
                                        need_likes=1, count=count, sort='asc',
                                        preview_length=0)
         return res
 
-    @classmethod
-    def albums(cls, obj_id, ids=None):
+    def albums(self, obj_id, ids=None):
         if not ids:
             ids = []
         return api_app.photos.getAlbums(owner_id=obj_id, album_ids=ids)
 
-    @classmethod
-    def user_photos(cls, user_id):
-        return api.photos.getUserPhotos(user_id=user_id, extended=True, count=1000)
+    def user_photos(self, user_id):
+        return self.api.photos.getUserPhotos(user_id=user_id, extended=True, count=1000)
 
-    @classmethod
-    def photo_tags(cls, photo_id):
+    def photo_tags(self, photo_id):
         owner_id, photo_id = photo_id.split('_')
-        return api.photos.getTags(owner_id=owner_id, photo_id=photo_id)
+        return self.api.photos.getTags(owner_id=owner_id, photo_id=photo_id)
 
-    @classmethod
-    def albums_ids(cls, albums_ids):
+    def albums_ids(self, albums_ids):
         assert albums_ids
         assert isinstance(albums_ids, list)
         owner = albums_ids[0].split('_')[0]
@@ -216,48 +207,41 @@ class VKAPI:
         for album in albums_ids:
             assert owner == album.split('_')[0]
             ids.append(album.split('_')[1])
-        albums = cls.albums(owner, ids=ids)
+        albums = self.albums(owner, ids=ids)
 
         if VKError.is_error(albums):
             logger.warning('Fail to get albums by ids')
             return [albums] * len(albums_ids)
         return albums.get('items', [])
 
-    @classmethod
-    def photos(cls, album):
+    def photos(self, album):
         owner_id, album_id = album.split('_')
         return api_app.photos.get(owner_id=owner_id, album_id=album_id, extended=True)
 
-    @classmethod
-    def all_photos(cls, owner_id, offset=0):
-        return api.photos.getAll(owner_id=owner_id, extended=True, count=200, offset=offset)
+    def all_photos(self, owner_id, offset=0):
+        return self.api.photos.getAll(owner_id=owner_id, extended=True, count=200, offset=offset)
 
-    @classmethod
-    def photos_ids(cls, photos_ids):
+    def photos_ids(self, photos_ids):
         assert isinstance(photos_ids, list)
-        res = api.photos.getById(photos=photos_ids, extended=True)
+        res = self.api.photos.getById(photos=photos_ids, extended=True)
         return res
 
-    @classmethod
-    def groups(cls, vkid):
-        return api.groups.get(user_id=vkid)
+    def groups(self, vkid):
+        return self.api.groups.get(user_id=vkid)
 
-    @classmethod
-    def search(cls, string, offset=0, limit=100, filters=''):
-        search_result = api.search.getHints(q=string, offset=offset,
-                                            limit=limit, filters=filters, search_global=1)
+    def search(self, string, offset=0, limit=100, filters=''):
+        search_result = self.api.search.getHints(q=string, offset=offset,
+                                                 limit=limit, filters=filters, search_global=1)
         return search_result
 
-    @classmethod
-    def members(cls, group_id, count=None, offset=None):
+    def members(self, group_id, count=None, offset=None):
         group_id = int(group_id)
         assert isinstance(count, int), count
         assert count <= 1000
         assert isinstance(offset, int)
         return api_app.groups.getMembers(group_id=group_id, offset=offset, count=count)
 
-    @classmethod
-    def execute(cls, code_string):
+    def execute(self, code_string):
         assert isinstance(code_string, str)
-        res = api.execute(code=code_string)
+        res = self.api.execute(code=code_string)
         return res

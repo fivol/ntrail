@@ -1,7 +1,11 @@
+from config import config
 from query_object import BasicQuery
 from local_cache import LocalCache
 from ntapimodule.api_server_call import APIServerCall
 from ntapimodule.api_errors import APIError
+from flask import g
+from auth.db import AuthDB
+import typing as t
 
 
 class APIQueries:
@@ -19,7 +23,7 @@ class APIQueries:
         self.add_query(BasicQuery(service, method, key, params=params))
         return self.execute(force)[0]
 
-    def many(self, service, method, keys, force=False):
+    def many(self, service: str, method: str, keys, force=False):
         assert isinstance(service, str)
         assert isinstance(method, str)
         assert isinstance(keys, list)
@@ -29,14 +33,19 @@ class APIQueries:
         if keys:
             return self.execute(force)
 
-    def add_query(self, query):
+    def add_query(self, query: BasicQuery):
         assert isinstance(query, BasicQuery)
+        # Добавление пользовательского токена к запросу
+        query.access_token = AuthDB.get_api_token(user_id=g.user.id, service=query.service)
+        # TODO Продумать нормально неавторизованные запросы. Сейчас все выполняется от моего имени
+        if not query.access_token:
+            query.access_token = config.get('MY_VK_ACCESS_TOKEN')
         query.num = self.curr_num
         self.curr_num += 1
         self.queries.add(query)
 
     @classmethod
-    def right_order_queries(cls, queries):
+    def right_order_queries(cls, queries: t.Set[BasicQuery]):
         assert isinstance(queries, set)
         queries = list(queries)
         assert len(queries) == sorted([query.num for query in queries])[-1] + 1
@@ -44,7 +53,7 @@ class APIQueries:
         return [query.value for query in queries]
 
     @classmethod
-    def get_queries_to_cache(cls, queries):
+    def get_queries_to_cache(cls, queries: t.List[BasicQuery]):
         assert isinstance(queries, set)
         return set([query for query in queries if query.can_cache])
 
