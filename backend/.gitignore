@@ -4,6 +4,7 @@
 *.svg
 __pycache__/
 *.html
+*.log
 
 env/
 venv/
