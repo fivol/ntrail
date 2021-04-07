@@ -60,7 +60,9 @@ config = Config('../env_file')
 VK_APP_ID = config.get('VK_APP_ID')
 VK_APP_SECRET = config.get('VK_APP_SECRET')
 HOST = config.get('HOST')
+DEBUG_MODE = config.bool('DEBUG_MODE')
+if DEBUG_MODE:
+    HOST = 'http://localhost:5000'
 
 MAIN_DB_URL = config.get('MAIN_DB_URL')
 
-DEBUG_MODE = config.bool('DEBUG_MODE')
