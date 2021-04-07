@@ -21,7 +21,12 @@ class APIQueries:
 
     def one(self, service, method, key, params=None, force=False):
         self.add_query(BasicQuery(service, method, key, params=params))
-        return self.execute(force)[0]
+        response = self.execute(force)[0]
+        if isinstance(response, APIError):
+            raise response
+        if not isinstance(response, dict):
+            raise Exception('Unknown api response')
+        return response
 
     def many(self, service: str, method: str, keys, force=False):
         assert isinstance(service, str)

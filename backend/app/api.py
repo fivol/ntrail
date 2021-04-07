@@ -4,6 +4,7 @@ from app.auth.db import AuthDB
 from auth.vk.logic import VKAuthorization
 from exceptions import HandledException
 from glbal import logger
+from ntapimodule.api_errors import APIError
 from ntmodule.tools import make_json_serializable
 from selective_query_execute import execute_query
 from flask import g
@@ -94,6 +95,13 @@ class APIData:
             response = {
                 'code': 500,
                 'error': f'Ошибка реализации сервера (AssertionError). '
+                         f'Напишите, пожалуйста, в поддержку с помощью кнопки "Обратная связь" для исправления'
+            }
+        except APIError as e:
+            logger.exception('APIError')
+            response = {
+                'code': 500,
+                'error': f'Ошибка API запроса: {str(e)}.'
                          f'Напишите, пожалуйста, в поддержку с помощью кнопки "Обратная связь" для исправления'
             }
         except:

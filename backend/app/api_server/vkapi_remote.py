@@ -62,8 +62,9 @@ class API(vk.API):
                     logger.warning(f'VK API error 6. Too many requests per second. Wait {wait_seconds} seconds')
                     time.sleep(wait_seconds)
                 return self.make_request(begin_time)
-
-            return VKError(e.code)
+            error = VKError(e.code)
+            logger.warning('VKError %s', error)
+            return error
 
 
 class VkApiAccessor:

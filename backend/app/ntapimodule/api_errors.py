@@ -8,7 +8,7 @@ ALBUM_ACCESS_DENIED_ERROR = 200
 USER_AUTHORIZATION_ERROR = 5
 
 
-class APIError:
+class APIError(Exception):
     errors = None
     request_result_errors = None
     service = None
@@ -18,9 +18,9 @@ class APIError:
             return obj
         elif isinstance(obj, dict):
             assert obj['status'] == 'error'
-            return object.__new__(services[obj['service']])
+            return Exception.__new__(services[obj['service']])
         elif isinstance(obj, int):
-            return object.__new__(cls)
+            return Exception.__new__(cls)
         else:
             raise TypeError('API ERROR wrong init type')
 
@@ -34,6 +34,9 @@ class APIError:
 
     def __repr__(self):
         return f'{self.errors[self.code]}. Error {self.service} code {self.code}'
+
+    def __str__(self):
+        return self.errors[self.code]
 
     def to_dict(self):
         return {
