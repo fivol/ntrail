@@ -14,7 +14,6 @@ modules_dict = {
     'query': ModuleQuery
 }
 
-
 TOKEN_WORD = 'word'
 TOKEN_TEXT = 'text'
 
@@ -25,7 +24,7 @@ class Token:
             self.token_type = None
             self.token_value = None
         elif not value:
-            raise SyntaxError('обнаружен пустой токен')
+            raise QuerySyntaxException('обнаружен пустой токен')
         elif value in '()[]=':
             self.token_type = value
             self.token_value = value
@@ -70,7 +69,7 @@ class TokensGenerator:
         token = self.peek()
 
         if expected_type and expected_type != token.type:
-            raise SyntaxError(f'встречен токен неверного типа "{token.type}" вместо "{expected_type}"')
+            raise QuerySyntaxException(f'встречен токен неверного типа "{token.type}" вместо "{expected_type}"')
         self.i += 1
 
         return token.lower()
@@ -134,7 +133,8 @@ class QueryParser:
         method = self.g.next(TOKEN_WORD).value
         method_items = method.split(separator)
         if len(method_items) != 2:
-            raise SyntaxError('название метода должно быть составлено по принципу <название модуля>.<имя метода>')
+            raise QuerySyntaxException(
+                'название метода должно быть составлено по принципу <название модуля>.<имя метода>')
         module_name, method_name = method_items
 
         return module_name, method_name
@@ -284,6 +284,5 @@ def execute_query(query):
 
     response['queryExecutionDuration'] = time.time() - execute_begin_time
     response['data'] = data
-    response['time'] = time.time()
 
     return response

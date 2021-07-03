@@ -112,7 +112,8 @@ class APIData:
                          f'для оперативного исправления'
             }
         response_code = response['code']
-
+        if 'code' in response:
+            del response["code"]
         response = jsonify(response)
         response.headers.add("Access-Control-Allow-Origin", "*")
 

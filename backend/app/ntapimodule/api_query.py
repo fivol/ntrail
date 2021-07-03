@@ -7,6 +7,8 @@ from flask import g
 from auth.db import AuthDB
 import typing as t
 
+from app.ntmodule.selective_query_exeptions import WrongQueryException
+
 
 class APIQueries:
     def __init__(self):
@@ -41,7 +43,10 @@ class APIQueries:
     def add_query(self, query: BasicQuery):
         assert isinstance(query, BasicQuery)
         # Добавление пользовательского токена к запросу
-        query.access_token = AuthDB.get_api_token(user_id=g.user.id, service=query.service)
+        try:
+            query.access_token = AuthDB.get_api_token(user_id=g.user.id, service=query.service)
+        except AttributeError:
+            raise WrongQueryException('Необходима авторизация')
         # TODO Продумать нормально неавторизованные запросы. Сейчас все выполняется от моего имени
         if not query.access_token:
             query.access_token = config.get('MY_VK_ACCESS_TOKEN')
