@@ -1,10 +1,10 @@
-from worker.modules.vk.vk import VKAPI
+from collections import defaultdict
+from .modules.vk.vk import VKAPI
 from .modules.instagram.instagram import IGAPI
 from .query_handler import QueryHandler
-from core.call_worker.query_object import BasicQuery, ComplexQuery
-from glbal import logger
-from collections import defaultdict
-from core.call_worker.api_errors import ServerError
+from .query_object import BasicQuery, ComplexQuery
+from .glbal import logger
+from .api_errors import ServerError
 
 import requests
 
