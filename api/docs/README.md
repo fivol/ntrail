@@ -6,8 +6,9 @@ description: >-
 ---
 
 # NTrail API
+[Смотреть на Gitbook](https://borisoffficial.gitbook.io/ntrail-api/)
 
-### Получение авторизационного токена
+### Получение токена для авторизации
 
 На данный момент авторизация производится через ВК, необходимо иметь аккаунт. Для получения перейдите по [ссылке](https://oauth.vk.com/authorize?client_id=7898476&redirect_uri=http://localhost:8000/verify/&scope=0&response_type=code) и скопируйте его. При потере можно заново получить тот же токен по той же ссылке
 
