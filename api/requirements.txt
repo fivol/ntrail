@@ -5,3 +5,4 @@ pydantic
 bestconfig
 gino
 sqlalchemy
+jsonpath-ng
