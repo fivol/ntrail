@@ -1,24 +1,25 @@
-from .vkapi_remote import VKAPI
-from .igapi_remote import IGAPI
+from worker.modules.vk.vk import VKAPI
+from .modules.instagram.instagram import IGAPI
 from .query_handler import QueryHandler
-from query_object import BasicQuery, ComplexQuery
+from core.call_worker.query_object import BasicQuery, ComplexQuery
 from glbal import logger
 from collections import defaultdict
-from ntapimodule.api_errors import ServerError
+from core.call_worker.api_errors import ServerError
 
 import requests
 
 
 def internet_on():
     """Return True if internet on (can ping google.com)"""
+    check_internet_url = 'https://google.com'
     try:
-        requests.get('http://216.58.192.142', timeout=1)
+        requests.get(check_internet_url, timeout=1)
         return True
     except requests.exceptions.ConnectionError:
         return False
 
 
-api_dict = {'vk': VKAPI, 'ig': IGAPI}
+api_dict = {'vk': VKAPI, 'instagram': IGAPI}
 
 
 class APIServerEmulator:

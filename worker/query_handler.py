@@ -1,7 +1,7 @@
-from query_object import ComplexQuery, BasicQuery
+from core.call_worker.query_object import ComplexQuery, BasicQuery
 from collections import defaultdict
-from ntmodule.tools import split_list
-from ntapimodule.api_errors import APIError
+from core.module.tools import split_list
+from core.call_worker.api_errors import APIError
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
 # составные запросы для наибыстрейшего выполнение всех

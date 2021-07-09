@@ -1,9 +1,9 @@
 import time
-from instagram import Account, WebAgentAccount, HasMediaElement
-from instagram.exceptions import InternetException, UnexpectedResponse
+from .instagramlib import Account, WebAgentAccount, HasMediaElement
+from .instagramlib.exceptions import InternetException, UnexpectedResponse
 from app_data import inst_accounts_data
 from glbal import logger
-from ntmodule.tools import ThreadResult, sequential_start, MemoryCache, get
+from core.module.tools import ThreadResult, sequential_start, MemoryCache, get
 import random
 
 REQUEST_ERROR_404 = 'REQUEST_ERROR_404'

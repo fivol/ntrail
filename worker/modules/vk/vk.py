@@ -2,7 +2,7 @@ import vk
 from vk.exceptions import VkAPIError
 import time
 from glbal import logger
-from ntapimodule.api_errors import VKError, INVALID_ID_ERROR, APIError
+from core.call_worker.api_errors import VKError, INVALID_ID_ERROR, APIError
 
 VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
