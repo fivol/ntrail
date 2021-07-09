@@ -1,4 +1,4 @@
-from query_object import BasicQuery
+from core.call_worker.query_object import BasicQuery
 from models import QueryModel, db
 import datetime
 from config import CACHE_TYPE
