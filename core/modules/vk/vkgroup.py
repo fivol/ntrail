@@ -11,6 +11,7 @@ class VKGroup(OneObjectRepresent):
 
     def __init__(self, group, **kwargs):
         super().__init__()
+
         self.id = None
         self.status = None
         if isinstance(group, str):
