@@ -1,6 +1,6 @@
 from core.module.many_objects import ManyObjects
 from core.module.selective_query_exeptions import QueryDataException
-from core.module.tools import merge_lists
+from core.tools import merge_lists
 
 # Этот класс отвечает за отображение модуля на интерфейс NTrail.
 # Если модуль нужнается в визуальном отображении, нужну унаследовать этот класс и переопределить некоторые методы

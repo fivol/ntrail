@@ -49,9 +49,9 @@ from core.module.represent import try_base_analog, Represent
 from core.module.represent_tools import RepresentTools
 from core.module.tied_counter import TiedCounter
 from core.module.tied_value import TiedValue, get_tied_array_size
-from core.module.tools import once_property, name_to_gent, concatenate_lists, \
+from core.tools import once_property, name_to_gent, concatenate_lists, \
     bool_filter, merge_lists, get_field_values
-from core.module.tools import cache_method
+from core.tools import cache_method
 import numpy as np
 import networkx as nx
 import collections
@@ -61,7 +61,7 @@ from time import time
 from .vkuser import VKUser
 import math
 from itertools import groupby
-from core.module.tools import clear_list, prepare_list, list_from_dicts, is_good_username
+from core.tools import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
 from .vkapi import VKAPI
 from core.constants import PLOT_LINE, PLOT_CIRCULAR

@@ -1,7 +1,7 @@
 
 import hashlib
 from pprint import pprint
-from core.module.tools import *
+from core.tools import *
 
 
 class AnyObject:

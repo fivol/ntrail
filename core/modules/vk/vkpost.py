@@ -1,6 +1,6 @@
 from .media_object import MediaObject
 from .vkapi import VKAPI
-from core.module.tools import once_property, valid_object_method
+from core.tools import once_property, valid_object_method
 from collections import defaultdict
 from core.module.many_objects import ManyObjects
 

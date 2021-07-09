@@ -4,12 +4,12 @@ from more_itertools import unique_everseen
 from core.constants import PLOT_CIRCULAR, PLOT_LINE
 from core.module.represent import Represent
 from core.module.represent_tools import RepresentTools
-from core.module.tools import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
+from core.tools import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
 from collections import Counter
 import networkx as nx
 import math
 from glbal import logger
-from core.module.tools import dict_from_dicts, prepare_list
+from core.tools import dict_from_dicts, prepare_list
 from core.modules.vk.vkapi import VKAPI
 
 age_limits_dict = {

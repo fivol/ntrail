@@ -1,10 +1,10 @@
 import peewee
 import hashlib
 
-from core.module.tools import make_json_serializable
+from .tools import make_json_serializable
 from collections import defaultdict
-from glbal import logger
-from core.models import UserModel, db, EntityModel, FeatureModel
+from .glbal import logger
+from .models import UserModel, db, EntityModel, FeatureModel
 
 
 class DB:

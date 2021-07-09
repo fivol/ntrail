@@ -1,5 +1,5 @@
 from core.module.any_object import AnyObject
-from core.module.tools import align_string, once_property
+from core.tools import align_string, once_property
 import hashlib
 
 

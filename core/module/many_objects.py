@@ -1,12 +1,12 @@
 import bisect
 # from slmpy import ModularityOptimzer
 from core.module.any_object import AnyObject
-from core.module.tools import once_property, counter_top, get_color, cache_method
+from core.tools import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 from functools import lru_cache
 import random
-from core.module.tools import self_replace
+from core.tools import self_replace
 import numpy as np
 import re
 from core.db_logic import DB

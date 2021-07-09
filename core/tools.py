@@ -5,7 +5,7 @@ import numpy as np
 import re
 from functools import reduce, wraps
 import pickle
-from glbal import logger
+from core.glbal import logger
 from threading import Thread
 import difflib
 import string

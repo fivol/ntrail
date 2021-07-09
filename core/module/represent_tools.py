@@ -2,7 +2,7 @@ from glbal import logger
 from core.module.tied_value import TiedValue
 import numpy as np
 
-from core.module.tools import bool_filter, get_random_color
+from core.tools import bool_filter, get_random_color
 from core.constants import PLOT_LINE, PLOT_CIRCULAR
 
 

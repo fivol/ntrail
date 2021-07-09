@@ -1,0 +1,4 @@
+numpy
+transliterate
+peewee
+pymorphy2

@@ -1,6 +1,6 @@
 from .vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
-from core.module.tools import once_property, valid_object_method, get_sites
+from core.tools import once_property, valid_object_method, get_sites
 import matplotlib.pyplot as plt
 import io
 import re

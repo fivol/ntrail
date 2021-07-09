@@ -1,8 +1,8 @@
 import math
-from glbal import logger
+from core.glbal import logger
 from core.call_worker.api_query import APIQueries
 from core.call_worker.worker.query_object import BasicQuery
-from core.module.tools import list_from_dicts
+from core.tools import list_from_dicts
 
 service = 'vk'
 
