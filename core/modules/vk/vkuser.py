@@ -63,7 +63,7 @@ class VKUser(VKAPI, OneObjectRepresent):
         url = url.lower()
         if re.fullmatch(r'[0-9a-z._]+', url):
             return url
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         usernames = VKCommunity.parse_usernames(url)
         if not usernames:
             return None
@@ -116,14 +116,14 @@ class VKUser(VKAPI, OneObjectRepresent):
 
     @valid_object_method
     def followers(self):
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         followers = self.get_user_followers(self.id)
         assert isinstance(followers, list)
         return VKCommunity(followers)
 
     @valid_object_method
     def follows(self):
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         subscriptions = self.get_user_subscriptions(self.id)
         assert isinstance(subscriptions, list)
         return VKCommunity(subscriptions)
@@ -134,7 +134,7 @@ class VKUser(VKAPI, OneObjectRepresent):
 
     @classmethod
     def generate_random(cls):
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         return VKCommunity.generate_random(1).objects[0]
 
     @once_property
@@ -204,7 +204,7 @@ class VKUser(VKAPI, OneObjectRepresent):
 
     @valid_object_method
     def friends(self):
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         friends_ids = self.get_user_friends(self.id)
         friends_ids.append(self.id)
         return VKCommunity(friends_ids, main=self, target='friends')
