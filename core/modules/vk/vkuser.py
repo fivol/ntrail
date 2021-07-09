@@ -7,8 +7,8 @@ import re
 from glbal import logger
 from .vkapi import VKAPI
 from .vkphoto import VKPhotos, VKAlbums
-from core.call_worker.api_errors import APIError, INVALID_ID_ERROR
-from constants import ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
+from core.call_worker.worker.api_errors import APIError, INVALID_ID_ERROR
+from core.constants import ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
     ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, \
     ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
 from .vkpost import VKPosts

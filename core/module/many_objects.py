@@ -9,7 +9,7 @@ import random
 from core.module.tools import self_replace
 import numpy as np
 import re
-from db_logic import DB
+from core.db_logic import DB
 import matplotlib.pyplot as plt
 from time import time
 import pandas as pd

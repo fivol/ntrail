@@ -43,7 +43,6 @@
 import random
 from more_itertools import unique_everseen
 
-from glbal import stack_logger
 from .vkgroup import VKGroup
 from .vkgroups import VKGroups
 from core.module.represent import try_base_analog, Represent
@@ -65,8 +64,7 @@ from itertools import groupby
 from core.module.tools import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
 from .vkapi import VKAPI
-from constants import PLOT_LINE, PLOT_CIRCULAR
-from visual_logging import VisualLogger
+from core.constants import PLOT_LINE, PLOT_CIRCULAR
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан
@@ -165,7 +163,6 @@ occupation_type_dict = {
 }
 
 
-@stack_logger.logit
 class VKCommunity(Represent, VKAPI, RepresentTools):
     base_class = VKUser
     available_attributes = ['friends', 'clusters', 'groups']

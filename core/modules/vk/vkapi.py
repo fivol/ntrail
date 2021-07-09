@@ -1,7 +1,7 @@
 import math
-from glbal import logger, stack_logger
+from glbal import logger
 from core.call_worker.api_query import APIQueries
-from core.call_worker.query_object import BasicQuery
+from core.call_worker.worker.query_object import BasicQuery
 from core.module.tools import list_from_dicts
 
 service = 'vk'
@@ -26,7 +26,6 @@ def log_query(func):
     return wrapper
 
 
-@stack_logger.logit
 class VKAPI:
     @classmethod
     def get_users(cls, vk_ids, full=False, **kwargs):

@@ -3,7 +3,7 @@ from core.module.tied_value import TiedValue
 import numpy as np
 
 from core.module.tools import bool_filter, get_random_color
-from constants import PLOT_LINE, PLOT_CIRCULAR
+from core.constants import PLOT_LINE, PLOT_CIRCULAR
 
 
 class RepresentTools:

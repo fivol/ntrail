@@ -1,7 +1,7 @@
 import time
 from instagram import Account, WebAgentAccount, HasMediaElement
 from instagram.exceptions import InternetException, UnexpectedResponse
-from app_data import inst_accounts_data
+from core.app_data import inst_accounts_data
 from glbal import logger
 from ntmodule.tools import get, ThreadResult, sequential_start, MemoryCache
 import random

@@ -1,8 +1,8 @@
-from core.call_worker.query_object import BasicQuery
-from models import QueryModel, db
+from .call_worker.worker.query_object import BasicQuery
+from .models import QueryModel, db
 import datetime
-from config import CACHE_TYPE
-from constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE
+from .config import CACHE_TYPE
+from .constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE
 
 
 def local_cache_command(action):

@@ -1,7 +1,7 @@
 from core.modules.vk.vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from constants import PLOT_CIRCULAR, PLOT_LINE
+from core.constants import PLOT_CIRCULAR, PLOT_LINE
 from core.module.represent import Represent
 from core.module.represent_tools import RepresentTools
 from core.module.tools import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
@@ -80,7 +80,7 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         for group in self.nodes:
             members_ids += self.get_random_group_members(group, k=100)[:100]
 
-        from module_vk.vkcommunity import VKCommunity
+        from .vkcommunity import VKCommunity
         return VKCommunity(members_ids, target='members', main=self.objects[0])
 
     @cache_method
@@ -424,7 +424,7 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         }
 
     def get_description(self):
-        from module_vk.vkuser import VKUser
+        from .vkuser import VKUser
         if isinstance(self.source, VKUser):
             return f'ВК сообщества "{self.source.name}" ({self.size} шт.)'
 

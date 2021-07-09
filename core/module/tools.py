@@ -12,7 +12,7 @@ import string
 import transliterate
 import math
 import pymorphy2
-from app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
+from core.app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
 from core.module.tied_counter import TiedCounter
 from core.module.tied_value import TiedValue
 
@@ -167,16 +167,6 @@ def sizeof(obj, mb_capacity=False):
     if mb_capacity:
         return int(1024 / size)
     return size
-
-
-def split_list(list_object, segment_size):
-    result_list = []
-    for i in range(len(list_object) // segment_size + 1):
-        begin = i * segment_size
-        end = (i + 1) * segment_size
-        if begin < len(list_object):
-            result_list.append(list_object[begin:end])
-    return result_list
 
 
 def get_field_values(data_list, field, capitalize=False, clean=False, counter=False, key=None):
