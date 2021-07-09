@@ -1,0 +1,7 @@
+VERSION: 1.0.0
+BASE_URL: 'http://localhost:8000'
+VK_APP:
+  CLIENT_ID: 7898476
+  SECRET: VOlOMVKWwkCMxP6PrEBQ
+
+
