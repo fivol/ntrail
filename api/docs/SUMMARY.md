@@ -1,4 +1,4 @@
-# Table of contents
+# Summary
 
 * [NTrail API](README.md)
 * [ВКонтакте](vkontakte.md)
