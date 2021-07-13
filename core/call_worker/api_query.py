@@ -1,4 +1,3 @@
-from config import config
 from .worker.query_object import BasicQuery
 from core.local_cache import LocalCache
 from .api_server_call import APIServerCall

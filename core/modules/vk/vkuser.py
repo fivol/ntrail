@@ -34,7 +34,7 @@ class VKUser(VKAPI, OneObjectRepresent):
             elif user.startswith(self.id_prefix):
                 self.id = int(user[4:])
             else:
-                username = VKUser.get_username(user)
+                username = VKUser.extract_username(user)
                 user_dict = self.resolve_screen_name(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
@@ -58,7 +58,7 @@ class VKUser(VKAPI, OneObjectRepresent):
             raise TypeError(f'VKUser {user} type is {type(user)}')
 
     @staticmethod
-    def get_username(url):
+    def extract_username(url):
         url = url.lower()
         if re.fullmatch(r'[0-9a-z._]+', url):
             return url
@@ -144,11 +144,11 @@ class VKUser(VKAPI, OneObjectRepresent):
     def full_data(self):
         return self.get_user(self.id, full=True)
 
-    def get_attribute(self, key: str):
+    def get_attribute(self, key: str, default=None):
         """Возвращает один из базовых параметров аккаунта по ключу
         Пытается минимизировать время, сначала обращается к
         урезанным данным"""
-        return self.short_data.get(key) or self.full_data.get(key)
+        return self.short_data.get(key, default) or self.full_data.get(key, default)
 
     def get_full_data(self, force):
         return self.get_user(self.id, full=True, force=force)

@@ -27,6 +27,9 @@ class ManyObjects(AnyObject):
     def size(self):
         return len(self.nodes)
 
+    def __len__(self):
+        return self.size
+
     def load_media_data(self, objects=None):
         raise NotImplementedError
 
@@ -475,5 +478,5 @@ class ManyObjects(AnyObject):
         raise NotImplementedError
 
     def clusters(self):
-        from ntmodule.clusters import Clusters
+        from core.module.clusters import Clusters
         return Clusters(self)

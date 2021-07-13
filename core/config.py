@@ -1,5 +1,4 @@
 from .constants import CACHE_TYPE_FULL_USE
-from config import Config
 
 PLOT_CIRCULAR = 'circular'
 

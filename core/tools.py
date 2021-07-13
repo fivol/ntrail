@@ -37,6 +37,7 @@ execution_locked_func = {}
 def get_random_color():
     def rand(x, y):
         return random.randint(x, y)
+
     return '#%02X%02X%02X' % (rand(0, 255), rand(0, 20), rand(100, 255))
 
 
@@ -233,6 +234,7 @@ def get_objs(ids):
 def set_obj(id, obj):
     objects[id] = obj
 
+
 def get(name, save=False):
     return MemoryCache.get(name, save)
 
@@ -360,8 +362,8 @@ def prepare_list(list_object, mean=True, median=True, fourth=True,
     if median: res['median'] = l[len(l) // 2]
     if common:
         common_array = calculate_array_common(basic_list)
-        res['commonMean'] = np.mean(common_array)
-        res['commonMedian'] = np.median(common_array)
+        res['commonMean'] = round(float(np.mean(common_array)), 1)
+        res['commonMedian'] = round(float(np.median(common_array)), 1)
 
     if fourth:
         res['fourth'] = l[len(l) // 4]

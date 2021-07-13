@@ -193,7 +193,7 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                     if id_:
                         self.nodes = [VKUser.parse_id(id_) for id_ in users]
                     else:
-                        usernames = [VKUser.get_username(url) for url in users]
+                        usernames = [VKUser.extract_username(url) for url in users]
                         usernames = clear_list(usernames)
                         self.resolve_screen_names(usernames)
                         self.nodes = [VKUser(username).id for username in usernames]
