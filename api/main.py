@@ -2,13 +2,14 @@ from enum import Enum
 from typing import Optional
 
 import aiohttp
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Response, status
 from fastapi.responses import RedirectResponse
 
 from models import Token, db, db_url
 from config import config
 from pydantic import BaseModel
 from fastapi.responses import PlainTextResponse
+from core.modules.vk.vkuser import VKUser
 
 from utils import SmartAccessDict
 
@@ -55,7 +56,6 @@ class ResponseVerbose(str, Enum):
 
 class VkUserResponse(BaseModel):
     user: Optional[dict]
-    error: Optional[str]
 
 
 async def get_token(vk_id: str):
@@ -75,9 +75,7 @@ async def check_token(token: str, **kwargs):
 
 @app.get('/verify/', response_class=PlainTextResponse, include_in_schema=False)
 async def vk_token_confirm(code: str):
-    """Получаем vk_id человека и выдаем ему токен
-    Чтобы получить токен, перейдите по ссылке
-    https://oauth.vk.com/authorize?client_id=7898476&redirect_uri=http://localhost:8000/verify/&scope=0&response_type=code"""
+    """Получаем vk_id человека и выдаем ему токен"""
     vk_access_token_url = 'https://oauth.vk.com/access_token'
     async with aiohttp.ClientSession() as session:
         async with session.get(vk_access_token_url, params={
@@ -90,37 +88,21 @@ async def vk_token_confirm(code: str):
                 response = await response.json()
                 vk_id = response['user_id']
             except:
-                return "Чтобы получить токен, перейдите по ссылке https://oauth.vk.com/authorize?client_id=7898476&redirect_uri=http://localhost:8000/verify/&scope=0&response_type=code"
+                return "Reloading page prohibited. Please, pass original link"
     return bytes(await get_token(vk_id), 'utf-8')
 
 
-async def make_request(q: str):
-    """Сделать запрос на основной сервер и получить json"""
-    host = 'http://127.0.0.1:5000'
-    async with aiohttp.ClientSession() as session:
-        request_url = f'{host}/query/'
-        try:
-            async with session.get(request_url, params={'q': q}) as resp:
-                try:
-                    return dict(await resp.json())
-                except:
-                    raise HTTPException(status_code=503, detail='Unknown response from main server')
-        except aiohttp.client_exceptions.ClientConnectorError:
-            raise HTTPException(status_code=503, detail='Main server stopped. Please, write to support')
-
-
 @app.get('/vk/', response_model=VkUserResponse, name='ВК аккаунт')
-async def vk_api(token: str = Query(None, title='API токен'),
+async def vk_api(response: Response,
+                 token: str = Query(None, title='API токен'),
                  options: list[VkRequestOption] = Query(..., title='API токен'),
                  verbose: ResponseVerbose = Query(ResponseVerbose.normal, title='Детализация ответа'),
                  user: str = Query(..., title='Аккаунт ВК',
-                                   description='Ссылка на пользователя ВК или его ID', min_length=2
+                                   description='username, ссылка или id пользователя ВК', min_length=2
                                    )) -> dict:
     """Получить информацию об одном аккаунте ВКонтакте. Запрос собирается на основе списка `options` из аргументов
     Возможны следующие варианты
     - basic: только данные самого аккаунта, самые быстрый запрос, возвращает следующую информацию
-    - followers: проанализировать еще и подписчиков (подписки)
-    - friends: проанализировать еще и подписчиков (подписки)
     """
     await check_token(token)
 
@@ -132,25 +114,13 @@ async def vk_api(token: str = Query(None, title='API токен'),
     user_data = {}
 
     if VkRequestOption.basic in options:
-        query = f'GET vk.user {user}'
-        response = SmartAccessDict(await make_request(query))
-        if len(response.get('data.clusters.items[0].entities.items', [])) == 0:
-            return {
-                'error': 'Аккаунт не найден'
-            }
-        user_cluster = SmartAccessDict(response.get('data.clusters.items[0]'))
-        user_dict = user_cluster.get('entities.items[0]')
-        user_data['url'] = user_dict.get('url')
-        user_data['username'] = user_dict.get('username')
-        user_data['valid'] = user_dict.get('valid')
-        user_data['id'] = user_dict.get('nativeID')
-        user_data['img'] = user_dict.get('img')
-
-    if VkRequestOption.friends in options:
-        query = f'GET vk.user {user} friends'
-        response = SmartAccessDict(await make_request(query))
-        friends = response.get('data.clusters.items[0]')
-        friends.get('properties')
+        user = VKUser(user)
+        if not user.valid:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+        user_data['id'] = user.id
+        user_data['username'] = user.get_attribute('')
+        user_data['name'] = user.name
+        user_data['url'] = user.url
 
     return {
         'user': user_data

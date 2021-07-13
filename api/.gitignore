@@ -1,4 +1,7 @@
 venv/
 .idea/
 *.pyc
-
+*.env
+*.db
+*.cache
+*.db-*
