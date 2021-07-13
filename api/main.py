@@ -1,4 +1,7 @@
-from enum import Enum
+import datetime
+import math
+from contextlib import suppress
+from enum import Enum, auto
 from typing import Optional
 
 import aiohttp
@@ -11,11 +14,13 @@ from pydantic import BaseModel
 from fastapi.responses import PlainTextResponse
 from core.modules.vk.vkuser import VKUser
 
-from utils import SmartAccessDict
+from tools import SmartAccessDict
 
 app = FastAPI(
     title='NTrail API',
-    version=config.get('VERSION')
+    version=config.get('VERSION'),
+    description='[Читать описание API на Gitbook](https://borisoffficial.gitbook.io/ntrail-api/). '
+                'Там подробно про каждый метод, лимиты, получение токена и т.д.'
 )
 
 
@@ -35,16 +40,14 @@ async def version():
     return config.get('VERSION')
 
 
-class VkRequestOption(str, Enum):
+class VkRequestOption(Enum):
     # Только базовая информация о пользователе
     basic = 'basic'
-    # Помимо аккаунта цели, получить список друзей
-    friends = 'friends'
-    # Сгруппировать друзей по кластерам и проанализировать их
-    clusters = 'clusters'
+    # Анализировать связи с друзьями, подписчиками и прочее
+    connections = 'connections'
 
 
-class ResponseVerbose(str, Enum):
+class ResponseVerbose(Enum):
     """Уровень детализации информации в запросе"""
     # Параметр по умолчанию, возвращать среднее количество информации
     normal = 'normal'
@@ -92,10 +95,16 @@ async def vk_token_confirm(code: str):
     return bytes(await get_token(vk_id), 'utf-8')
 
 
+class PropertySource(Enum):
+    page = auto()
+    friends = auto()
+    followers = auto()
+    following = auto()
+
+
 @app.get('/vk/', response_model=VkUserResponse, name='ВК аккаунт')
-async def vk_api(response: Response,
-                 token: str = Query(None, title='API токен'),
-                 options: list[VkRequestOption] = Query(..., title='API токен'),
+async def vk_api(token: str = Query(None, title='API токен'),
+                 options: list[VkRequestOption] = Query(['basic'], title='API токен'),
                  verbose: ResponseVerbose = Query(ResponseVerbose.normal, title='Детализация ответа'),
                  user: str = Query(..., title='Аккаунт ВК',
                                    description='username, ссылка или id пользователя ВК', min_length=2
@@ -112,15 +121,74 @@ async def vk_api(response: Response,
 
     # Данные, которые возвращает запрос
     user_data = {}
+    user = VKUser(user)
+    if not user.valid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+
+    def add_property(key: str, value, confidence: float = None, source: PropertySource = None):
+        """Добавить значение к ответу"""
+        if value is None:
+            return
+        if verbose == ResponseVerbose.simple:
+            user_data[key] = value
+        elif verbose == ResponseVerbose.normal:
+            property_dict = {
+                'value': value
+            }
+            if source:
+                property_dict['source'] = source.name
+            if confidence is not None:
+                property_dict['confidence'] = min(1.0, max(0.0, confidence))
+            user_data[key] = property_dict
+        else:
+            raise ValueError
 
     if VkRequestOption.basic in options:
-        user = VKUser(user)
-        if not user.valid:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
-        user_data['id'] = user.id
-        user_data['username'] = user.get_attribute('')
-        user_data['name'] = user.name
-        user_data['url'] = user.url
+        add_property('id', user.id, source=PropertySource.page)
+        add_property('url', user.url, source=PropertySource.page)
+        add_property('name', user.name, source=PropertySource.page)
+        add_property('username', user.get_attribute('screen_name'), source=PropertySource.page)
+        add_property('deactivated', user.get_attribute('deactivated'), source=PropertySource.page)
+        add_property('sex', ['not specified', 'female', 'male'][user.get_attribute('sex', 0)],
+                     source=PropertySource.page)
+        bdate = user.get_attribute('bdate')
+        add_property('birth', bdate, source=PropertySource.page)
+        add_property('photo', user.get_attribute('photo_200'), source=PropertySource.page)
+        # Возраст, взятый напрямую со страницы
+        if bdate and len(bdate.split('.')) == 3:
+            age = datetime.datetime.now() - datetime.datetime.strptime(bdate, '%d.%m.%Y')
+            add_property('age', age.days // 365)
+
+    if VkRequestOption.connections in options:
+        from core.modules.vk.vkcommunity import VKCommunity
+        friends: VKCommunity = user.friends()
+        friends_data = friends.process_data()
+
+        def extract_first(key):
+            return {
+                'key': key,
+                'value': friends_data[key]['source_list'][0][0].value,
+                'confidence': round(len(friends_data[key]['source_list'][0][0].id) / len(friends), 2)
+            }
+
+        add_property('friends_count', len(friends), source=PropertySource.friends)
+        with suppress(Exception):
+            if friends_data['age']['count'] > 4:
+                add_property('age', friends_data['age']['commonMedian'], source=PropertySource.friends,
+                             confidence=len(friends) / 100)
+        with suppress(Exception):
+            add_property(**extract_first('city'))
+        with suppress(Exception):
+            add_property(**extract_first('country'))
+        with suppress(Exception):
+            add_property(**extract_first('school'))
+        with suppress(Exception):
+            add_property(**extract_first('university'))
+        clusters = friends.pools()
+        add_property('social.groups.all.count', len([cluster for cluster in clusters if len(cluster) > 3]))
+        add_property('social.groups.big.count', len([cluster for cluster in clusters if len(cluster) > 8]))
+        add_property('social.groups.small.count',  len([cluster for cluster in clusters if 1 < len(cluster) <= 8]))
+        add_property('social.groups.free.count',  len([cluster for cluster in clusters if len(cluster) == 1]))
 
     return {
         'user': user_data
