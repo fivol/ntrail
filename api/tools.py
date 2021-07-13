@@ -12,7 +12,6 @@ class SmartAccessDict(dict):
             return default
 
 
-
 if __name__ == '__main__':
     a = SmartAccessDict({'a': {'b': 123, 'd': 'hello'}, 'x': [0, 3, 4]})
     assert a.get('a.b') == 123

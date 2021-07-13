@@ -5,7 +5,7 @@ from enum import Enum, auto
 from typing import Optional
 
 import aiohttp
-from fastapi import FastAPI, Query, HTTPException, Response, status
+from fastapi import FastAPI, Query, HTTPException, status
 from fastapi.responses import RedirectResponse
 
 from models import Token, db, db_url
@@ -45,6 +45,8 @@ class VkRequestOption(Enum):
     basic = 'basic'
     # Анализировать связи с друзьями, подписчиками и прочее
     connections = 'connections'
+    # Группы и сообщества человека
+    groups = 'groups'
 
 
 class ResponseVerbose(Enum):
@@ -54,7 +56,7 @@ class ResponseVerbose(Enum):
     # Упрощенный запрос, только необходимый минимум
     simple = 'simple'
     # Подробная инфа по запросу
-    detail = 'detail'
+    # detail = 'detail'
 
 
 class VkUserResponse(BaseModel):
@@ -127,7 +129,7 @@ async def vk_api(token: str = Query(None, title='API токен'),
 
     def add_property(key: str, value, confidence: float = None, source: PropertySource = None):
         """Добавить значение к ответу"""
-        if value is None:
+        if value is None or value == '':
             return
         if verbose == ResponseVerbose.simple:
             user_data[key] = value
@@ -158,6 +160,37 @@ async def vk_api(token: str = Query(None, title='API токен'),
         if bdate and len(bdate.split('.')) == 3:
             age = datetime.datetime.now() - datetime.datetime.strptime(bdate, '%d.%m.%Y')
             add_property('age', age.days // 365)
+        with suppress(Exception):
+            platform = user.get_attribute('last_seen')['platform']
+            add_property('platform.type', [None, 'web', 'apple', 'apple', 'android', 'web', 'web', 'web'][platform],
+                         source=PropertySource.page)
+        add_property('followers.count', user.get_attribute('followers_count'), source=PropertySource.page)
+        with suppress(Exception):
+            add_property('subscriptions.count', user.get_attribute('counters')['subscriptions'],
+                         source=PropertySource.page)
+            add_property('followers.count', user.get_attribute('counters')['followers'], source=PropertySource.page)
+        with suppress(Exception):
+            add_property('occupation', user.get_attribute('occupation')['type'], source=PropertySource.page)
+        with suppress(Exception):
+            add_property('university', user.get_attribute('universities')[0]['name'], source=PropertySource.page)
+        with suppress(Exception):
+            add_property('school', user.get_attribute('schools')[0]['name'], source=PropertySource.page)
+
+        with suppress(Exception):
+            add_property('active_user',
+                         datetime.datetime.now() - datetime.datetime.fromtimestamp(
+                             user.get_attribute('last_seen')['time']) < datetime.timedelta(days=3),
+                         source=PropertySource.page)
+        add_property('relation',
+                     [None, 'single', 'in a relationship', 'engaged', 'married', "it's complicated",
+                      'actively searching', 'in love'][user.get_attribute('relation')])
+        with suppress(Exception):
+            add_property('personal',
+                         [None, 'Communist', 'Socialist', 'Moderate', 'Liberal', "Conservative",
+                          'Monarchist', 'Ultraconservative', 'Apathetic', 'Libertian'][
+                             user.get_attribute('personal')['political']])
+        if user.get_attribute("instagram"):
+            add_property('links.instagram', f'https://www.instagram.com/{user.get_attribute("instagram")}/')
 
     if VkRequestOption.connections in options:
         from core.modules.vk.vkcommunity import VKCommunity
@@ -171,24 +204,33 @@ async def vk_api(token: str = Query(None, title='API токен'),
                 'confidence': round(len(friends_data[key]['source_list'][0][0].id) / len(friends), 2)
             }
 
-        add_property('friends_count', len(friends), source=PropertySource.friends)
+        add_property('friends.count', len(friends), source=PropertySource.friends)
         with suppress(Exception):
-            if friends_data['age']['count'] > 4:
+            if friends_data['age']['count'].value > 4:
                 add_property('age', friends_data['age']['commonMedian'], source=PropertySource.friends,
-                             confidence=len(friends) / 100)
+                             confidence=friends_data['age']['count'].value / 100)
         with suppress(Exception):
             add_property(**extract_first('city'))
         with suppress(Exception):
             add_property(**extract_first('country'))
         with suppress(Exception):
-            add_property(**extract_first('school'))
+            if not len(user.get_attribute('schools', [])):
+                add_property(**extract_first('school'))
         with suppress(Exception):
-            add_property(**extract_first('university'))
+            if not len(user.get_attribute('universities', [])):
+                add_property(**extract_first('university'))
         clusters = friends.pools()
         add_property('social.groups.all.count', len([cluster for cluster in clusters if len(cluster) > 3]))
         add_property('social.groups.big.count', len([cluster for cluster in clusters if len(cluster) > 8]))
-        add_property('social.groups.small.count',  len([cluster for cluster in clusters if 1 < len(cluster) <= 8]))
-        add_property('social.groups.free.count',  len([cluster for cluster in clusters if len(cluster) == 1]))
+        add_property('social.groups.small.count', len([cluster for cluster in clusters if 1 < len(cluster) <= 8]))
+        add_property('social.groups.free.count', len([cluster for cluster in clusters if len(cluster) == 1]))
+
+    if VkRequestOption.groups in options:
+        groups = user.groups()
+        add_property('groups.count', len(groups))
+        groups_data = groups.process_data()
+        add_property('groups.themes', [item[0].value for item in groups_data['activity_pages']['source_list']])
+        add_property('groups.tags', [item[0].value for item in groups_data['name']['source_list']])
 
     return {
         'user': user_data
