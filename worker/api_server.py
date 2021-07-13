@@ -79,8 +79,7 @@ class APIServerEmulator:
         # Инизиализируем с помощью токена пользователя
         # От имени которого совершаются запросы
         api_class = api_dict[query.service]
-        print(query.to_dict())
-        api_class_instance = api_class(access_token=query.access_token)
+        api_class_instance = api_class(query.env)
         method = query.method
 
         assert isinstance(method, str)

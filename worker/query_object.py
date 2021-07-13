@@ -98,7 +98,7 @@ class ComplexQuery(BasicQuery):
         else:
             raise NotImplementedError
 
-        super().__init__(service, method, key, params=params, env=env, **kwargs)
+        super().__init__(service, method, key, params=params, env=self.env, **kwargs)
 
     @classmethod
     def from_basic_query(cls, query: BasicQuery):

@@ -113,7 +113,8 @@ class VKAPI:
     Конструируется от токена пользователя, выполняющего запросы
     """
 
-    def __init__(self, access_token: str = None):
+    def __init__(self, env: dict = None):
+        access_token = env.get('access_token')
         assert access_token
         self.api = API(
             session=vk.Session(access_token=access_token),
