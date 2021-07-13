@@ -1,6 +1,6 @@
 from core.call_worker.worker.query_object import BasicQuery
 from core.call_worker.worker.api_server import APIServerEmulator
-from config import API_SERVER_REQUEST_VERSION
+from ..config import API_SERVER_REQUEST_VERSION
 
 
 class APIServerCall:

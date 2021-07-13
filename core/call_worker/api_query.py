@@ -3,16 +3,20 @@ from .worker.query_object import BasicQuery
 from core.local_cache import LocalCache
 from .api_server_call import APIServerCall
 from .worker.api_errors import APIError
-from flask import g
-from auth.db import AuthDB
 import typing as t
 
 
 class APIQueries:
+    default_env = {}
+
     def __init__(self):
         self.queries = set()
         self.valid = True
         self.curr_num = 0
+
+    @classmethod
+    def add_default_env(cls, env: dict):
+        cls.default_env = {**cls.default_env, **env}
 
     def __add__(self, other):
         for query in other.queries:
@@ -40,14 +44,7 @@ class APIQueries:
 
     def add_query(self, query: BasicQuery):
         assert isinstance(query, BasicQuery)
-        # Добавление пользовательского токена к запросу
-        query.access_token = None
-        if hasattr(g, 'user'):
-            query.access_token = AuthDB.get_api_token(user_id=g.user.id, service=query.service)
-        # TODO Продумать нормально неавторизованные запросы. Сейчас все выполняется от моего имени
-        if not query.access_token:
-            query.access_token = config.get('MY_VK_ACCESS_TOKEN')
-        assert query.access_token
+        query.env = {**self.default_env, **query.env}
         query.num = self.curr_num
         self.curr_num += 1
         self.queries.add(query)

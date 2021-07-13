@@ -2,7 +2,7 @@ from .media_object import MediaObject
 from core.module.many_objects import ManyObjects
 from core.tools import once_property, valid_object_method, align_string
 from .vkapi import VKAPI
-from glbal import logger
+from core.glbal import logger
 
 
 class VKAlbum(MediaObject, VKAPI):

@@ -4,7 +4,7 @@ from core.tools import once_property, valid_object_method, get_sites
 import matplotlib.pyplot as plt
 import io
 import re
-from glbal import logger
+from core.glbal import logger
 from .vkapi import VKAPI
 from .vkphoto import VKPhotos, VKAlbums
 from core.call_worker.worker.api_errors import APIError, INVALID_ID_ERROR
@@ -20,7 +20,6 @@ class VKUser(VKAPI, OneObjectRepresent):
 
     def __init__(self, user, **kwargs):
         super().__init__()
-        print(user)
         self.id = None
         self.status = None
 
@@ -145,6 +144,12 @@ class VKUser(VKAPI, OneObjectRepresent):
     def full_data(self):
         return self.get_user(self.id, full=True)
 
+    def get_attribute(self, key: str):
+        """Возвращает один из базовых параметров аккаунта по ключу
+        Пытается минимизировать время, сначала обращается к
+        урезанным данным"""
+        return self.short_data.get(key) or self.full_data.get(key)
+
     def get_full_data(self, force):
         return self.get_user(self.id, full=True, force=force)
 
@@ -168,7 +173,6 @@ class VKUser(VKAPI, OneObjectRepresent):
         if not id_.startswith(VKUser.id_prefix):
             return None
         return int(id_[len(VKUser.id_prefix):])
-
 
     @valid_object_method
     def get_key_words(self):

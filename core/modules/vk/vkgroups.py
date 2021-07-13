@@ -8,7 +8,7 @@ from core.tools import once_property, get_common_texts_terms, cache_method, get_
 from collections import Counter
 import networkx as nx
 import math
-from glbal import logger
+from core.glbal import logger
 from core.tools import dict_from_dicts, prepare_list
 from core.modules.vk.vkapi import VKAPI
 

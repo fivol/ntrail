@@ -1,4 +1,4 @@
-from glbal import logger
+from core.glbal import logger
 from core.module.tied_value import TiedValue
 import numpy as np
 

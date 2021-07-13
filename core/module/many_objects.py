@@ -117,9 +117,8 @@ class ManyObjects(AnyObject):
 
     def print(self, k=50, shuffle=False):
         head_line = f'Class: {self.__class__}. Size: {self.size}'
-        print(head_line)
         if len(self.nodes) != len(set(self.nodes)):
-            print('Nodes repeats')
+            pass
         if self.counter:
             objects = sorted(self.objects, key=lambda x: -self.counter[x.id])
         else:

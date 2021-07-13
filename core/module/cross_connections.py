@@ -23,7 +23,6 @@ class NodeImportance(Represent):
                     node_cross_cluster_connectedness[node] += 1
 
         important_nodes = sorted(node_cross_cluster_connectedness.items(), key=lambda x: x[1], reverse=True)
-        print(important_nodes)
         entities = [
             {
                 **self.many_objects.base_class(node).get_entity(),
@@ -65,7 +64,6 @@ class CrossConnections(Represent):
         main = None
         if main_obj:
             main = main_obj.id
-        print('main', main_obj, main)
         cluster_connectedness = defaultdict(int)
         for node in all_nodes:
             for neighbor in graph.neighbors(node):

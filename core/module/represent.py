@@ -10,7 +10,6 @@ from core.tools import merge_lists
 def try_base_analog(func):
     def wrapper(self, *args, **kwargs):
         func_name = func.__name__
-        print('func_name', func_name)
         base_class = self.__class__.base_class
         if base_class and func_name in base_class.available_attributes and self.size == 1:
             obj = base_class(self.data_list()[0])

@@ -138,7 +138,6 @@ def timeit(func):
         t = time()
         result = func(*args, **kwargs)
         eps = time() - t
-        print(f'# timeit {func.__name__} eps: {eps:.5f} time: {str(time())[7:]}')
         return result
 
     return wrapper
@@ -171,7 +170,6 @@ def sizeof(obj, mb_capacity=False):
 
 def get_field_values(data_list, field, capitalize=False, clean=False, counter=False, key=None):
     def prepare_value(value):
-        # print(value)
         if key:
             value = value[key]
         if capitalize:
@@ -213,7 +211,7 @@ class MemoryCache:
     def save_memory(cls):
         cls.get_data_locked = True
         try:
-            with open('data/data', 'wb') as f:
+            with open('.cache', 'wb') as f:
                 pickle.dump(cls.stored_data, f)
         except:
             logger.exception('Fail to save memory')
@@ -225,7 +223,7 @@ class MemoryCache:
     def load_memory(cls):
         import pickle
         try:
-            with open('data/data', 'rb') as f:
+            with open('.cache', 'rb') as f:
                 cls.stored_data = pickle.load(f)
         except FileNotFoundError:
             logger.warning('Memory file not found!')
@@ -264,7 +262,6 @@ def list_from_dicts(dicts_list, key, counter=False, ignore_zero=False, most_comm
 
     if capitalize:
         result = [item.capitalize() for item in result]
-    # print([item for item in result])
     if counter:
         res = Counter(result)
         if most_common:
