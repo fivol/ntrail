@@ -3,7 +3,7 @@ from .api_errors import APIError
 
 
 class BasicQuery:
-    def __init__(self, service: str, method: str, key, num: int = -1, params=None, **kwargs):
+    def __init__(self, service: str, method: str, key, num: int = -1, params=None, env: dict = None, **kwargs):
         """
         :access_token: токен доступа к сервису
         TODO заменить access_token на объект идентификации, включающий в себя id пользователя и access_token
@@ -16,11 +16,11 @@ class BasicQuery:
         assert isinstance(method, str)
         self.service = service
         self.method = method
+        self.env = env or {}
         self.key = key
         self.num = num
         self.params = params
         self.value = kwargs.get('value')
-        self.access_token = getattr(self, 'access_token', None) or kwargs.get('access_token')
 
     def set_value(self, value):
         self.value = value
@@ -56,7 +56,7 @@ class BasicQuery:
             'key': self.key,
             'value': self.value,
             'params': self.params,
-            'access_token': self.access_token
+            'env': self.env
         }
 
     @classmethod
@@ -76,15 +76,16 @@ class BasicQuery:
 
 
 class ComplexQuery(BasicQuery):
-    def __init__(self, service, method, key, queries=None, params=None, convert_type=0, **kwargs):
+    def __init__(self, service, method, key, queries=None, params=None, convert_type=0, env: dict = None, **kwargs):
         self.basic_queries = queries
         self.convert_type = convert_type
         assert len(queries)
         assert isinstance(queries, list)
+        self.env = env or {}
         # Добавление access_token из queries
         if queries and len(queries):
             first_query: BasicQuery = next(iter(queries))
-            self.access_token = first_query.access_token
+            self.env = first_query.env
 
         if convert_type == 0:
             assert len(queries) == 1
@@ -97,7 +98,7 @@ class ComplexQuery(BasicQuery):
         else:
             raise NotImplementedError
 
-        super().__init__(service, method, key, params=params, **kwargs)
+        super().__init__(service, method, key, params=params, env=env, **kwargs)
 
     @classmethod
     def from_basic_query(cls, query: BasicQuery):

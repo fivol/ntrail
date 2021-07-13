@@ -1,7 +1,7 @@
 import vk
 from vk.exceptions import VkAPIError
 import time
-from ...glbal import logger
+from ...config import logger
 
 from ...api_errors import VKError, INVALID_ID_ERROR, APIError
 

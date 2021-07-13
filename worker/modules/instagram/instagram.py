@@ -2,8 +2,8 @@ import time
 from .instagramlib import Account, WebAgentAccount, HasMediaElement
 from .instagramlib.exceptions import InternetException, UnexpectedResponse
 from core.app_data import inst_accounts_data
-from glbal import logger
-from core.module.tools import ThreadResult, sequential_start, MemoryCache, get
+from ...config import logger
+from ...tools import ThreadResult, sequential_start, MemoryCache
 import random
 
 REQUEST_ERROR_404 = 'REQUEST_ERROR_404'
@@ -18,12 +18,14 @@ REQUEST_STATUS_FAIL = 'REQUEST_STATUS_FAIL'
 
 dead_agents = set()
 
+get = MemoryCache.get
+
 try:
-    with open('data/dead_agents', 'r') as f:
+    with open('dead_agents', 'r') as f:
         globals()['dead_agents'] = set(f.read().split(','))
 except FileNotFoundError:
     logger.debug('dead_agents file not found')
-    with open('data/dead_agents', 'w') as f:
+    with open('dead_agents', 'w') as f:
         f.write('')
 
 
@@ -134,12 +136,12 @@ class InstRequest:
 
     @classmethod
     def print_stat(cls):
-        print('Good agents count:', len(cls.good_agents))
-        print('Wait agents count:', len(cls.wait_agents))
-        print('Active agents count:', len(cls.active_agents))
-        print('Used agents count:', len(cls.used_agents))
-        print('Last_agent_review_time:', time.time() - cls.last_agent_review_time)
-        print('Force requests:', cls.force_requests)
+        logger.debug('Good agents count:', len(cls.good_agents))
+        logger.debug('Wait agents count:', len(cls.wait_agents))
+        logger.debug('Active agents count:', len(cls.active_agents))
+        logger.debug('Used agents count:', len(cls.used_agents))
+        logger.debug('Last_agent_review_time:', time.time() - cls.last_agent_review_time)
+        logger.debug('Force requests:', cls.force_requests)
 
     @classmethod
     @sequential_start

@@ -3,7 +3,7 @@ from .modules.vk.vk import VKAPI
 from .modules.instagram.instagram import IGAPI
 from .query_handler import QueryHandler
 from .query_object import BasicQuery, ComplexQuery
-from .glbal import logger
+from .config import logger
 from .api_errors import ServerError
 
 import requests

@@ -47,7 +47,7 @@ class VKHandler:
     service = 'vk'
 
     @classmethod
-    def combine_queries(cls, methods_dict):
+    def _combine_queries(cls, methods_dict):
         complex_queries = []
         for method, queries in methods_dict.items():
             if not queries:
@@ -74,7 +74,7 @@ class VKHandler:
         return complex_queries
 
     @staticmethod
-    def generate_execute_string(queries):
+    def _generate_execute_string(queries):
         def query_execute_str(query):
             if query.method == 'friends':
                 return 'API.friends.get({"user_id":%d})' % int(query.key)
@@ -100,11 +100,11 @@ class VKHandler:
         return code_string
 
     @classmethod
-    def calculate_execute(cls, to_execute):
+    def _calculate_execute(cls, to_execute):
         execute_queries_bunches = split_list(to_execute, execute_queries_count)
         execute_queries = []
         for query_bunch in execute_queries_bunches:
-            execute_string = cls.generate_execute_string(query_bunch)
+            execute_string = cls._generate_execute_string(query_bunch)
             query = ComplexQuery(cls.service, 'execute', execute_string,
                                  queries=query_bunch,
                                  convert_type=2)
@@ -113,7 +113,7 @@ class VKHandler:
         return execute_queries
 
     @classmethod
-    def get_queries_to_execute(cls, complex_queries_all):
+    def _get_queries_to_execute(cls, complex_queries_all):
         service_fast_count = round(execute_queries_count * user_token_queries_count / service_token_queries_count)
         non_execute = [query for query in complex_queries_all if query.method not in available_execute]
         complex_queries = [query for query in complex_queries_all if query.method in available_execute]
@@ -151,12 +151,12 @@ class VKHandler:
         for query in queries:
             methods_dict[query.method].append(query)
 
-        complex_queries = cls.combine_queries(methods_dict)
+        complex_queries = cls._combine_queries(methods_dict)
         assert len(complex_queries)
         assert isinstance(complex_queries, list)
-        to_execute_queries, other_queries = cls.get_queries_to_execute(complex_queries)
+        to_execute_queries, other_queries = cls._get_queries_to_execute(complex_queries)
         assert len(to_execute_queries) + len(other_queries) == len(complex_queries)
-        complex_queries = cls.calculate_execute(to_execute_queries)
+        complex_queries = cls._calculate_execute(to_execute_queries)
         if complex_queries:
             assert isinstance(complex_queries, list)
             assert isinstance(next(iter(complex_queries)), ComplexQuery)
