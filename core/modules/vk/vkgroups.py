@@ -146,7 +146,7 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         return g
 
     def get_members(self, each_amount=1000):
-        from module_vk.vkcommunity import VKCommunity
+        from core.modules.vk.vkcommunity import VKCommunity
         return VKCommunity(sum([group.get_members(each_amount) for group in self.objects], []))
 
     def load_media_data(self, groups=None):
