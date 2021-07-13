@@ -7,6 +7,8 @@
 uvicorn main:app --reload
 ```
 
+### Получить access_token можно [здесь](https://vkhost.github.io/)
+
 
 ## Получение токена
 [Инструкция](https://vk.com/dev/auth_sites)
