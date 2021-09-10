@@ -56,7 +56,7 @@ class ResponseVerbose(Enum):
     # Упрощенный запрос, только необходимый минимум
     simple = 'simple'
     # Подробная инфа по запросу
-    # detail = 'detail'
+    detail = 'detail'
 
 
 class VkUserResponse(BaseModel):
@@ -104,16 +104,18 @@ class PropertySource(Enum):
     following = auto()
 
 
-@app.get('/vk/', response_model=VkUserResponse, name='ВК аккаунт')
+@app.get('/vk/user/', response_model=VkUserResponse, name='ВК аккаунт')
 async def vk_api(token: str = Query(None, title='API токен'),
                  options: list[VkRequestOption] = Query(['basic'], title='API токен'),
-                 verbose: ResponseVerbose = Query(ResponseVerbose.normal, title='Детализация ответа'),
+                 verbose: ResponseVerbose = Query(ResponseVerbose.simple, title='Детализация ответа'),
                  user: str = Query(..., title='Аккаунт ВК',
                                    description='username, ссылка или id пользователя ВК', min_length=2
                                    )) -> dict:
     """Получить информацию об одном аккаунте ВКонтакте. Запрос собирается на основе списка `options` из аргументов
     Возможны следующие варианты
     - basic: только данные самого аккаунта, самые быстрый запрос, возвращает следующую информацию
+    - connections: проанализировать друзей, подписки и подписчиков
+    - groups: добавить поля, связанные с группами, сообществами пользователя
     """
     await check_token(token)
 
