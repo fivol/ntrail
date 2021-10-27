@@ -1,7 +1,7 @@
 from collections import defaultdict
-from .query_object import ComplexQuery, BasicQuery
-from .api_errors import APIError
-from .tools import split_list
+from query_object import ComplexQuery, BasicQuery
+from api_errors import APIError
+from tools import split_list
 
 
 # Принимает список базовых запросов. Задача максимально оптимально создать
