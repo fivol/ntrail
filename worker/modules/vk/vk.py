@@ -1,5 +1,6 @@
 import typing
 
+import celery as celery
 import vk
 from vk.exceptions import VkAPIError
 import time
@@ -122,6 +123,11 @@ users_full_fields = [
     'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
     'universities', 'verified', 'counters', 'screen_name', 'lists', 'is_closed',
 ]
+
+
+class CeleryTask(celery.Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
 
 
 class VkParser(BaseParser):

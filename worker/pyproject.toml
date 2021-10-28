@@ -6,7 +6,6 @@ authors = ["Boris Bondarenko <borisoffficial@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-celery = "^5.1.2"
 redis = "^3.5.3"
 flower = "^1.0.0"
 requests = "^2.26.0"
