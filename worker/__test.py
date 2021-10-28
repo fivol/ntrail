@@ -76,6 +76,10 @@ class ActualTask:
         return [future.get() for future in futures]
 
 
+def deferred_task(func) -> typing.Callable:
+    return ActualTask(func, func.__name__, func.__class__)
+
+
 class BaseMeta(type):
     def __init__(cls, name, bases, dct):
         if not bases:
