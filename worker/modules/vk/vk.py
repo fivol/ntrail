@@ -84,23 +84,7 @@ class VkApiAccessor:
     pass
 
 
-class VkSessionManager:
-    """
-    Поддерживает сессии для обращения к endpoint-ам вк
-    """
 
-    @classmethod
-    def get_user_session(cls):
-        return ReliableAPI(
-            session=vk.Session(access_token=access_token),
-            v=VK_API_VERSION,
-            lang=VK_API_LANG,
-            timeout=VK_API_TIMEOUT)
-
-    @classmethod
-    def get_app_session(cls):
-        return ReliableAPI(session=vk.Session(access_token=app_token), v=VK_API_VERSION, lang=VK_API_LANG,
-                           timeout=VK_API_TIMEOUT)
 
 
 # Токен приложения. Используется один на весь сервис

@@ -94,14 +94,15 @@ class BaseMeta(type):
 
 
 class Base(metaclass=BaseMeta):
-    @classmethod
-    def skip(cls):
-        pass
-
-    @classmethod
-    def assert_skip(cls, value):
-        if not value:
-            cls.skip()
+    pass
+    # @classmethod
+    # def skip(cls):
+    #     pass
+    #
+    # @classmethod
+    # def assert_skip(cls, value):
+    #     if not value:
+    #         cls.skip()
 
 
 class SessionManager:
@@ -113,6 +114,7 @@ class SessionManager:
 class Derived(Base):
     @classmethod
     def get_user(cls, user_id: int):
+        sleep(0.1)
         return user_id + 1
 
     @classmethod
@@ -121,23 +123,25 @@ class Derived(Base):
 
 
 if __name__ == '__main__':
-    print(Derived.friends.map(range(200)))
+    # print(type(SessionManager))
+    # exit(0)
+    print(Derived.get_user.map(range(1000)))
     exit(0)
 
     from threading import Thread
     import concurrent.futures
     t0 = time()
-    count = 220
+    count = 500
 
-    threads = [Thread(target=lambda: Derived.get_user(i)) for i in range(count)]
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-    #     for number, prime in executor.map(lambda x: Derived.get_user(x), range(50)):
-    #         print('%d is prime: %s' % (number, prime))
-    for thread in threads:
-        thread.start()
-
-    for thread in threads:
-        thread.join()
+    # threads = [Thread(target=lambda: Derived.get_user(i)) for i in range(count)]
+    # # with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    # #     for number, prime in executor.map(lambda x: Derived.get_user(x), range(50)):
+    # #         print('%d is prime: %s' % (number, prime))
+    # for thread in threads:
+    #     thread.start()
+    #
+    # for thread in threads:
+    #     thread.join()
 
     print("Time elapsed:", time() - t0)
     print('Rpc: ', count / (time() - t0))
