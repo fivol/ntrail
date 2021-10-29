@@ -3,7 +3,7 @@ from collections import deque
 from random import randint
 from time import time
 
-from credentials import CredentialsServerApi
+from session.credentials import CredentialsServerApi
 from session.exceptions import NoTokenAvailableException, ApiLimitException, SessionAction
 from session.session_provider import SessionProvider
 from session.session_state import SessionState

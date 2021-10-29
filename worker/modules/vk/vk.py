@@ -1,9 +1,12 @@
+from celery_wrapper.app import app
+
 import asyncio
 import logging
 import typing
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
 import config
+from modules.parser import BaseParser
 
 from session.exceptions import SessionWait, SessionRemove
 from session.session_manager import SessionManager
@@ -43,7 +46,7 @@ class VkApiSession(SessionState):
             raise SessionRemove(reason='Captcha')
 
 
-class VkMethods:
+class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
@@ -72,9 +75,15 @@ class VkMethods:
 
 
 async def main():
-    # print(await VkMethods.user(1))
-    for i in range(20):
-        print(await VkMethods.user(1))
+    print(await VkMethods.user(1))
+    exit(0)
+    users = await asyncio.gather(
+        *[
+            VkMethods.user(1)
+            for _ in range(2)
+        ]
+    )
+    print(users)
 
 if __name__ == '__main__':
     asyncio.run(main())

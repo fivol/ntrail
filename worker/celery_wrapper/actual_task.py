@@ -1,8 +1,6 @@
 import typing
-
-from celery_wrapper.task_executing import TaskBase
-
-from app import app
+from celery_wrapper.app import app
+from celery_wrapper.celery_task import TaskBase
 
 
 class ActualTask:
@@ -31,7 +29,7 @@ class ActualTask:
         VkApi.resolve("https://vk.com/keklol")
         """
         future = self._run_task(args, kwargs)
-        result = future.get(timeout=10)
+        result = future.get(timeout=2)
         return result
 
     def _run_task(self, args, kwargs):

@@ -15,5 +15,8 @@
 
 ## Воркеры
 ### Запуск
+```shell
+celery -A celery_wrapper.app worker -l DEBUG -c 1
+```
 
 ### Мониторинг
