@@ -1,3 +1,5 @@
+from session.exceptions import SessionException
+
 
 class SessionProvider:
     def __init__(self, session, manager=None, error_handler=None):
@@ -9,6 +11,10 @@ class SessionProvider:
         return self._session.session
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        action = self._error_handler(exc_type, exc_val, exc_tb)
-        self._manager.return_session(self._session, action=action)
+        try:
+            self._error_handler(exc_type, exc_val, exc_tb)
+        except SessionException as action:
+            self._manager.return_session(self._session, action=action)
+        else:
+            self._manager.return_session(self._session)
         return False

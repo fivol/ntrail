@@ -1,3 +1,12 @@
+import typing
+from collections import deque
+from random import randint
+from time import time
+
+from credentials import CredentialsServerApi
+from session.exceptions import NoTokenAvailableException, ApiLimitException, SessionAction
+from session.session_provider import SessionProvider
+from session.session_state import SessionState
 
 
 class SessionManager:
@@ -16,7 +25,7 @@ class SessionManager:
         self._key_type = key_type
 
     def get(self):
-        return SessionProvider(session=self._get_session(), manager=self)
+        return SessionProvider(session=self._get_session(), manager=self, error_handler=self._error_handler)
 
     def _create_session(self, key):
         origin_session = self._session_maker(key)
@@ -33,7 +42,7 @@ class SessionManager:
 
     def __filter_new_keys(self, keys):
         new_keys = list(filter(lambda t: t not in self._all_keys, keys))
-        if len(new_keys) != keys:
+        if len(new_keys) != len(keys):
             raise RuntimeWarning('Credentials server do not work properly')
         return new_keys
 
@@ -45,7 +54,7 @@ class SessionManager:
             self._active_queue.appendleft(session)
 
     def _receive_keys(self):
-        count = len(self._active_queue)
+        count = max(1, len(self._active_queue))
         tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(count))
         self.__add_new_keys(tokens)
         return tokens
@@ -77,9 +86,5 @@ class SessionManager:
             return session
 
     def return_session(self, session, action: SessionAction = None):
-        if not action:
-            self._active_queue.append(session)
-        elif isinstance(action, SessionWait):
-            pass
-        else:
-            raise NotImplementedError
+        self._active_queue.append(session)
+        # TODO handle session actions

@@ -21,7 +21,7 @@ class ActualTask:
 
     def _init_task(self):
         name = f'task-{self.cls.__name__}.{self.method_name}'
-        self._celery_task = TaskBase(self.method, self.method_name)
+        self._celery_task = TaskBase(self.method, self.method_name, cls=self.cls)
         self._celery_task.name = name
         app.register_task(self._celery_task)
 

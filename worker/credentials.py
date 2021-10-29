@@ -1,4 +1,5 @@
 
+
 class CredentialsServerApi:
     """Основной класс для получения данных авторизации
         Его задачи:
@@ -8,7 +9,7 @@ class CredentialsServerApi:
     """
 
     tokens = [
-        '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'
+        '7c5bcbdb7c5bcbdb7c5bcbdb9b7c37ff7177c5b7c5bcbdb211516ab57c448a13e033bb1'  # my app token
     ]
 
     @classmethod
