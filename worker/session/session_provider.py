@@ -10,10 +10,12 @@ class SessionProvider:
         return self._session.session
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        try:
-            self._session.handle_error(exc_type, exc_val, exc_tb)
-        except SessionException as action:
-            self._manager.return_session(self._session, action=action)
-        else:
-            self._manager.return_session(self._session)
+        if exc_type:
+            try:
+                self._session.handle_error(exc_type, exc_val, exc_tb)
+            except SessionException as action:
+                self._manager.return_session(self._session, action=action)
+                return False
+
+        self._manager.return_session(self._session)
         return False

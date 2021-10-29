@@ -1,11 +1,16 @@
 import asyncio
+import logging
 import typing
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
+import config
 
 from session.exceptions import SessionWait, SessionRemove
 from session.session_manager import SessionManager
 from session.session_state import SessionState
+
+
+logger = logging.getLogger('vk')
 
 VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
@@ -29,6 +34,7 @@ class VkApiSession(SessionState):
         await self.__vk_session.close()
 
     def handle_error(self, exc_type, exc_val, exc_tb):
+        logger.info('Vk Api error handle')
         # TODO This is just example. Make normal
         if exc_type == VkAPIError:
             raise SessionWait(seconds=1)
@@ -51,8 +57,7 @@ class VkMethods:
 
     @classmethod
     async def user(cls, user_id) -> dict:
-        async with cls.user_api.get() as api:
-            print(api)
+        async with cls.app_api.get() as api:
             return await api.users.get(user_ids=user_id)
 
     @classmethod
@@ -63,11 +68,13 @@ class VkMethods:
     @classmethod
     async def friends(cls, user_id) -> typing.Union[dict, str]:
         async with cls.app_api.get() as api:
-            return api.friends.get(user_id=user_id)
+            return await api.friends.get(user_id=user_id)
 
 
 async def main():
-    print(await VkMethods.user(1))
+    # print(await VkMethods.user(1))
+    for i in range(20):
+        print(await VkMethods.user(1))
 
 if __name__ == '__main__':
     asyncio.run(main())
