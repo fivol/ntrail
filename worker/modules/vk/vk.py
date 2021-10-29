@@ -2,9 +2,17 @@ import typing
 
 import celery as celery
 import vk
-from vk.exceptions import VkAPIError
 import time
+import asyncio
+import typing
+from random import randint
 
+from aiovk import TokenSession, API
+from aiovk.exceptions import VkCaptchaNeeded, VkTwoFactorCodeNeeded, VkAPIError
+from collections import deque
+from time import time
+
+from session.session_manager import SessionManager
 from ..parser import BaseParser
 from ...config import logger
 
@@ -14,6 +22,23 @@ VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
 # 10 секунд - ограничение на время выполнения запроса к API
 VK_API_TIMEOUT = 10
+
+# https://github.com/Fahreeve/aiovk
+
+
+def create_vk_session(token: str):
+    session = TokenSession(access_token=token)
+    session.API_VERSION = '5.103'
+    return API(session)
+
+
+def session_error_handler(exc_type, exc_val, exc_tb):
+    # TODO This is just example. Make normal
+    if exc_type == VkAPIError:
+        raise SessionWait(seconds=1)
+
+    if exc_type == VkCaptchaNeeded:
+        raise SessionRemove(reason='Captcha')
 
 
 class ReliableAPI(vk.API):
@@ -250,3 +275,25 @@ class VkParser(BaseParser):
     #     assert isinstance(code_string, str)
     #     res = self.api.execute(code=code_string)
     #     return res
+
+
+class VkMethods:
+    user_api = SessionManager(key_type='vk.user.token',
+                              session_maker=create_vk_session, error_handler=session_error_handler)
+    app_api = SessionManager(key_type='vk.app.token',
+                             session_maker=create_vk_session, error_handler=session_error_handler)
+
+    # TODO Add ability to combine managers in context manager
+    # To call any available api for example
+
+    @classmethod
+    async def _wrapper(cls, method, args, kwargs):
+        try:
+            method(*args, **kwargs)
+        except SessionException:
+            pass
+
+    @classmethod
+    async def user(cls, user_id):
+        async with cls.user_api.get() as api:
+            return await api.users.get(user_ids=user_id)

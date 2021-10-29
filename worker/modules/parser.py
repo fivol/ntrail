@@ -1,6 +1,7 @@
+from task_executing import TasksExecutorMeta
 
 
-class BaseParser:
+class BaseParser(metaclass=TasksExecutorMeta):
     """
     Базовый класс для парсеров.
     Парсеры это просто группа методов взаимодейсвия с одним сервисом,

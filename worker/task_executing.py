@@ -1,9 +1,7 @@
 import typing
-from celery import Celery, Task
-from time import sleep, time
-from collections.abc import Iterable
+from celery import Task
 
-app = Celery('test_tasks', broker='redis://localhost', backend='redis://localhost')
+from app import app
 
 
 class TaskBase(Task):
@@ -66,7 +64,7 @@ class ActualTask:
                     self.kwargs = item[1]
                 elif isinstance(item, dict):
                     self.kwargs = item
-                elif isinstance(item, Iterable):
+                elif isinstance(item, typing.Iterable):
                     self.args = list(item)
                 else:
                     self.args = (item, )
@@ -80,7 +78,7 @@ def deferred_task(func) -> typing.Callable:
     return ActualTask(func, func.__name__, func.__class__)
 
 
-class BaseMeta(type):
+class TasksExecutorMeta(type):
     def __init__(cls, name, bases, dct):
         if not bases:
             # Base class creation
@@ -91,69 +89,3 @@ class BaseMeta(type):
                     continue
                 task = ActualTask(method=getattr(cls, method_name), method_name=method_name, cls=cls)
                 setattr(cls, method_name, task)
-
-
-class Base(metaclass=BaseMeta):
-    pass
-    # @classmethod
-    # def skip(cls):
-    #     pass
-    #
-    # @classmethod
-    # def assert_skip(cls, value):
-    #     if not value:
-    #         cls.skip()
-
-
-class SessionManager:
-    @classmethod
-    def get_api(cls):
-        return 123
-
-
-class Derived(Base):
-    @classmethod
-    def get_user(cls, user_id: int):
-        sleep(0.1)
-        return user_id + 1
-
-    @classmethod
-    def friends(cls, user_id: int):
-        return [user_id] * 10
-
-
-if __name__ == '__main__':
-    # print(type(SessionManager))
-    # exit(0)
-    print(Derived.get_user.map(range(1000)))
-    exit(0)
-
-    from threading import Thread
-    import concurrent.futures
-    t0 = time()
-    count = 500
-
-    # threads = [Thread(target=lambda: Derived.get_user(i)) for i in range(count)]
-    # # with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-    # #     for number, prime in executor.map(lambda x: Derived.get_user(x), range(50)):
-    # #         print('%d is prime: %s' % (number, prime))
-    # for thread in threads:
-    #     thread.start()
-    #
-    # for thread in threads:
-    #     thread.join()
-
-    print("Time elapsed:", time() - t0)
-    print('Rpc: ', count / (time() - t0))
-
-"""
-Эксперимент: каждый запрос выполняется 0.1 секунды с помощью sleap
-Простой запуск (количество потоков равно количеству ядер) - rps: 65
-На 20 потоках rps: 130
-На 30 rps: 170
-40: 192
-50: 206
-60: 187
-
-То есть оптимум при 10 запросах в секунду примерно 50 потоков
-"""
