@@ -18,7 +18,7 @@ class BaseParser(metaclass=TasksExecutorMeta):
         Calling every time when call any method of child classes
         """
         try:
-            return method(*args, **kwargs)
+            return await method(*args, **kwargs)
         except SessionException:
             # Не удалось выполнить задачу из-за проблем с сессией, первый запрос провалился
             return task.replace(task.signature(args, kwargs))

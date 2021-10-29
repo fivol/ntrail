@@ -5,6 +5,7 @@ from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
 
 from session.exceptions import SessionWait, SessionRemove
 from session.session_manager import SessionManager
+from session.session_state import SessionState
 
 VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
@@ -13,19 +14,27 @@ VK_API_LANG = 'ru'
 VK_API_TIMEOUT = 10
 
 
-def create_vk_session(token: str):
-    session = TokenSession(access_token=token)
-    session.API_VERSION = VK_API_VERSION
-    return API(session)
+class VkApiSession(SessionState):
+    def __init__(self, *args, **kwargs):
+        self.__vk_session = None
+        super().__init__(*args, **kwargs)
 
+    def create(self, key: str):
+        session = TokenSession(access_token=key)
+        self.__vk_session = session
+        session.API_VERSION = VK_API_VERSION
+        return API(session)
 
-def session_error_handler(exc_type, exc_val, exc_tb):
-    # TODO This is just example. Make normal
-    if exc_type == VkAPIError:
-        raise SessionWait(seconds=1)
+    async def close(self):
+        await self.__vk_session.close()
 
-    if exc_type == VkCaptchaNeeded:
-        raise SessionRemove(reason='Captcha')
+    def handle_error(self, exc_type, exc_val, exc_tb):
+        # TODO This is just example. Make normal
+        if exc_type == VkAPIError:
+            raise SessionWait(seconds=1)
+
+        if exc_type == VkCaptchaNeeded:
+            raise SessionRemove(reason='Captcha')
 
 
 class VkMethods:
@@ -34,10 +43,8 @@ class VkMethods:
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
         Конструируется от токена пользователя, выполняющего запросы
     """
-    user_api = SessionManager(key_type='vk.user.token',
-                              session_maker=create_vk_session, error_handler=session_error_handler)
-    app_api = SessionManager(key_type='vk.app.token',
-                             session_maker=create_vk_session, error_handler=session_error_handler)
+    user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession)
+    app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession)
 
     # TODO Add ability to combine managers in context manager
     # To call any available api for example
@@ -45,7 +52,7 @@ class VkMethods:
     @classmethod
     async def user(cls, user_id) -> dict:
         async with cls.user_api.get() as api:
-            print(api, type(api))
+            print(api)
             return await api.users.get(user_ids=user_id)
 
     @classmethod

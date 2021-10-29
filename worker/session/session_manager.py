@@ -1,4 +1,4 @@
-import typing
+import asyncio
 from collections import deque
 from random import randint
 from time import time
@@ -15,21 +15,18 @@ class SessionManager:
     Возвращает алгоритмом round robin
     """
 
-    def __init__(self, key_type: str = None,
-                 session_maker: typing.Callable = None, error_handler: typing.Callable = None):
+    def __init__(self, key_type: str, controller: type(SessionState)):
         self._all_keys = set()
-        self._session_maker = session_maker
-        self._error_handler = error_handler
+        self._session_controller = controller
         self._active_queue = deque()
         self._waiting_queue = set()
         self._key_type = key_type
 
     def get(self):
-        return SessionProvider(session=self._get_session(), manager=self, error_handler=self._error_handler)
+        return SessionProvider(session=self._get_session(), manager=self)
 
-    def _create_session(self, key):
-        origin_session = self._session_maker(key)
-        return SessionState(session=origin_session, key=key)
+    def _create_session(self, key) -> SessionState:
+        return self._session_controller(key)
 
     def _check_waiting_queue(self):
         while self._waiting_queue:
@@ -53,11 +50,11 @@ class SessionManager:
             # TODO tokens can be not plain string, for example can contain revive time
             self._active_queue.appendleft(session)
 
-    def _receive_keys(self):
+    def _receive_keys(self) -> bool:
         count = max(1, len(self._active_queue))
         tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(count))
         self.__add_new_keys(tokens)
-        return tokens
+        return bool(tokens)
 
     def _return_expired(self, receive=False):
         if receive:
@@ -88,3 +85,11 @@ class SessionManager:
     def return_session(self, session, action: SessionAction = None):
         self._active_queue.append(session)
         # TODO handle session actions
+
+    async def _stop(self):
+        while self._active_queue:
+            session = self._active_queue.pop()
+            await session.single_close()
+
+    def __del__(self):
+        asyncio.run(self._stop())
