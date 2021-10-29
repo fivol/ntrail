@@ -1,7 +1,6 @@
 import time
 from .instagramlib import Account, WebAgentAccount, HasMediaElement
 from .instagramlib.exceptions import InternetException, UnexpectedResponse
-from core.app_data import inst_accounts_data
 from ...config import logger
 from ...tools import ThreadResult, sequential_start, MemoryCache
 import random

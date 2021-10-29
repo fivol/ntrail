@@ -1,6 +1,4 @@
 from collections import defaultdict
-from query_object import ComplexQuery, BasicQuery
-from api_errors import APIError
 from tools import split_list
 
 
@@ -189,7 +187,3 @@ class VKHandler:
             raise NotImplementedError
 
         return set(res)
-
-
-class QueryHandler:
-    vk = VKHandler

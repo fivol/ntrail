@@ -16,7 +16,7 @@ from session.session_manager import SessionManager
 from ..parser import BaseParser
 from ...config import logger
 
-from .errors import VKError, INVALID_ID_ERROR
+from .exceptions import VKError, INVALID_ID_ERROR
 
 VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'

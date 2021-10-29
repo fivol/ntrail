@@ -1,4 +1,4 @@
-from task_executing import TasksExecutorMeta
+from celery_wrapper.task_executing import TasksExecutorMeta
 
 
 class BaseParser(metaclass=TasksExecutorMeta):
