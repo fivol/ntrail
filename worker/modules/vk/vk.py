@@ -1,3 +1,5 @@
+import time
+
 from celery_wrapper.app import app
 
 import asyncio
@@ -8,7 +10,7 @@ from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
 import config
 from modules.parser import BaseParser
 
-from session.exceptions import SessionWait, SessionRemove
+from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableException
 from session.session_manager import SessionManager
 from session.session_state import SessionState
 
@@ -46,7 +48,7 @@ class VkApiSession(SessionState):
             raise SessionRemove(reason='Captcha')
 
 
-class VkMethods(BaseParser):
+class VkMethods:
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
@@ -60,8 +62,12 @@ class VkMethods(BaseParser):
 
     @classmethod
     async def user(cls, user_id) -> dict:
-        async with cls.app_api.get() as api:
-            return await api.users.get(user_ids=user_id)
+        while True:
+            try:
+                async with cls.app_api.get() as api:
+                    return await api.users.get(user_ids=user_id)
+            except NoTokenAvailableException:
+                pass
 
     @classmethod
     async def resolve(cls, screen_name: str):
@@ -75,15 +81,18 @@ class VkMethods(BaseParser):
 
 
 async def main():
-    print(await VkMethods.user(1))
-    exit(0)
+    t0 = time.time()
+    count = 200
     users = await asyncio.gather(
         *[
-            VkMethods.user(1)
-            for _ in range(2)
+            VkMethods.user(_ + 1000)
+            for _ in range(count)
         ]
     )
+    print(len(users))
     print(users)
+    assert len(users) == count
+    print(count / (time.time() - t0))
 
 if __name__ == '__main__':
     asyncio.run(main())

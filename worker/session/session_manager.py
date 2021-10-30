@@ -38,9 +38,10 @@ class SessionManager:
                 break
 
     def __filter_new_keys(self, keys):
+        return keys
         new_keys = list(filter(lambda t: t not in self._all_keys, keys))
-        if len(new_keys) != len(keys):
-            raise RuntimeWarning('Credentials server do not work properly')
+        # if len(new_keys) != len(keys):
+        #     raise RuntimeWarning('Credentials server do not work properly')
         return new_keys
 
     def __add_new_keys(self, keys):
