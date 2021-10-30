@@ -82,10 +82,10 @@ class VkMethods:
 
 async def main():
     t0 = time.time()
-    count = 200
+    count = 500
     users = await asyncio.gather(
         *[
-            VkMethods.user(_ + 1000)
+            VkMethods.user(_ + 10000)
             for _ in range(count)
         ]
     )

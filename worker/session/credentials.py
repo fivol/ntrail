@@ -27,6 +27,12 @@ class CredentialsServerApi:
         '7a36d58c7a36d58c7a36d58cd77a4f376f77a367a36d58c1b4a9e96de35d21a28e0efa6',  # token2
         '92e1bb2092e1bb2092e1bb20f1929859c5992e192e1bb20f39df0177f53304cdddedd8f',  # token3
         'ebfba2c0ebfba2c0ebfba2c0b4eb824026eebfbebfba2c08a87e995bfc8dd6139c04236',  # token4
+        'd42df59ad42df59ad42df59adfd45416ffdd42dd42df59ab55164fc90f07dad999d9e66',  # token5
+        '394f41a1394f41a1394f41a1fd3936a2c73394f394f41a15833d0de69d195716057f7f2',  # token6
+        'a5d16764a5d16764a5d1676454a5a88403aa5d1a5d16764c4adf6fd8c23ac5104837e8a',  # token7
+        '5fbcca0e5fbcca0e5fbcca0e105fc5296655fbc5fbcca0e3ec05bbfac31d550761a7846',  # token8
+        'c902ef28c902ef28c902ef2854c97b0c41cc902c902ef28a87e7ee54f81aa27aa0eed16',  # token9
+        'c7143605c7143605c7143605a8c76dd56fcc714c7143605a668a7e17f7e838c2bad8238',  # token10
     ]
 
     @classmethod
