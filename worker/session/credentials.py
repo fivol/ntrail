@@ -33,6 +33,8 @@ class CredentialsServerApi:
         'vk.user.token': [
             '14d0b68663a9922a0e5b6ed0660e6dd25fddbe3343f0b77b9c33024a1805ef6f9c3c280d91a3b1a97a929',  # some user (vk3)
             '607c9224cf10f1e605f7bd37c330371af668e8d22e5d7533a2e6f019919839e1ebf4feca77841bf18e11d',  # my token
+        ],
+        'vk.community.token': [
             'ceb2be8419170500776cd691203ba6d3c6a64cc79dd428e870ca172431da2e22a8edaa87da851ae8fb64f',  # Terald
             '2dc1eecd699abfc38eaef9f978e4c3d398ace0acd0500e9489e8fbe1a06e106fee5d46991b0c89ca7876c',  # mdd
             '6564c4e0d209090cc04482143ffd2f4989538e805c8ba1cb154e34e2c724802af4233b32a04360fd8823f',  # Bot Leonardo

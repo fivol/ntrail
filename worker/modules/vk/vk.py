@@ -60,6 +60,8 @@ class VkMethods:
     # Vk requests limits https://vk.com/dev/api_requests
     # 3 in docs
     _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=3)
+    # 3 in docs
+    _comm_api = SessionManager(key_type='vk.community.token', controller=VkApiSession, max_rps=3)
     # 5 in docs
     _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=5)
 
@@ -107,12 +109,13 @@ class VkMethods:
         cls._executable_pool = []
 
     @classmethod
-    async def _run_query(cls, method, kwargs, apis, executable=False) -> dict:
+    async def _run_query(cls, method, kwargs, apis, executable=False):
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
         If not enough commands, do is without execute, just with calling api
         """
+
         async def run_with_api():
             for i, api in enumerate(apis):
                 try:
@@ -157,31 +160,60 @@ class VkMethods:
 
     @classmethod
     async def user(cls, user_id) -> dict:
-        return await cls._run_query('users.get', {'user_id': user_id}, [cls._user_api, cls._app_api], executable=False)
+        return await cls._run_query(
+            'users.get',
+            {'user_id': user_id}, [cls._user_api, cls._app_api],
+            executable=True
+        )
 
     @classmethod
-    async def friends(cls):
-        return 0
+    async def execute(cls, code) -> list:
+        return await cls._run_query(
+            'execute',
+            {'code': code}, [cls._comm_api, cls._user_api],
+            executable=True
+        )
 
     @classmethod
-    async def execute(cls, code):
-        with cls._user_api.get() as api:
-            return await api.execute(code=code)
-    #
-    # @classmethod
-    # async def resolve(cls, screen_name: str):
-    #     async with cls.app_api.get() as api:
-    #         return api.utils.resolveScreenName(screen_name=screen_name)
-    #
-    # @classmethod
-    # async def friends(cls, user_id) -> typing.Union[dict, str]:
-    #     async with cls.app_api.get() as api:
-    #         return await api.friends.get(user_id=user_id)
+    async def resolve(cls, screen_name) -> dict:
+        return await cls._run_query(
+            'utils.resolveScreenName',
+            {'screen_name': screen_name},
+            [cls._app_api, cls._comm_api, cls._user_api],
+            executable=True
+        )
+
+    @classmethod
+    async def friends(cls, user_id) -> dict:
+        return await cls._run_query(
+            'friends.get',
+            {'user_id': user_id},
+            [cls._app_api, cls._user_api],
+            executable=True
+        )
+
+    @classmethod
+    async def followers(cls, user_id, offset=0, count=1000):
+        return await cls._run_query(
+            'users.getFollowers',
+            {'user_id': user_id, 'offset': offset, 'count': count},
+            [cls._app_api, cls._user_api],
+            executable=True
+        )
+
+    @classmethod
+    async def members(cls, group_id, offset=0, count=1000):
+        return await cls._run_query(
+            'groups.getMembers',
+            {'group_id': group_id, 'offset': offset, 'count': count},
+            [cls._app_api, cls._comm_api, cls._user_api],
+            executable=True
+        )
 
 
 async def main():
     t0 = time.time()
-    count = 30
+    count = 3
     ids = set([i for i in range(1, 1 + count)])
     users = await asyncio.gather(
         *[
@@ -195,6 +227,6 @@ async def main():
     assert len(users) == count
     print(count / (time.time() - t0))
 
+
 if __name__ == '__main__':
     asyncio.run(main())
-
