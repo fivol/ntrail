@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from collections import deque
 from random import randint
 from time import time
 
@@ -28,6 +27,7 @@ class SessionManager:
 
         self._key_type = key_type
         self._max_rps = max_rps
+        self._stop_called = False
 
     def get(self):
         session = self._get_session()
@@ -98,10 +98,12 @@ class SessionManager:
         self._add_active_session(session)
         # TODO handle session actions
 
-    async def _stop(self):
+    async def stop(self):
+        self._stop_called = True
         while self._active_sessions:
             rps, session = self._active_sessions.pop()
             await session.single_close()
 
     def __del__(self):
-        asyncio.run(self._stop())
+        if self._all_sessions:
+            assert self._stop_called, 'Must close session, may be you forgot "with Engine()" statement'

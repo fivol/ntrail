@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 import random
-import typing
+import traceback
 from time import sleep
 
 
@@ -13,6 +13,15 @@ def split_list(list_object, segment_size):
         if begin < len(list_object):
             result_list.append(list_object[begin:end])
     return result_list
+
+
+_imported_files = set()
+
+
+def assert_imported_once():
+    filename = traceback.extract_stack()[-2][0]
+    assert filename not in _imported_files, 'This file was already imported'
+    _imported_files.add(filename)
 
 
 def sequential_start(func):
@@ -68,7 +77,8 @@ class MakeSynced:
         return await self._method(*args, **kwargs)
 
     def sync(self, *args, **kwargs):
-        return asyncio.run(self._method(*args, **kwargs))
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self._method(*args, **kwargs))
 
 
 def inject_methods_wrappers(*wrappers):

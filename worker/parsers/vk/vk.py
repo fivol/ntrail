@@ -3,12 +3,12 @@ import time
 import asyncio
 import logging
 from aiovk import TokenSession, API
-from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableException, RpsLimitException, \
-    SessionException, SessionManagerException
+
+from parsers.parser import BaseParser
+from session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from session.session_manager import SessionManager
 from session.session_state import SessionState
-import config
-from utils import inject_methods_wrappers, MakeSynced
+from tools import inject_methods_wrappers, MakeSynced, assert_imported_once
 
 logger = logging.getLogger('vk')
 
@@ -17,6 +17,8 @@ VK_API_LANG = 'ru'
 
 # 10 секунд - ограничение на время выполнения запроса к API
 VK_API_TIMEOUT = 10
+
+assert_imported_once()
 
 
 class VkApiSession(SessionState):
@@ -42,7 +44,7 @@ EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
 @inject_methods_wrappers('_wrapper', MakeSynced)
-class VkMethods:
+class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
@@ -51,14 +53,20 @@ class VkMethods:
     # Vk requests limits https://vk.com/dev/api_requests
     # 3 in docs
     _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=3)
-    # 3 in docs
+    # # 3 in docs
     _comm_api = SessionManager(key_type='vk.community.token', controller=VkApiSession, max_rps=3)
-    # 5 in docs
+    # # 5 in docs
     _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=5)
 
     _execute_epoch = 0
     _execute_results = {}
     _executable_pool = []
+
+    @classmethod
+    async def stop(cls):
+        await cls._user_api.stop()
+        await cls._comm_api.stop()
+        await cls._app_api.stop()
 
     # TODO Add ability to combine managers in context manager
     # To call any available api for example
@@ -214,10 +222,7 @@ async def main():
     )
     users_ids = {user[0]['id'] for user in users}
     assert ids == users_ids
-    print(users)
-    assert len(users) == count
     print(count / (time.time() - t0))
-
 
 if __name__ == '__main__':
     asyncio.run(main())
