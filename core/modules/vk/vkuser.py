@@ -198,7 +198,7 @@ class VKUser(OneObjectRepresent):
     @valid_object_method
     def friends(self):
         from .vkcommunity import VKCommunity
-        friend_ids = VkMethods.friends(self.id)
+        friend_ids = VkMethods.friends.sync(self.id)
         friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
 

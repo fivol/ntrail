@@ -26,9 +26,6 @@ class ManyMedia(AnyMedia):
     def size(self):
         return len(self.nodes)
 
-    def __len__(self):
-        return self.size
-
     def load_media_data(self, objects=None):
         raise NotImplementedError
 
@@ -160,9 +157,6 @@ class ManyMedia(AnyMedia):
         node_cluster_dict = {node: id_ + 1 for id_, cluster in enumerate(clear_pools) for node in cluster.nodes}
         return node_cluster_dict
 
-    def __hash__(self):
-        return hash(self.hash)
-
     @once_property
     def hash(self):
         obj_hash = hashlib.sha1(str(sorted(self.nodes)).encode('UTF-8')).hexdigest()[-16:]
@@ -211,20 +205,6 @@ class ManyMedia(AnyMedia):
             if links:
                 g.add_edges_from([(node, link) for link in links if link in self.nodes])
         return g
-
-    def __add__(self, other):
-        assert other.base_class == self.base_class
-        return self.__class__(self.counter + other.counter)
-
-    def __getitem__(self, key):
-        assert isinstance(key, int), key
-        return self.objects[key]
-
-    def __or__(self, other):
-        return self.__class__(list(set(self.nodes) | set(other.nodes)))
-
-    def __and__(self, other):
-        return self.__class__(list(set(self.nodes) & set(other.nodes)))
 
     @staticmethod
     def get_value_by_path(data, full_path):
@@ -408,7 +388,8 @@ class ManyMedia(AnyMedia):
 
     @property
     def name(self):
-        return f'{self.short_info()} size: {self.size} id: {self.hash}'
+        # TODO
+        return self.class_name()
 
     def collect_archive(self, count=200):
         assert isinstance(count, int)
@@ -479,3 +460,26 @@ class ManyMedia(AnyMedia):
     def clusters(self):
         from module.clusters import Clusters
         return Clusters(self)
+
+    def __len__(self):
+        return self.size
+
+    def __str__(self):
+        return self.name
+
+    def __add__(self, other):
+        assert other.base_class == self.base_class
+        return self.__class__(self.counter + other.counter)
+
+    def __getitem__(self, key):
+        assert isinstance(key, int), key
+        return self.objects[key]
+
+    def __or__(self, other):
+        return self.__class__(list(set(self.nodes) | set(other.nodes)))
+
+    def __and__(self, other):
+        return self.__class__(list(set(self.nodes) & set(other.nodes)))
+
+    def __hash__(self):
+        return hash(self.hash)

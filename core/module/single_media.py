@@ -47,12 +47,9 @@ class SingleMedia(AnyMedia):
         obj_hash = hashlib.sha1(str(self.id).encode('UTF-8')).hexdigest()[-16:]
         return obj_hash
 
-    def __eq__(self, other):
-        return hash(other) == hash(self)
-
     @property
     def name(self):
-        return f'{self.id}'
+        return f'{self.__class__.__name__}({self.id})'
 
-    def __repr__(self):
-        return self.name
+    def __eq__(self, other):
+        return hash(other) == hash(self)

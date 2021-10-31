@@ -42,6 +42,7 @@
 # 5 — положительное.
 from more_itertools import unique_everseen
 
+from worker import VkMethods
 from .vkgroup import VKGroup
 from .vkgroups import VKGroups
 from module.represent import try_base_analog, Represent
@@ -190,7 +191,7 @@ class VKCommunity(Represent, RepresentTools):
                     else:
                         usernames = [VKUser.extract_username(url) for url in users]
                         usernames = clear_list(usernames)
-                        self.resolve_screen_names(usernames)
+                        VkMethods.resolve.sync(usernames)
                         self.nodes = [VKUser(username).id for username in usernames]
                         self.nodes = clear_list(self.nodes)
                 else:
@@ -198,7 +199,7 @@ class VKCommunity(Represent, RepresentTools):
             self.counter = Counter(self.nodes)
         elif isinstance(users, str):
             usernames = VKCommunity.parse_usernames(users)
-            self.resolve_screen_names(usernames)
+            VkMethods.resolve.sync_map(usernames)
             self.nodes = [VKUser(username).id for username in usernames]
             self.nodes = clear_list(self.nodes)
             self.counter = Counter(self.nodes)
@@ -802,7 +803,7 @@ class VKCommunity(Represent, RepresentTools):
             return VKUser(self.data_list()[0]).name
 
         if self.target == 'friends':
-            return 'Друзья ' + name_to_gent(self.main.full_data['first_name'])
+            return 'Друзья ' + name_to_gent(self.main.data()['first_name'])
         if self.target == 'loners':
             return 'Без кластера'
         if self.target == 'members':
@@ -870,3 +871,7 @@ class VKCommunity(Represent, RepresentTools):
                 'mainID': self.hash,
             },
         }
+
+    @property
+    def name(self):
+        return self.get_name()

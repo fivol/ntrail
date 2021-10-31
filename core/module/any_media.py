@@ -35,13 +35,6 @@ class AnyMedia:
     def print(self):
         pprint(self.data(), compact=True)
 
-    @abstractmethod
-    def __hash__(self):
-        """
-        All objects must implement hash method
-        """
-        pass
-
     @once_property
     def hash(self):
         str_id = str(sorted(self.__hash__())).encode('UTF-8')
@@ -58,3 +51,13 @@ class AnyMedia:
 
     def preload(self, force=False):
         self.data(force=force)
+
+    def __str__(self):
+        return self.name
+
+    @abstractmethod
+    def __hash__(self):
+        """
+        All objects must implement hash method
+        """
+        pass
