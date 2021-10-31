@@ -1,16 +1,8 @@
 import json
 import time
-import inspect
-from collections import defaultdict
-
-
 import asyncio
 import logging
-import typing
 from aiovk import TokenSession, API
-from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
-from modules.parser import BaseParser
-
 from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableException, RpsLimitException, \
     SessionException, SessionManagerException
 from session.session_manager import SessionManager

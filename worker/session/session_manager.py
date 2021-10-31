@@ -84,7 +84,6 @@ class SessionManager:
                 if self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
-
             rps, session = self._active_sessions.pop()
             self._add_active_session(session)
             if session.rps() >= self._max_rps:
@@ -95,6 +94,7 @@ class SessionManager:
             return session
 
     def return_session(self, session, action: SessionAction = None):
+        self._active_sessions.remove(self._all_sessions[hash(session)])
         self._add_active_session(session)
         # TODO handle session actions
 

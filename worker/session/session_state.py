@@ -67,5 +67,3 @@ class SessionState:
     def is_expired(self):
         return self._expire_time and time() > self._expire_time
 
-    async def __adel__(self):
-        await self.single_close()
