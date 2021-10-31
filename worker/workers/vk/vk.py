@@ -3,7 +3,6 @@ import time
 import inspect
 from collections import defaultdict
 
-from celery_wrapper.app import app
 
 import asyncio
 import logging
