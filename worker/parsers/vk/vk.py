@@ -8,7 +8,7 @@ from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableExcep
 from session.session_manager import SessionManager
 from session.session_state import SessionState
 import config
-from utils import inject_methods_wrapper
+from utils import inject_methods_wrappers, MakeSynced
 
 logger = logging.getLogger('vk')
 
@@ -41,7 +41,7 @@ class VkApiSession(SessionState):
 EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
-@inject_methods_wrapper('_wrapper')
+@inject_methods_wrappers('_wrapper', MakeSynced)
 class VkMethods:
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.

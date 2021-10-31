@@ -1,5 +1,7 @@
+import asyncio
 import inspect
 import random
+import typing
 from time import sleep
 
 
@@ -30,9 +32,59 @@ def sequential_start(func):
     return wrapper
 
 
-def inject_methods_wrapper(wrapper_name):
+class MethodWrapper:
+    def __init__(self, _method, _wrapper):
+        self._method = _method
+        self._wrapper = _wrapper
+
+    async def __call__(self, *args, **kwargs):
+        return await self._wrapper(self._method, args, kwargs)
+
+
+class MakeSynced:
+    """
+    Wraps method and give .sync interface to call async functions
+
+    --------------------
+    Async variant:
+
+        async def abc(x):
+            return x
+        print(asyncio.run(abs()))
+    --------------------
+    Sync variant:
+
+        @MakeSynced
+        async def abc(x):
+            return x
+
+        print(abc.sync(3))
+    """
+
+    def __init__(self, _method):
+        self._method = _method
+
+    async def __call__(self, *args, **kwargs):
+        return await self._method(*args, **kwargs)
+
+    def sync(self, *args, **kwargs):
+        return asyncio.run(self._method(*args, **kwargs))
+
+
+def inject_methods_wrappers(*wrappers):
+    """
+    It is decorator
+    Makes decorators to all methods in class
+    """
     def cls_wrapper(cls):
-        wrapper = getattr(cls, wrapper_name)
+        wrappers_funcs = []
+        for wrapper in wrappers:
+            if isinstance(wrapper, str):
+                wrapper_method = getattr(cls, wrapper)
+                wrapper = lambda func: MethodWrapper(func, wrapper_method)
+
+            wrappers_funcs.append(wrapper)
+
         for item in cls.__dict__:
             if item.startswith('_'):
                 continue
@@ -41,15 +93,35 @@ def inject_methods_wrapper(wrapper_name):
             if not inspect.ismethod(method):
                 continue
 
-            class MethodWrapper:
-                def __init__(self, _method, _wrapper):
-                    self._method = _method
-                    self._wrapper = _wrapper
+            for wrapper in wrappers_funcs:
+                method = wrapper(method)
 
-                async def __call__(self, *args, **kwargs):
-                    return await self._wrapper(self._method, args, kwargs)
-
-            setattr(cls, item, MethodWrapper(method, wrapper))
+            setattr(cls, item, method)
         return cls
 
     return cls_wrapper
+
+
+if __name__ == '__main__':
+    @inject_methods_wrappers('_wrapper', MakeSynced)
+    class A:
+        @classmethod
+        async def _wrapper(cls, method, args, kwargs):
+            print('wrapper')
+            return await method(*args, **kwargs)
+
+        @classmethod
+        async def a(cls, x):
+            print('method a')
+            return x
+
+        @classmethod
+        async def b(cls, x):
+            print('method b')
+            return x
+    print(asyncio.run(A.a(4)))
+    print(asyncio.run(A.b(3)))
+    print(asyncio.run(A.a(2)))
+
+    print(A.a.sync(2))
+    print(A.b.sync(10))
