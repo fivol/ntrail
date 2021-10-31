@@ -8,6 +8,9 @@ handlers:
     level: DEBUG
     formatter: default
     stream: ext://sys.stdout
+loggers:
+  vk:
+    level: DEBUG
 root:
   level: DEBUG
   handlers: [console]

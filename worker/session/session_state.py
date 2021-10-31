@@ -10,7 +10,8 @@ class SessionState:
     Описывает вызов токена, время обращения к нему, состояние и прочее
     """
 
-    def __init__(self, key):
+    def __init__(self, key, key_type):
+        self._key_type = key_type
         self.session = self.create(key)
         self._key = key
         self.last_used_time = None
@@ -19,11 +20,15 @@ class SessionState:
         self.status = None
         self._expire_time = None
         self.__closed = False
+        self.active_usages = 0
 
     @classmethod
     @abstractmethod
     def create(cls, key):
         pass
+
+    def __hash__(self):
+        return f'{self._key_type}-{self._key}'
 
     @abstractmethod
     async def close(self):

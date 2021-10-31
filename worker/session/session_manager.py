@@ -23,7 +23,9 @@ class SessionManager:
         self._key_type = key_type
 
     def get(self):
-        return SessionProvider(session=self._get_session(), manager=self)
+        session = self._get_session()
+        session.
+        return SessionProvider(session=session, manager=self)
 
     def _create_session(self, key) -> SessionState:
         return self._session_controller(key)
@@ -38,10 +40,9 @@ class SessionManager:
                 break
 
     def __filter_new_keys(self, keys):
-        return keys
         new_keys = list(filter(lambda t: t not in self._all_keys, keys))
-        # if len(new_keys) != len(keys):
-        #     raise RuntimeWarning('Credentials server do not work properly')
+        if len(new_keys) != len(keys):
+            raise RuntimeWarning('Credentials server do not work properly')
         return new_keys
 
     def __add_new_keys(self, keys):
@@ -53,7 +54,7 @@ class SessionManager:
 
     def _receive_keys(self) -> bool:
         count = max(1, len(self._active_queue))
-        tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(count))
+        tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(self._key_type, count))
         self.__add_new_keys(tokens)
         return bool(tokens)
 
@@ -61,7 +62,7 @@ class SessionManager:
         if receive:
             self._receive_keys()
 
-    def _get_session(self):
+    def _get_session(self) -> SessionState:
         while True:
             if not len(self._active_queue) or not randint(0, 10):
                 self._check_waiting_queue()
