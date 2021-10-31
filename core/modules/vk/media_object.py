@@ -1,5 +1,5 @@
-from core.module.one_object import OneObject
-from core.modules.vk.vkapi import VKAPI
+from module.one_object import OneObject
+from modules.vk.vkapi import VKAPI
 
 
 class MediaObject(OneObject, VKAPI):
@@ -9,5 +9,5 @@ class MediaObject(OneObject, VKAPI):
         self.type = None
 
     def likes(self):
-        from core.modules.vk.vkcommunity import VKCommunity
+        from modules.vk.vkcommunity import VKCommunity
         return VKCommunity(self.get_object_likes(self.type, self.id))

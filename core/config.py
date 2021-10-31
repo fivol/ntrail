@@ -1,4 +1,4 @@
-from .constants import CACHE_TYPE_FULL_USE
+from constants import CACHE_TYPE_FULL_USE
 
 PLOT_CIRCULAR = 'circular'
 

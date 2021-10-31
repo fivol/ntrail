@@ -1,10 +1,6 @@
 import math
-from core.glbal import logger
-from core.call_worker.api_query import APIQueries
-from core.call_worker.worker.query_object import BasicQuery
-from core.tools import list_from_dicts
-
-service = 'vk'
+from glbal import logger
+from tools import list_from_dicts
 
 
 def get_items(func):
