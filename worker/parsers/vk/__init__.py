@@ -1,1 +1,1 @@
-from .vk import VkMethods
+# from .vk import VkMethods

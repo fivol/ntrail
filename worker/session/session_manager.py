@@ -28,6 +28,7 @@ class SessionManager:
         self._key_type = key_type
         self._max_rps = max_rps
         self._stop_called = False
+        print('session manager')
 
     def get(self):
         session = self._get_session()

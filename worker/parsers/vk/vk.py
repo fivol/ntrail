@@ -4,14 +4,17 @@ import asyncio
 import logging
 import typing
 
+import config
 from aiovk import TokenSession, API
+from methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
+from tools import assert_imported_once
 
+from parsers.vk.data import *
+from caching import cache_with_redis
 from parsers.parser import BaseParser
 from session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from session.session_manager import SessionManager
 from session.session_state import SessionState
-from tools import inject_methods_wrappers, MakeSynced, assert_imported_once
-from .data import *
 
 
 logger = logging.getLogger('vk')
@@ -47,7 +50,7 @@ class VkApiSession(SessionState):
 EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
-@inject_methods_wrappers('_wrapper', MakeSynced)
+@inject_methods_wrappers('_wrapper', cache_with_redis, MakeSynced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -67,6 +70,7 @@ class VkMethods(BaseParser):
     _executable_pool = []
 
     @classmethod
+    @ignore_injection
     async def stop(cls):
         await cls._user_api.stop()
         await cls._comm_api.stop()
@@ -178,7 +182,7 @@ class VkMethods(BaseParser):
         return await cls._run_query(
             'execute',
             {'code': code}, [cls._comm_api, cls._user_api],
-            executable=True
+            executable=False
         )
 
     @classmethod
@@ -223,8 +227,8 @@ class VkMethods(BaseParser):
 
 async def main():
     t0 = time.time()
-    count = 3
-    ids = set([i for i in range(1, 1 + count)])
+    count = 400
+    ids = set([i for i in range(100, 100 + count)])
     users = await asyncio.gather(
         *[
             VkMethods.users([i])
@@ -234,6 +238,7 @@ async def main():
     users_ids = {user[0]['id'] for user in users}
     assert ids == users_ids
     print(count / (time.time() - t0))
+    await VkMethods.stop()
 
 if __name__ == '__main__':
     asyncio.run(main())

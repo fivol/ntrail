@@ -1,3 +1,4 @@
+import logging
 
 
 class BaseParser:
@@ -9,6 +10,8 @@ class BaseParser:
     Парсер может реализовывать высокоуровневые методы, которые исполняются
     посредством создания ряда дополнительных задач
     """
+
+    _caching_available = True
 
     @classmethod
     async def stop(cls):
