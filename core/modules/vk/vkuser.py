@@ -1,4 +1,5 @@
 import logging
+from functools import cache
 
 from worker import VkMethods
 from .vkgroups import VKGroups
@@ -15,7 +16,7 @@ logger = logging.getLogger('vk-user')
 
 
 class VKUser(OneObjectRepresent):
-    id_prefix = 'vku_'
+    _id_prefix = 'vku_'
     available_attributes = ['friends', 'follows', 'followers', 'groups']
 
     def __init__(self, user, **kwargs):
@@ -31,7 +32,7 @@ class VKUser(OneObjectRepresent):
         if isinstance(user, str):
             if not user:
                 self.status = AccountStatus.ABSENT
-            elif user.startswith(self.id_prefix):
+            elif user.startswith(self._id_prefix):
                 self.id = int(user[4:])
             else:
                 username = VKUser.extract_username(user)
@@ -82,27 +83,27 @@ class VKUser(OneObjectRepresent):
 
     def check_status(self):
         if not self.status:
-            user_data = self.short_data
+            user_data = self.data(full=False)
             # TODO Error handling
             # if APIError.is_error(user_data):
             #     if APIError(user_data).code == INVALID_ID_ERROR:
-            #         self.status = ACCOUNT_STATUS_ABSENT
+            #         self.status = AccountStatus.ABSENT
             if False:
                 pass
             elif isinstance(user_data, dict):
                 if 'deactivated' in user_data:
                     deactivated_status = user_data['deactivated']
                     if deactivated_status == 'deleted':
-                        self.status = ACCOUNT_STATUS_DELETED
+                        self.status = AccountStatus.DELETED
                     elif deactivated_status == 'banned':
-                        self.status = ACCOUNT_STATUS_BANNED
+                        self.status = AccountStatus.BANNED
                     else:
                         logger.warning('Unknown reason for user account deactivation: %s', deactivated_status)
-                        self.status = ACCOUNT_STATUS_DELETED
+                        self.status = AccountStatus.DELETED
                 elif user_data.get('is_closed', False):
-                    self.status = ACCOUNT_STATUS_PRIVATE
+                    self.status = AccountStatus.PRIVATE
                 else:
-                    self.status = ACCOUNT_STATUS_PUBLIC
+                    self.status = AccountStatus.PUBLIC
             else:
                 raise TypeError('VKUser short data wrong type:', type(user_data), user_data)
         assert bool(self.status)
@@ -112,9 +113,9 @@ class VKUser(OneObjectRepresent):
     def valid(self):
         status = self.check_status()
         assert not (status is None), status
-        return status == ACCOUNT_STATUS_VALID or \
-               status == ACCOUNT_STATUS_PUBLIC or \
-               status == ACCOUNT_STATUS_PRIVATE
+        return status == AccountStatus.VALID or \
+            status == AccountStatus.PUBLIC or \
+            status == AccountStatus.PRIVATE
 
     @valid_object_method
     def followers(self):
@@ -135,26 +136,19 @@ class VKUser(OneObjectRepresent):
         return VKGroups(self.get_user_groups(self.id), source=self).order()
 
     @classmethod
-    def generate_random(cls):
+    def random(cls):
         from .vkcommunity import VKCommunity
-        return VKCommunity.generate_random(1).objects[0]
+        return VKCommunity.random(1).objects[0]
 
-    @once_property
-    def short_data(self):
-        return self.full_data
-
-    @once_property
-    def full_data(self):
-        return self.get_user(self.id, full=True)
+    @cache
+    def data(self, force=False, full=True) -> dict:
+        return VkMethods.users.sync([self.id], full=True)[0]
 
     def get_attribute(self, key: str, default=None):
         """Возвращает один из базовых параметров аккаунта по ключу
         Пытается минимизировать время, сначала обращается к
         урезанным данным"""
-        return self.short_data.get(key, default) or self.full_data.get(key, default)
-
-    def get_full_data(self, force):
-        return self.get_user(self.id, full=True, force=force)
+        return self.data(full=False).get(key, default) or self.data.get(key, default)
 
     @valid_object_method
     def posts(self):
@@ -162,24 +156,15 @@ class VKUser(OneObjectRepresent):
 
     @property
     def name(self):
-        return f"{self.short_data['first_name']} {self.short_data['last_name']}"
+        return f"{self.data(full=False)['first_name']} {self.data(full=False)['last_name']}"
 
     @property
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    def preload(self, force=False):
-        self.get_full_data(force)
-
-    @classmethod
-    def parse_id(cls, id_):
-        if not id_.startswith(VKUser.id_prefix):
-            return None
-        return int(id_[len(VKUser.id_prefix):])
-
     @valid_object_method
     def get_key_words(self):
-        site_string = ' '.join([str(item) for key, item in self.full_data.items() if not key.startswith('photo')])
+        site_string = ' '.join([str(item) for key, item in self.data().items() if not key.startswith('photo')])
         sites = get_sites(site_string)
         sites_username = []
         for host, site in sites:
@@ -192,18 +177,19 @@ class VKUser(OneObjectRepresent):
             except:
                 logger.exception('Fail to get username from site: %s', site)
 
+        data = self.data()
         key_words = [
             self.name,
-            self.full_data.get('first_name', None),
-            self.full_data.get('last_name', None),
-            self.full_data.get('screen_name', None),
-            self.full_data.get('skype', None),
-            self.full_data.get('livejournal', None),
-            self.full_data.get('instagram', None),
-            self.full_data.get('twitter', None),
-            self.full_data.get('facebook', None),
-            self.full_data.get('maiden_name', None),
-            self.full_data.get('nickname', None),
+            data.get('first_name', None),
+            data.get('last_name', None),
+            data.get('screen_name', None),
+            data.get('skype', None),
+            data.get('livejournal', None),
+            data.get('instagram', None),
+            data.get('twitter', None),
+            data.get('facebook', None),
+            data.get('maiden_name', None),
+            data.get('nickname', None),
             *sites_username
         ]
         key_words = list(filter(lambda x: bool(x), key_words))
@@ -212,9 +198,9 @@ class VKUser(OneObjectRepresent):
     @valid_object_method
     def friends(self):
         from .vkcommunity import VKCommunity
-        friends_ids = self.get_user_friends(self.id)
-        friends_ids.append(self.id)
-        return VKCommunity(friends_ids, main=self, target='friends')
+        friend_ids = VkMethods.friends(self.id)
+        friend_ids.append(self.id)
+        return VKCommunity(friend_ids, main=self, target='friends')
 
     @once_property
     @valid_object_method
@@ -223,7 +209,7 @@ class VKUser(OneObjectRepresent):
 
     @valid_object_method
     def show_icon(self):
-        user = self.short_data
+        user = self.data(full=False)
         url = user['photo_200']
         a = io.imread(url)
         plt.figure(figsize=(1, 1))
@@ -252,16 +238,16 @@ class VKUser(OneObjectRepresent):
         return {
             **response,
             'url': self.url,
-            'img': self.full_data.get('photo_100', 'https://vk.com/images/camera_100.png?ava=1'),
+            'img': self.data.get('photo_100', 'https://vk.com/images/camera_100.png?ava=1'),
             'name': self.name,
-            'username': self.full_data.get("screen_name", 'id' + str(self.id)),
+            'username': self.data.get("screen_name", 'id' + str(self.id)),
             'nativeID': self.id,
             'valid': True,
-            'verified': self.full_data.get('verified', False),
+            'verified': self.data.get('verified', False),
             'accessStatus': self.check_status(),
-            'private': self.check_status() == ACCOUNT_STATUS_PRIVATE,
+            'private': self.check_status() == AccountStatus.PRIVATE,
             'properties': {
-                'color': 'blue' if self.full_data.get('sex', 2) == 2 else 'red',
+                'color': 'blue' if self.data.get('sex', 2) == 2 else 'red',
                 'weight': 1,
                 'connections': []
             }
@@ -274,8 +260,8 @@ class VKUser(OneObjectRepresent):
             'type': 'user',
             'fullEntitiesCount': 1,
             'id': self.hash,
-            'name': self.full_data['first_name'] if self.valid else 'Не валиден',
-            'query': f'GET vk.user {self.full_data["screen_name"]}' if self.valid else ''
+            'name': self.data['first_name'] if self.valid else 'Не валиден',
+            'query': f'GET vk.user {self.data["screen_name"]}' if self.valid else ''
         }
 
     # def represent(self, force=False):
@@ -316,4 +302,5 @@ class VKUser(OneObjectRepresent):
 
 
 from .vkcommunity import VKCommunity
+
 VKUser.many_objects_class = VKCommunity

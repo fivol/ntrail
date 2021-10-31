@@ -5,6 +5,7 @@ import hashlib
 
 class SingleMedia(AnyMedia):
     many_objects_class = None
+    _id_prefix = None
 
     def __init__(self):
         self.id = None
@@ -13,16 +14,16 @@ class SingleMedia(AnyMedia):
         return self.gen_id(self.id)
 
     @classmethod
-    def parse_id(cls, id_):
-        if not id_.startswith(cls.id_prefix):
+    def _parse_id(cls, id_):
+        if not id_.startswith(cls._id_prefix):
             return None
-        return int(id_[len(cls.id_prefix):])
+        return int(id_[len(cls._id_prefix):])
 
     @classmethod
     def gen_id(cls, plain_id):
         if isinstance(plain_id, str) and plain_id.startswith(cls.id_prefix):
             return plain_id
-        return cls.id_prefix + str(plain_id)
+        return cls._id_prefix + str(plain_id)
 
     @property
     def valid(self):
@@ -52,3 +53,6 @@ class SingleMedia(AnyMedia):
     @property
     def name(self):
         return f'{self.id}'
+
+    def __repr__(self):
+        return self.name

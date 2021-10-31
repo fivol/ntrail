@@ -53,8 +53,8 @@ class VKGroups(Represent, RepresentTools):
                     self.nodes = [group.id for group in groups]
                 elif isinstance(groups[0], int):
                     self.nodes = groups
-                elif isinstance(groups[0], str) and VKGroup.parse_id(groups[0]):
-                    self.nodes = [VKGroup.parse_id(group) for group in groups]
+                elif isinstance(groups[0], str) and VKGroup._parse_id(groups[0]):
+                    self.nodes = [VKGroup._parse_id(group) for group in groups]
                 else:
                     raise ValueError('Unknown nodes type for groups')
 

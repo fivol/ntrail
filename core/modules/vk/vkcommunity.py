@@ -184,9 +184,9 @@ class VKCommunity(Represent, RepresentTools):
                 elif isinstance(users[0], int):
                     self.nodes = users
                 elif isinstance(users[0], str):
-                    id_ = VKUser.parse_id(users[0])
+                    id_ = VKUser._parse_id(users[0])
                     if id_:
-                        self.nodes = [VKUser.parse_id(id_) for id_ in users]
+                        self.nodes = [VKUser._parse_id(id_) for id_ in users]
                     else:
                         usernames = [VKUser.extract_username(url) for url in users]
                         usernames = clear_list(usernames)
@@ -263,7 +263,7 @@ class VKCommunity(Represent, RepresentTools):
         )
 
     @classmethod
-    def generate_random(cls, size):
+    def random(cls, size):
         comm = VKCommunity()
         while comm.size < size:
             min_vkid = 1
