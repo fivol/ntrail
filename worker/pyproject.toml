@@ -5,13 +5,10 @@ description = ""
 authors = ["Boris Bondarenko <borisoffficial@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-redis = "^3.5.3"
+python = "^3.9"
 requests = "^2.26.0"
 vk = "^2.0.2"
 aiovk = "^4.0.0"
-celery-pool-asyncio = "^0.2.0"
-celery = "^5.1.2"
 
 [tool.poetry.dev-dependencies]
 
