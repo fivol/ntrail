@@ -1,9 +1,8 @@
 import logging
 
-from constants import GROUP_STATUS_ABSENT, GROUP_STATUS_VALID, GROUP_STATUS_DEACTIVATED
+from constants import GroupStatus
 from module.one_object_represent import OneObjectRepresent
 from utils import once_property, valid_object_method, cache_method
-from modules.vk.vkapi import VKAPI
 
 
 logger = logging.getLogger('vk-group')
@@ -22,12 +21,12 @@ class VKGroup(OneObjectRepresent):
             user_dict = VKAPI.resolve_screen_name(groupname)
             if not isinstance(user_dict, dict):
                 logger.info('VKGroup username does not exist "%s"', groupname)
-                self.status = GROUP_STATUS_ABSENT
+                self.status = GroupStatus.ABSENT
             elif not user_dict['type'] == 'group':
                 logger.info('VKGroup username type is "%s"', user_dict['type'])
-                self.status = GROUP_STATUS_ABSENT
+                self.status = GroupStatus.ABSENT
             else:
-                self.status = GROUP_STATUS_VALID
+                self.status = GroupStatus.VALID
                 self.id = user_dict['object_id']
         elif isinstance(group, int):
             self.id = int(group)
@@ -77,22 +76,22 @@ class VKGroup(OneObjectRepresent):
             user_data = self.short_data
             if APIError.is_error(user_data):
                 if user_data.code == INVALID_ID_ERROR:
-                    self.status = GROUP_STATUS_ABSENT
+                    self.status = GroupStatus.ABSENT
                 else:
                     raise ValueError('VKGroup short data have unknown value:', user_data)
             else:
                 assert isinstance(user_data, dict)
                 if 'deactivated' in user_data:
-                    self.status = GROUP_STATUS_DEACTIVATED
+                    self.status = GroupStatus.DEACTIVATED
                 else:
-                    self.status = GROUP_STATUS_VALID
+                    self.status = GroupStatus.VALID
         return self.status
 
     @once_property
     def valid(self):
         status = self.check_status()
         assert not (status is None), status
-        return status == GROUP_STATUS_VALID
+        return status == GroupStatus.VALID
 
     def get_entities(self):
         return [self.get_entity()]

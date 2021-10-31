@@ -59,8 +59,7 @@ import math
 from itertools import groupby
 from utils import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
-from .vkapi import VKAPI
-from constants import PLOT_LINE, PLOT_CIRCULAR
+from constants import PlotType
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан
@@ -159,7 +158,7 @@ occupation_type_dict = {
 }
 
 
-class VKCommunity(Represent, VKAPI, RepresentTools):
+class VKCommunity(Represent, RepresentTools):
     base_class = VKUser
     available_attributes = ['friends', 'clusters', 'groups']
 
@@ -622,7 +621,7 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                 [
                     ('commonMean', 'Наисреднейший'),
                 ],
-                PLOT_LINE
+                PlotType.LINE
             ),
             self.gen_property_category(
                 'sex', 'Пол',
@@ -630,47 +629,47 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                     ('man', 'Мужской'),
                     ('woman', 'Женский'),
                 ],
-                PLOT_CIRCULAR,
+                PlotType.CIRCULAR,
                 self.gen_circular_plot(data['sex']['source_list'],
                                        name=lambda value: 'Мужской' if value.get_value() == 2 else 'Женский',
                                        color=lambda value: '#989FFF' if value.get_value() == 2 else '#FD8DA6')
             ),
-            self.gen_property_category('city', 'Город', [], PLOT_CIRCULAR, common_count=3),
+            self.gen_property_category('city', 'Город', [], PlotType.CIRCULAR, common_count=3),
             # self.gen_property_category('group', 'Группы', [
             #     ('all_count', 'Уникальных групп'),
             #     ('mean_count', 'На человека')], None),
-            self.gen_property_category('school', 'Школа', [], PLOT_CIRCULAR, common_count=5),
-            self.gen_property_category('university', 'Университет (архив)', [], PLOT_CIRCULAR, common_count=5),
+            self.gen_property_category('school', 'Школа', [], PlotType.CIRCULAR, common_count=5),
+            self.gen_property_category('university', 'Университет (архив)', [], PlotType.CIRCULAR, common_count=5),
             self.gen_property_category('verified', 'Верификация', [('count', 'Количество')], None),
             self.gen_property_category('status', 'Статус', [], None),
             self.gen_property_category('site', 'Сайт', [], None),
             self.gen_property_category('phone', 'Телефон', [('mobile', 'Мобильный'), ('home', 'Домашний')], None),
-            self.gen_property_category('country', 'Страна', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('relatives', 'Среди родственников есть', [], PLOT_CIRCULAR,
+            self.gen_property_category('country', 'Страна', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('relatives', 'Среди родственников есть', [], PlotType.CIRCULAR,
                                        name_func=lambda x: relatives_dict[x],
                                        common_count=3),
-            self.gen_property_category('occupation_type', 'Род занятий', [], PLOT_CIRCULAR,
+            self.gen_property_category('occupation_type', 'Род занятий', [], PlotType.CIRCULAR,
                                        name_func=lambda x: occupation_type_dict[x],
                                        common_count=3),
-            self.gen_property_category('occupation_work', 'Работа', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('occupation_school', 'Текущая школа', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('occupation_university', 'Университет', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('personal_political', 'Политические предпочтения', [], PLOT_CIRCULAR,
+            self.gen_property_category('occupation_work', 'Работа', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('occupation_school', 'Текущая школа', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('occupation_university', 'Университет', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('personal_political', 'Политические предпочтения', [], PlotType.CIRCULAR,
                                        name_func=lambda x: political_dict.get(x),
                                        common_count=3),
-            self.gen_property_category('personal_people_main', 'Главное в людях', [], PLOT_CIRCULAR,
+            self.gen_property_category('personal_people_main', 'Главное в людях', [], PlotType.CIRCULAR,
                                        name_func=lambda x: people_main_dict[x],
                                        common_count=3),
-            self.gen_property_category('personal_life_main', 'Главное в жизни', [], PLOT_CIRCULAR,
+            self.gen_property_category('personal_life_main', 'Главное в жизни', [], PlotType.CIRCULAR,
                                        name_func=lambda x: life_main_dict[x],
                                        common_count=3),
-            self.gen_property_category('personal_smoking', 'Отношение к курению', [], PLOT_CIRCULAR,
+            self.gen_property_category('personal_smoking', 'Отношение к курению', [], PlotType.CIRCULAR,
                                        name_func=lambda x: smoking_dict[x],
                                        common_count=3),
-            self.gen_property_category('personal_alcohol', 'Отношение к алкоголю', [], PLOT_CIRCULAR,
+            self.gen_property_category('personal_alcohol', 'Отношение к алкоголю', [], PlotType.CIRCULAR,
                                        name_func=lambda x: alcohol_dict[x],
                                        common_count=3),
-            self.gen_property_category('relation', 'Семейное положение', [], PLOT_CIRCULAR,
+            self.gen_property_category('relation', 'Семейное положение', [], PlotType.CIRCULAR,
                                        name_func=lambda x: relation_dict[x],
                                        common_count=5),
             self.gen_property_category('last_seen_time', 'Время последнего посещения (в днях)', [
@@ -678,8 +677,8 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                 ('max', 'Максимальное'),
                 ('min', 'Минимальное'),
                 ('median', 'Медианное'),
-            ], PLOT_LINE),
-            self.gen_property_category('home_town', 'Родной город', [], PLOT_CIRCULAR, common_count=3),
+            ], PlotType.LINE),
+            self.gen_property_category('home_town', 'Родной город', [], PlotType.CIRCULAR, common_count=3),
             self.gen_property_category(
                 'is_closed', 'Статус аккаунта',
                 [
@@ -688,15 +687,15 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                     ('banned', 'Забаненный'),
                     ('deleted', 'Удаленный'),
                 ],
-                PLOT_CIRCULAR,
+                PlotType.CIRCULAR,
                 self.gen_circular_plot(data['is_closed']['source_list'],
                                        name=lambda
                                            x: account_status_dict.get(x, ['Неизвестный тип'])[0],
                                        color=lambda x: account_status_dict.get(x, ['#ffffff'])[1])),
-            self.gen_property_category('online', 'Онлайн', [], PLOT_CIRCULAR, common_count=5),
-            self.gen_property_category('personal_langs', 'Языки', [], PLOT_CIRCULAR, common_count=5),
-            self.gen_property_category('personal_religion', 'Мировоззрение', [], PLOT_CIRCULAR, common_count=5),
-            self.gen_property_category('last_seen_platform', 'Последнее посещение', [], PLOT_CIRCULAR, common_count=5,
+            self.gen_property_category('online', 'Онлайн', [], PlotType.CIRCULAR, common_count=5),
+            self.gen_property_category('personal_langs', 'Языки', [], PlotType.CIRCULAR, common_count=5),
+            self.gen_property_category('personal_religion', 'Мировоззрение', [], PlotType.CIRCULAR, common_count=5),
+            self.gen_property_category('last_seen_platform', 'Последнее посещение', [], PlotType.CIRCULAR, common_count=5,
                                        name_func=lambda x: last_seen_platform_dict[x]),
             self.gen_property_category('followers_count', 'Количество подписчиков',
                                        [
@@ -704,7 +703,7 @@ class VKCommunity(Represent, VKAPI, RepresentTools):
                                            ('min', 'Минимальное'),
                                            ('mean', 'Среднее'),
                                            ('median', 'Медианное'),
-                                       ], PLOT_LINE),
+                                       ], PlotType.LINE),
         ]
         return bool_filter(properties)
 

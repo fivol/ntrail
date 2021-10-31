@@ -7,13 +7,12 @@ import networkx as nx
 from functools import lru_cache
 import random
 from utils import self_replace
-import numpy as np
 import re
 from db.db_logic import DB
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from time import time
-import pandas as pd
-import matplotlib.patches as mpatches
+# import pandas as pd
+# import matplotlib.patches as mpatches
 import hashlib
 
 

@@ -2,7 +2,7 @@ import logging
 import random
 from collections import Counter
 from time import time, sleep
-import numpy as np
+# import numpy as np
 import re
 from functools import reduce, wraps
 import pickle

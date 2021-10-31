@@ -11,6 +11,8 @@ handlers:
 loggers:
   vk:
     level: DEBUG
+  "pymorphy2.opencorpora_dict.wrapper":
+    level: WARNING
 root:
-  level: DEBUG
+  level: INFO
   handlers: [console]

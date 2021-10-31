@@ -1,7 +1,15 @@
-from worker import VkMethods
-import asyncio
+from worker import Engine, VkMethods
+# from modules import VKUser
+
+my_id = 245089915
+
+
+def main():
+    print(VkMethods.user.sync(1))
+
 
 if __name__ == '__main__':
-    print(VkMethods.friends.sync(245089915))
-    print(VkMethods.user.sync(245089915))
-
+    pass
+    with Engine():
+        print(VkMethods.user.sync(1))
+        print(VkMethods.user.sync(1))

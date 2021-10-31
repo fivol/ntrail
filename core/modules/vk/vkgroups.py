@@ -1,16 +1,16 @@
 import logging
 
-from modules.vk.vkgroup import VKGroup
+from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from constants import PLOT_CIRCULAR, PLOT_LINE
+from constants import PlotType
 from module.represent import Represent
 from module.represent_tools import RepresentTools
-from utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
+from utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter, dict_from_dicts, \
+    prepare_list
 from collections import Counter
 import networkx as nx
 import math
-from modules.vk.vkapi import VKAPI
 
 logger = logging.getLogger('vk-groups')
 
@@ -27,7 +27,7 @@ groups_types_dict = {
 }
 
 
-class VKGroups(VKAPI, Represent, RepresentTools):
+class VKGroups(Represent, RepresentTools):
     base_class = VKGroup
     available_attributes = ['clusters', 'members']
 
@@ -354,16 +354,16 @@ class VKGroups(VKAPI, Represent, RepresentTools):
 
     def get_all_properties(self):
         return bool_filter([
-            self.gen_property_category('age_limits', 'Возрастные ограничения', [], PLOT_CIRCULAR,
+            self.gen_property_category('age_limits', 'Возрастные ограничения', [], PlotType.CIRCULAR,
                                        common_count=3, name_func=lambda x: age_limits_dict[x]),
-            self.gen_property_category('city', 'Город', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('name', 'Имя содержит', [], PLOT_CIRCULAR, common_count=10),
-            self.gen_property_category('country', 'Страна', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('members_count', 'Количество подписчиков', [], PLOT_LINE),
-            self.gen_property_category('activity_pages', 'Тема публичной страницы', [], PLOT_CIRCULAR, common_count=6),
-            self.gen_property_category('activity_groups', 'Тип группы', [], PLOT_CIRCULAR, common_count=3),
-            self.gen_property_category('type', 'Тип', [], PLOT_CIRCULAR, common_count=5, names_dict=groups_types_dict),
-            # self.gen_property_category('description', 'Описание', [], PLOT_CIRCULAR, common_count=10),
+            self.gen_property_category('city', 'Город', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('name', 'Имя содержит', [], PlotType.CIRCULAR, common_count=10),
+            self.gen_property_category('country', 'Страна', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('members_count', 'Количество подписчиков', [], PlotType.LINE),
+            self.gen_property_category('activity_pages', 'Тема публичной страницы', [], PlotType.CIRCULAR, common_count=6),
+            self.gen_property_category('activity_groups', 'Тип группы', [], PlotType.CIRCULAR, common_count=3),
+            self.gen_property_category('type', 'Тип', [], PlotType.CIRCULAR, common_count=5, names_dict=groups_types_dict),
+            # self.gen_property_category('description', 'Описание', [], PlotType.CIRCULAR, common_count=10),
             self.gen_property_category('verified', 'Верификация', [('count', 'Верифициовано')]),
         ])
 

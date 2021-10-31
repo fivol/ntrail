@@ -1,12 +1,16 @@
-from constants import CACHE_TYPE_FULL_USE
+import warnings
+
+from constants import CacheType
 
 PLOT_CIRCULAR = 'circular'
+
+warnings.simplefilter("ignore")
 
 
 # Способ кеширования
 # CACHE_TYPE_FULL_USE - максимальное возможное
 # TODO Add other ways to cache requests description
-CACHE_TYPE = CACHE_TYPE_FULL_USE
+CACHE_TYPE = CacheType.FULL_USE
 
 API_SERVER_REQUEST_VERSION = 0
 

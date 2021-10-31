@@ -4,7 +4,7 @@ from module.tied_value import TiedValue
 import numpy as np
 
 from utils import bool_filter, get_random_color
-from constants import PLOT_LINE, PLOT_CIRCULAR
+from constants import PlotType
 
 logger = logging.getLogger('represent')
 
@@ -82,9 +82,9 @@ class RepresentTools:
             return None
 
         if not data_list:
-            if type_ == PLOT_CIRCULAR:
+            if type_ == PlotType.CIRCULAR:
                 data_list = self.gen_circular_plot(data[key]['source_list'], name=name)
-            elif type_ == PLOT_LINE:
+            elif type_ == PlotType.LINE:
                 data_list = self.gen_line_plot(data[key]['source_list'])
             else:
                 return None

@@ -20,7 +20,7 @@ def try_base_analog(func):
     return wrapper
 
 
-class Represent(ManyObjects):
+class Represent(ManyMedia):
 
     def get_sub_properties_categories(self):
         categories = {

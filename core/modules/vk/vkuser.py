@@ -1,20 +1,20 @@
 import logging
 
+from worker import VkMethods
 from .vkgroups import VKGroups
 from module.one_object_represent import OneObjectRepresent
 from utils import once_property, valid_object_method, get_sites
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import io
 import re
-from .vkapi import VKAPI
 from .vkphoto import VKPhotos, VKAlbums
-from constants import *
+from constants import AccountStatus
 from .vkpost import VKPosts
 
 logger = logging.getLogger('vk-user')
 
 
-class VKUser(VKAPI, OneObjectRepresent):
+class VKUser(OneObjectRepresent):
     id_prefix = 'vku_'
     available_attributes = ['friends', 'follows', 'followers', 'groups']
 
@@ -30,20 +30,20 @@ class VKUser(VKAPI, OneObjectRepresent):
 
         if isinstance(user, str):
             if not user:
-                self.status = ACCOUNT_STATUS_ABSENT
+                self.status = AccountStatus.ABSENT
             elif user.startswith(self.id_prefix):
                 self.id = int(user[4:])
             else:
                 username = VKUser.extract_username(user)
-                user_dict = self.resolve_screen_name(username)
+                user_dict = VkMethods.resolve.sync(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
-                    self.status = ACCOUNT_STATUS_ABSENT
+                    self.status = AccountStatus.ABSENT
                 elif user_dict.get('type') == 'user':
                     self.id = user_dict.get('object_id')
                 else:
                     logger.info('VKUser username type is "%s"', user_dict.get('type'))
-                    self.status = ACCOUNT_STATUS_ABSENT
+                    self.status = AccountStatus.ABSENT
         elif isinstance(user, int):
             if user < 0:
                 raise ValueError('User id < 0', user)

@@ -24,7 +24,7 @@ def log_query(func):
     return wrapper
 
 
-class VKAPI:
+class VkCommon:
     @classmethod
     def get_users(cls, vk_ids, full=False, **kwargs):
         if not vk_ids:

@@ -3,12 +3,11 @@ import logging
 from .media_object import MediaObject
 from module.many_media import ManyMedia
 from utils import once_property, valid_object_method, align_string
-from .vkapi import VKAPI
 
 logger = logging.getLogger('vk-photo')
 
 
-class VKAlbum(MediaObject, VKAPI):
+class VKAlbum(MediaObject):
     def __init__(self, album):
         super().__init__()
         if isinstance(album, str):
@@ -39,7 +38,7 @@ class VKAlbum(MediaObject, VKAPI):
         return f'size: {align_string(self.full_data["size"], 4)} {self.full_data["title"]}'
 
 
-class VKAlbums(ManyMedia, VKAPI):
+class VKAlbums(ManyMedia):
     base_class = VKAlbum
 
     def __init__(self, albums):
@@ -115,7 +114,7 @@ class VKPhoto(MediaObject):
         pass
 
 
-class VKPhotos(ManyMedia, VKAPI):
+class VKPhotos(ManyMedia):
     base_class = VKPhoto
 
     def __init__(self, photos):
