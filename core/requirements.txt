@@ -5,7 +5,4 @@ pymorphy2
 vk==2.0.2
 bestconfig
 more-itertools
-networkx
-pandas
-matplotlib
 python-louvain
