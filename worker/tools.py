@@ -80,6 +80,15 @@ class MakeSynced:
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(self._method(*args, **kwargs))
 
+    async def map(self, items, **kwargs):
+        return await asyncio.gather(
+            *[self._method(item, **kwargs) for item in items]
+        )
+
+    def sync_map(self, items, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.map(items, **kwargs))
+
 
 def inject_methods_wrappers(*wrappers):
     """

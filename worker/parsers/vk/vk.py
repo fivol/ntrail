@@ -2,6 +2,8 @@ import json
 import time
 import asyncio
 import logging
+import typing
+
 from aiovk import TokenSession, API
 
 from parsers.parser import BaseParser
@@ -9,6 +11,8 @@ from session.exceptions import NoTokenAvailableException, RpsLimitException, Ses
 from session.session_manager import SessionManager
 from session.session_state import SessionState
 from tools import inject_methods_wrappers, MakeSynced, assert_imported_once
+from .data import *
+
 
 logger = logging.getLogger('vk')
 
@@ -108,7 +112,7 @@ class VkMethods(BaseParser):
         cls._executable_pool = []
 
     @classmethod
-    async def _run_query(cls, method, kwargs, apis, executable=False):
+    async def _run_query(cls, method, kwargs, apis, executable=False, **other):
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
@@ -158,15 +162,19 @@ class VkMethods(BaseParser):
         return result
 
     @classmethod
-    async def user(cls, user_id) -> dict:
+    async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
+        fields = []
+        if full:
+            fields = users_full_fields
         return await cls._run_query(
             'users.get',
-            {'user_id': user_id}, [cls._user_api, cls._app_api],
+            {'user_ids': user_ids, 'fields': fields},
+            [cls._app_api, cls._comm_api, cls._user_api],
             executable=True
         )
 
     @classmethod
-    async def execute(cls, code) -> list:
+    async def execute(cls, code, **kwargs) -> list:
         return await cls._run_query(
             'execute',
             {'code': code}, [cls._comm_api, cls._user_api],
@@ -174,7 +182,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    async def resolve(cls, screen_name) -> dict:
+    async def resolve(cls, screen_name, **kwargs) -> dict:
         return await cls._run_query(
             'utils.resolveScreenName',
             {'screen_name': screen_name},
@@ -183,30 +191,33 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    async def friends(cls, user_id) -> dict:
-        return await cls._run_query(
+    async def friends(cls, user_id, raw_=False, **kwargs) -> typing.Union[list, dict]:
+        result = await cls._run_query(
             'friends.get',
             {'user_id': user_id},
             [cls._app_api, cls._user_api],
-            executable=True
+            executable=True, **kwargs
         )
+        if raw_:
+            return result
+        return result['items']
 
     @classmethod
-    async def followers(cls, user_id, offset=0, count=1000):
+    async def followers(cls, user_id, offset=0, count=1000, **kwargs):
         return await cls._run_query(
             'users.getFollowers',
             {'user_id': user_id, 'offset': offset, 'count': count},
             [cls._app_api, cls._user_api],
-            executable=True
+            executable=True, **kwargs
         )
 
     @classmethod
-    async def members(cls, group_id, offset=0, count=1000):
+    async def members(cls, group_id, offset=0, count=1000, **kwargs):
         return await cls._run_query(
             'groups.getMembers',
             {'group_id': group_id, 'offset': offset, 'count': count},
             [cls._app_api, cls._comm_api, cls._user_api],
-            executable=True
+            executable=True, **kwargs
         )
 
 
@@ -216,7 +227,7 @@ async def main():
     ids = set([i for i in range(1, 1 + count)])
     users = await asyncio.gather(
         *[
-            VkMethods.user(i)
+            VkMethods.users([i])
             for i in ids
         ]
     )
