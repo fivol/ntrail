@@ -10,11 +10,11 @@ handlers:
     stream: ext://sys.stdout
 loggers:
   vk:
-    level: INFO
+    level: DEBUG
   cache:
-    level: INFO
+    level: DEBUG
   session:
-    level: ERROR
+    level: DEBUG
 root:
   level: DEBUG
   handlers: [console]

@@ -20,7 +20,7 @@ def get_redis():
 
 def init():
     ctx.redis = get_redis()
-    ctx.set_default('caching_available', True)
+    ctx.set_default('caching_available', None)
     ctx.set_default('caching', True)
     if ctx.caching:
         logger.info('Caching enabled')
@@ -39,7 +39,7 @@ def cache_with_redis(method):
 
             if cached_result is None:
                 result = await method(*args, **kwargs)
-                await get_context().set(call_encoded, json.dumps(result))
+                await ctx.redis.set(call_encoded, json.dumps(result))
                 logger.debug('Cache miss')
                 return result
             else:

@@ -9,7 +9,7 @@ from worker import Engine, VkMethods
 async def calculate_rps(epochs=10, count=100):
     rps_measures = []
     for ep in range(epochs):
-        ids = set([i for i in range(1 + ep * count, 1 + (ep + 1) * count)])
+        ids = set([i for i in range(count, 2*count)])
         assert len(ids) == count
         start = timer()
         users = await asyncio.gather(
@@ -31,11 +31,12 @@ async def calculate_rps(epochs=10, count=100):
 
 
 async def main():
-    print(await calculate_rps())
+    # print(await VkMethods.users([1]))
+    print(await calculate_rps(epochs=10, count=10))
 
 
 if __name__ == '__main__':
-    with Engine(caching=False):
+    with Engine(caching=True):
         asyncio.get_event_loop().run_until_complete(main())
 
 
