@@ -1,8 +1,8 @@
 import logging
 
 from .media_object import MediaObject
-from module.many_media import ManyMedia
-from utils import once_property, valid_object_method, align_string
+from core.module.many_media import ManyMedia
+from core.utils import once_property, valid_object_method, align_string
 
 logger = logging.getLogger('vk-photo')
 

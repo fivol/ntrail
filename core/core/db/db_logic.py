@@ -3,9 +3,9 @@ import logging
 import peewee
 import hashlib
 
-from utils import make_json_serializable
+from core.utils import make_json_serializable
 from collections import defaultdict
-from models import UserModel, db, EntityModel, FeatureModel
+from core.models import UserModel, db, EntityModel, FeatureModel
 
 
 logger = logging.getLogger('db')

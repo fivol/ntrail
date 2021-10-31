@@ -3,10 +3,10 @@ import logging
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from constants import PlotType
-from module.represent import Represent
-from module.represent_tools import RepresentTools
-from utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter, dict_from_dicts, \
+from core.constants import PlotType
+from core.module.represent import Represent
+from core.module.represent_tools import RepresentTools
+from core.utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter, dict_from_dicts, \
     prepare_list
 from collections import Counter
 import networkx as nx
@@ -148,7 +148,7 @@ class VKGroups(Represent, RepresentTools):
         return g
 
     def get_members(self, each_amount=1000):
-        from modules.vk.vkcommunity import VKCommunity
+        from core.modules.vk.vkcommunity import VKCommunity
         return VKCommunity(sum([group.get_members(each_amount) for group in self.objects], []))
 
     def load_media_data(self, groups=None):

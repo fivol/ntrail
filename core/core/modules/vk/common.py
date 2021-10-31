@@ -1,6 +1,6 @@
 import logging
 import math
-from utils import list_from_dicts
+from core.utils import list_from_dicts
 
 logger = logging.getLogger('vk-api-module')
 

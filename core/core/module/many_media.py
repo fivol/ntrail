@@ -1,14 +1,14 @@
 import bisect
 # from slmpy import ModularityOptimzer
-from module.any_media import AnyMedia
-from utils import once_property, counter_top, get_color, cache_method
+from core.module.any_media import AnyMedia
+from core.utils import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 from functools import lru_cache
 import random
-from utils import self_replace
+from core.utils import self_replace
 import re
-from db.db_logic import DB
+from core.db.db_logic import DB
 # import matplotlib.pyplot as plt
 from time import time
 # import pandas as pd
@@ -458,7 +458,7 @@ class ManyMedia(AnyMedia):
         raise NotImplementedError
 
     def clusters(self):
-        from module.clusters import Clusters
+        from core.module.clusters import Clusters
         return Clusters(self)
 
     def __len__(self):

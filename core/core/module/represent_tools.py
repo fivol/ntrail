@@ -1,10 +1,10 @@
 import logging
 
-from module.tied_value import TiedValue
+from core.module.tied_value import TiedValue
 import numpy as np
 
-from utils import bool_filter, get_random_color
-from constants import PlotType
+from core.utils import bool_filter, get_random_color
+from core.constants import PlotType
 
 logger = logging.getLogger('represent')
 

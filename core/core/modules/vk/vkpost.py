@@ -1,7 +1,7 @@
 from .media_object import MediaObject
-from utils import once_property, valid_object_method
+from core.utils import once_property, valid_object_method
 from collections import defaultdict
-from module.many_media import ManyMedia
+from core.module.many_media import ManyMedia
 
 
 class VKPost(MediaObject):

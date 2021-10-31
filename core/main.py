@@ -1,6 +1,5 @@
 from worker import Engine
-import config
-from modules import VKUser
+from core.modules import VKUser
 
 my_id = 245089915
 

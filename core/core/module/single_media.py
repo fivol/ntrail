@@ -1,5 +1,5 @@
-from module.any_media import AnyMedia
-from utils import align_string, once_property
+from core.module.any_media import AnyMedia
+from core.utils import align_string, once_property
 import hashlib
 
 

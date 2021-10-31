@@ -1,4 +1,4 @@
-from module.cross_connections import CrossConnections, NodeImportance
+from core.module.cross_connections import CrossConnections, NodeImportance
 
 
 class Clusters:

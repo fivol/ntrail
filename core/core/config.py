@@ -1,6 +1,6 @@
 import warnings
 
-from constants import CacheType
+from core.constants import CacheType
 
 PLOT_CIRCULAR = 'circular'
 

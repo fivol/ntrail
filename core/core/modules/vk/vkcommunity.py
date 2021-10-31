@@ -45,10 +45,10 @@ from more_itertools import unique_everseen
 from worker import VkMethods
 from .vkgroup import VKGroup
 from .vkgroups import VKGroups
-from module.represent import try_base_analog, Represent
-from module.represent_tools import RepresentTools
-from module.tied_value import get_tied_array_size
-from utils import *
+from core.module.represent import try_base_analog, Represent
+from core.module.represent_tools import RepresentTools
+from core.module.tied_value import get_tied_array_size
+from core.utils import *
 import numpy as np
 import networkx as nx
 import collections
@@ -58,9 +58,9 @@ from time import time
 from .vkuser import VKUser
 import math
 from itertools import groupby
-from utils import clear_list, prepare_list, list_from_dicts, is_good_username
+from core.utils import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
-from constants import PlotType
+from core.constants import PlotType
 
 # @ - полное говнище, но надо куда нибудь прикрутить
 # # - параметр обработан

@@ -1,4 +1,4 @@
-from module.single_media import SingleMedia
+from core.module.single_media import SingleMedia
 
 
 class MediaObject(SingleMedia):
@@ -8,5 +8,5 @@ class MediaObject(SingleMedia):
         self.type = None
 
     def likes(self):
-        from modules.vk.vkcommunity import VKCommunity
+        from core.modules.vk.vkcommunity import VKCommunity
         return VKCommunity(self.get_object_likes(self.type, self.id))

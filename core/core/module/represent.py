@@ -1,6 +1,6 @@
-from module.many_media import ManyMedia
-from module.selective_query_exeptions import QueryDataException
-from utils import merge_lists
+from core.module.many_media import ManyMedia
+from core.module.selective_query_exeptions import QueryDataException
+from core.utils import merge_lists
 
 # Этот класс отвечает за отображение модуля на интерфейс NTrail.
 # Если модуль нужнается в визуальном отображении, нужну унаследовать этот класс и переопределить некоторые методы

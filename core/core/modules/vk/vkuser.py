@@ -3,13 +3,13 @@ from functools import cache
 
 from worker import VkMethods
 from .vkgroups import VKGroups
-from module.one_object_represent import OneObjectRepresent
-from utils import once_property, valid_object_method, get_sites
+from core.module.one_object_represent import OneObjectRepresent
+from core.utils import once_property, valid_object_method, get_sites
 # import matplotlib.pyplot as plt
 import io
 import re
 from .vkphoto import VKPhotos, VKAlbums
-from constants import AccountStatus
+from core.constants import AccountStatus
 from .vkpost import VKPosts
 
 logger = logging.getLogger('vk-user')

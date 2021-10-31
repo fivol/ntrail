@@ -1,5 +1,5 @@
-from module.single_media import SingleMedia
-from module.selective_query_exeptions import QueryDataException, QueryProgrammingException
+from core.module.single_media import SingleMedia
+from core.module.selective_query_exeptions import QueryProgrammingException
 
 
 class OneObjectRepresent(SingleMedia):

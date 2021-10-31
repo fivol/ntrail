@@ -3,7 +3,7 @@ import hashlib
 import typing
 from pprint import pprint
 from abc import abstractmethod
-from utils import *
+from core.utils import *
 
 
 class AnyMedia:

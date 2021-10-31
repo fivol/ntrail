@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from module.tied_value import TiedValue
+from core.module.tied_value import TiedValue
 
 
 class TiedCounter:

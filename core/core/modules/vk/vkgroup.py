@@ -1,8 +1,8 @@
 import logging
 
-from constants import GroupStatus
-from module.one_object_represent import OneObjectRepresent
-from utils import once_property, valid_object_method, cache_method
+from core.constants import GroupStatus
+from core.module.one_object_represent import OneObjectRepresent
+from core.utils import once_property, valid_object_method, cache_method
 
 
 logger = logging.getLogger('vk-group')
