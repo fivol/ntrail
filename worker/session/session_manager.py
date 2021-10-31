@@ -1,12 +1,15 @@
 import asyncio
+import logging
 from collections import deque
 from random import randint
 from time import time
 
 from session.credentials import CredentialsServerApi
-from session.exceptions import NoTokenAvailableException, ApiLimitException, SessionAction
+from session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction
 from session.session_provider import SessionProvider
 from session.session_state import SessionState
+
+logger = logging.getLogger('session')
 
 
 class SessionManager:
@@ -15,28 +18,36 @@ class SessionManager:
     Возвращает алгоритмом round robin
     """
 
-    def __init__(self, key_type: str, controller: type(SessionState)):
-        self._all_keys = set()
+    def __init__(self, key_type: str, controller: type(SessionState), max_rps=int(1e6)):
         self._session_controller = controller
-        self._active_queue = deque()
+
+        self._all_keys = set()
+        self._all_sessions = {}
+        self._active_sessions = set()
         self._waiting_queue = set()
+
         self._key_type = key_type
+        self._max_rps = max_rps
 
     def get(self):
         session = self._get_session()
-        session.
         return SessionProvider(session=session, manager=self)
 
     def _create_session(self, key) -> SessionState:
-        return self._session_controller(key)
+        return self._session_controller(key=key, key_type=self._key_type)
+
+    def _add_active_session(self, session):
+        priority_session = (session.rps(), session)
+        self._active_sessions.add(priority_session)
+        self._all_sessions[hash(session)] = priority_session
 
     def _check_waiting_queue(self):
         while self._waiting_queue:
-            revive_time, token = self._waiting_queue.pop()
+            revive_time, session = self._waiting_queue.pop()
             if revive_time < time():
-                self._active_queue.append(token)
+                self._add_active_session(session)
             else:
-                self._waiting_queue.add((revive_time, token))
+                self._waiting_queue.add((revive_time, session))
                 break
 
     def __filter_new_keys(self, keys):
@@ -49,12 +60,14 @@ class SessionManager:
         for key in keys:
             session = self._create_session(key)
             self._all_keys.add(key)
+            self._add_active_session(session)
             # TODO tokens can be not plain string, for example can contain revive time
-            self._active_queue.appendleft(session)
 
     def _receive_keys(self) -> bool:
-        count = max(1, len(self._active_queue))
+        count = max(1, len(self._active_sessions))
         tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(self._key_type, count))
+        if len(tokens) < count:
+            logger.warning('Credentials Server give less keys then requested: %s < %s', len(tokens), count)
         self.__add_new_keys(tokens)
         return bool(tokens)
 
@@ -64,33 +77,30 @@ class SessionManager:
 
     def _get_session(self) -> SessionState:
         while True:
-            if not len(self._active_queue) or not randint(0, 10):
+            if not len(self._active_sessions) or not randint(0, 10):
                 self._check_waiting_queue()
 
-            if not self._active_queue:
+            if not self._active_sessions:
                 if self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
 
-            session = self._active_queue.popleft()
-            if not session.is_ready():
-                self._active_queue.appendleft(session)
-                if session.is_expired():
-                    self._return_expired()
-                    continue
+            rps, session = self._active_sessions.pop()
+            self._add_active_session(session)
+            if session.rps() >= self._max_rps:
                 if self._receive_keys():
                     continue
-                raise ApiLimitException()
+                raise RpsLimitException()
 
             return session
 
     def return_session(self, session, action: SessionAction = None):
-        self._active_queue.append(session)
+        self._add_active_session(session)
         # TODO handle session actions
 
     async def _stop(self):
-        while self._active_queue:
-            session = self._active_queue.pop()
+        while self._active_sessions:
+            rps, session = self._active_sessions.pop()
             await session.single_close()
 
     def __del__(self):

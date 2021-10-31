@@ -1,4 +1,7 @@
-from session.exceptions import SessionException
+import asyncio
+import traceback
+
+from session.exceptions import SessionException, SessionAction
 
 
 class SessionProvider:
@@ -6,14 +9,17 @@ class SessionProvider:
         self._session = session
         self._manager = manager
 
-    async def __aenter__(self):
+    def __enter__(self):
+        self._session.notify_use()
         return self._session.session
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type == asyncio.CancelledError:
+            return False
         if exc_type:
             try:
                 self._session.handle_error(exc_type, exc_val, exc_tb)
-            except SessionException as action:
+            except SessionAction as action:
                 self._manager.return_session(self._session, action=action)
                 return False
 

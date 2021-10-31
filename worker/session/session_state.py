@@ -1,6 +1,7 @@
 import logging
 from time import time
 from abc import abstractmethod
+from collections import deque
 
 logger = logging.getLogger('session')
 
@@ -20,7 +21,21 @@ class SessionState:
         self.status = None
         self._expire_time = None
         self.__closed = False
-        self.active_usages = 0
+        self.__using_times = deque()
+
+    def rps(self):
+        """
+        Сколько запросов максимум могли сделть за предыдущую секунду
+        """
+        t = time()
+        while self.__using_times and self.__using_times[0] + 1 < t:
+            self.__using_times.popleft()
+
+        return len(self.__using_times)
+
+    def notify_use(self):
+        """Вызывается для поддержания rps при использовании"""
+        self.__using_times.append(time())
 
     @classmethod
     @abstractmethod
@@ -28,7 +43,7 @@ class SessionState:
         pass
 
     def __hash__(self):
-        return f'{self._key_type}-{self._key}'
+        return hash(self._key)
 
     @abstractmethod
     async def close(self):

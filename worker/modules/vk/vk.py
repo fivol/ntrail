@@ -12,7 +12,8 @@ from aiovk import TokenSession, API
 from aiovk.exceptions import VkCaptchaNeeded, VkAPIError
 from modules.parser import BaseParser
 
-from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableException
+from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableException, RpsLimitException, \
+    SessionException, SessionManagerException
 from session.session_manager import SessionManager
 from session.session_state import SessionState
 import config
@@ -44,11 +45,11 @@ class VkApiSession(SessionState):
     def handle_error(self, exc_type, exc_val, exc_tb):
         logger.info('Vk Api error handle')
         # TODO This is just example. Make normal
-        if exc_type == VkAPIError:
-            raise SessionWait(seconds=1)
-
-        if exc_type == VkCaptchaNeeded:
-            raise SessionRemove(reason='Captcha')
+        # if exc_type == VkAPIError:
+        #     raise SessionWait(seconds=1)
+        #
+        # if exc_type == VkCaptchaNeeded:
+        #     raise SessionRemove(reason='Captcha')
 
 
 def inject_methods_wrapper(wrapper_name):
@@ -67,8 +68,8 @@ def inject_methods_wrapper(wrapper_name):
                     self._method = _method
                     self._wrapper = _wrapper
 
-                def __call__(self, *args, **kwargs):
-                    return self._wrapper(self._method, args, kwargs)
+                async def __call__(self, *args, **kwargs):
+                    return await self._wrapper(self._method, args, kwargs)
 
             setattr(cls, item, MethodWrapper(method, wrapper))
         return cls
@@ -83,8 +84,11 @@ class VkMethods:
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
         Конструируется от токена пользователя, выполняющего запросы
     """
-    _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession)
-    _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession)
+    # Vk requests limits https://vk.com/dev/api_requests
+    # 3 in docs
+    _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=3)
+    # 5 in docs
+    _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=5)
 
     _execute_epoch = 0
     _execute_results = {}
@@ -94,8 +98,16 @@ class VkMethods:
     # To call any available api for example
 
     @classmethod
-    def _wrapper(cls, method, args, kwargs):
-        return method(*args, **kwargs)
+    async def _wrapper(cls, method, args, kwargs):
+        while True:
+            try:
+                return await method(*args, **kwargs)
+            except RpsLimitException:
+                await asyncio.sleep(0.01)
+                continue
+            except NoTokenAvailableException:
+                # TODO Think hard
+                raise
 
     @classmethod
     def _gen_execute_code(cls, items) -> str:
@@ -113,7 +125,7 @@ class VkMethods:
         # Label results as waiting
         if not cls._executable_pool:
             raise IndexError
-        print('Run execute pool', len(cls._executable_pool))
+        logger.debug('Run execute pool %s', len(cls._executable_pool))
         execute_coro = cls.execute(cls._gen_execute_code(cls._executable_pool))
         execute_task = asyncio.create_task(execute_coro)
 
@@ -122,15 +134,20 @@ class VkMethods:
         cls._executable_pool = []
 
     @classmethod
-    async def _run_query(cls, api, method, kwargs, executable=False) -> dict:
+    async def _run_query(cls, method, kwargs, apis, executable=False) -> dict:
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
         If not enough commands, do is without execute, just with calling api
         """
         async def run_with_api():
-            async with api.get() as session:
-                return await session(method, **kwargs)
+            for i, api in enumerate(apis):
+                try:
+                    with api.get() as session:
+                        return await session(method, **kwargs)
+                except SessionManagerException:
+                    if i == len(apis) - 1:
+                        raise
 
         if not executable:
             return await run_with_api()
@@ -167,7 +184,7 @@ class VkMethods:
 
     @classmethod
     async def user(cls, user_id) -> dict:
-        return await cls._run_query(cls._app_api, 'users.get', {'user_id': user_id}, executable=True)
+        return await cls._run_query('users.get', {'user_id': user_id}, [cls._user_api, cls._app_api], executable=False)
 
     @classmethod
     async def friends(cls):
@@ -175,7 +192,7 @@ class VkMethods:
 
     @classmethod
     async def execute(cls, code):
-        async with cls._user_api.get() as api:
+        with cls._user_api.get() as api:
             return await api.execute(code=code)
     #
     # @classmethod
@@ -191,7 +208,7 @@ class VkMethods:
 
 async def main():
     t0 = time.time()
-    count = 300
+    count = 30
     ids = set([i for i in range(1, 1 + count)])
     users = await asyncio.gather(
         *[

@@ -1,20 +1,21 @@
-class RequestException(Exception):
+class SessionManagerException(Exception):
+    """Can not perform query because of some troubles with session manager/provider/server etc"""
     pass
 
 
-class NoTokenAvailableException(RequestException):
+class NoTokenAvailableException(SessionManagerException):
     pass
 
 
-class ApiLimitException(RequestException):
+class RpsLimitException(SessionManagerException):
     pass
 
 
 class SessionException(Exception):
-    pass
+    """Trouble with API itself"""
 
 
-class SessionAction(SessionException):
+class SessionAction(Exception):
     """Action should be done with session"""
     pass
 
