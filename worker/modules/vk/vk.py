@@ -17,7 +17,7 @@ from session.exceptions import SessionWait, SessionRemove, NoTokenAvailableExcep
 from session.session_manager import SessionManager
 from session.session_state import SessionState
 import config
-
+from utils import inject_methods_wrapper
 
 logger = logging.getLogger('vk')
 
@@ -45,36 +45,9 @@ class VkApiSession(SessionState):
     def handle_error(self, exc_type, exc_val, exc_tb):
         logger.info('Vk Api error handle')
         # TODO This is just example. Make normal
-        # if exc_type == VkAPIError:
-        #     raise SessionWait(seconds=1)
-        #
-        # if exc_type == VkCaptchaNeeded:
-        #     raise SessionRemove(reason='Captcha')
 
 
-def inject_methods_wrapper(wrapper_name):
-    def cls_wrapper(cls):
-        wrapper = getattr(cls, wrapper_name)
-        for item in cls.__dict__:
-            if item.startswith('_'):
-                continue
-            # TODO Skip all items, that is not methods
-            method = getattr(cls, item)
-            if not inspect.ismethod(method):
-                continue
-
-            class MethodWrapper:
-                def __init__(self, _method, _wrapper):
-                    self._method = _method
-                    self._wrapper = _wrapper
-
-                async def __call__(self, *args, **kwargs):
-                    return await self._wrapper(self._method, args, kwargs)
-
-            setattr(cls, item, MethodWrapper(method, wrapper))
-        return cls
-
-    return cls_wrapper
+EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
 @inject_methods_wrapper('_wrapper')
@@ -157,7 +130,7 @@ class VkMethods:
         cmd_idx = len(cls._executable_pool)
         curr_epoch = cls._execute_epoch
         cls._executable_pool.append((method, kwargs))
-        if len(cls._executable_pool) == 25:
+        if len(cls._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT:
             await cls._run_execute_pool()
 
         # Very important

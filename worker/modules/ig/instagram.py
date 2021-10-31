@@ -2,7 +2,7 @@ import time
 from .instagramlib import Account, WebAgentAccount, HasMediaElement
 from .instagramlib.exceptions import InternetException, UnexpectedResponse
 from ...config import logger
-from ...tools import ThreadResult, sequential_start, MemoryCache
+from ...utils import ThreadResult, sequential_start, MemoryCache
 import random
 
 REQUEST_ERROR_404 = 'REQUEST_ERROR_404'

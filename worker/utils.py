@@ -1,3 +1,4 @@
+import inspect
 import random
 from time import sleep
 
@@ -27,3 +28,28 @@ def sequential_start(func):
         return result
 
     return wrapper
+
+
+def inject_methods_wrapper(wrapper_name):
+    def cls_wrapper(cls):
+        wrapper = getattr(cls, wrapper_name)
+        for item in cls.__dict__:
+            if item.startswith('_'):
+                continue
+            # TODO Skip all items, that is not methods
+            method = getattr(cls, item)
+            if not inspect.ismethod(method):
+                continue
+
+            class MethodWrapper:
+                def __init__(self, _method, _wrapper):
+                    self._method = _method
+                    self._wrapper = _wrapper
+
+                async def __call__(self, *args, **kwargs):
+                    return await self._wrapper(self._method, args, kwargs)
+
+            setattr(cls, item, MethodWrapper(method, wrapper))
+        return cls
+
+    return cls_wrapper
