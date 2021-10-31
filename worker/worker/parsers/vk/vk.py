@@ -4,17 +4,16 @@ import asyncio
 import logging
 import typing
 
-import config
 from aiovk import TokenSession, API
-from methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
-from tools import assert_imported_once
+from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
+from worker.tools import assert_imported_once
 
-from parsers.vk.data import *
-from caching import cache_with_redis
-from parsers.parser import BaseParser
-from session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
-from session.session_manager import SessionManager
-from session.session_state import SessionState
+from worker.parsers.vk.data import *
+from worker.caching import cache_with_redis
+from worker.parsers.parser import BaseParser
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
+from worker.session.session_manager import SessionManager
+from worker.session.session_state import SessionState
 
 
 logger = logging.getLogger('vk')
@@ -143,8 +142,10 @@ class VkMethods(BaseParser):
         if len(cls._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT:
             await cls._run_execute_pool()
 
-        # Very important
+        # Very important. We should return control to collect many queries in pool in async
         await asyncio.sleep(0)
+        if len(cls._executable_pool) < 15:
+            await asyncio.sleep(0.001)
         if cls._execute_epoch == curr_epoch and len(cls._executable_pool) >= 3:
             await cls._run_execute_pool()
         results = cls._execute_results.get(curr_epoch, None)
@@ -223,22 +224,3 @@ class VkMethods(BaseParser):
             [cls._app_api, cls._comm_api, cls._user_api],
             executable=True, **kwargs
         )
-
-
-async def main():
-    t0 = time.time()
-    count = 400
-    ids = set([i for i in range(100, 100 + count)])
-    users = await asyncio.gather(
-        *[
-            VkMethods.users([i])
-            for i in ids
-        ]
-    )
-    users_ids = {user[0]['id'] for user in users}
-    assert ids == users_ids
-    print(count / (time.time() - t0))
-    await VkMethods.stop()
-
-if __name__ == '__main__':
-    asyncio.run(main())

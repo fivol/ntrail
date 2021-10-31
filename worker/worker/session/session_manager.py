@@ -1,12 +1,11 @@
-import asyncio
 import logging
 from random import randint
 from time import time
 
-from session.credentials import CredentialsServerApi
-from session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction
-from session.session_provider import SessionProvider
-from session.session_state import SessionState
+from worker.session.credentials import CredentialsServerApi
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction
+from worker.session.session_provider import SessionProvider
+from worker.session.session_state import SessionState
 
 logger = logging.getLogger('session')
 
@@ -28,7 +27,6 @@ class SessionManager:
         self._key_type = key_type
         self._max_rps = max_rps
         self._stop_called = False
-        print('session manager')
 
     def get(self):
         session = self._get_session()

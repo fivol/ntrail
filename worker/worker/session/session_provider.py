@@ -1,7 +1,6 @@
 import asyncio
-import traceback
 
-from session.exceptions import SessionException, SessionAction
+from worker.session.exceptions import SessionAction
 
 
 class SessionProvider:

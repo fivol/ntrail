@@ -1,41 +1,54 @@
 import asyncio
 import logging
-from functools import wraps
 import aioredis
 import json
 
+from worker.ctx import get_context
+
+
 logger = logging.getLogger('cache')
+
+ctx = get_context()
 
 
 def get_redis():
+    ctx.set_default('redis_url', 'redis://localhost')
     return aioredis.from_url(
-        "redis://localhost", encoding="utf-8", decode_responses=True
+        ctx.redis_url, encoding="utf-8", decode_responses=True
     )
 
 
-_redis = get_redis()
-_caching_available = True
+def init():
+    ctx.redis = get_redis()
+    ctx.set_default('caching_available', True)
+    ctx.set_default('caching', True)
+    if ctx.caching:
+        logger.info('Caching enabled')
+    else:
+        logger.info('Caching disabled')
 
 
 def cache_with_redis(method):
     async def _wrapper(*args, **kwargs):
-        global _caching_available
-        if not _caching_available:
+        if not ctx.caching or ctx.caching_available is False:
             return await method(*args, **kwargs)
         try:
             call_encoded = f'{method.__name__}-{args}-{kwargs}'
-            cached_result = await _redis.get(call_encoded)
+            cached_result = await ctx.redis.get(call_encoded)
+            _caching_available = True
+
             if cached_result is None:
                 result = await method(*args, **kwargs)
-                await _redis.set(call_encoded, json.dumps(result))
+                await get_context().set(call_encoded, json.dumps(result))
                 logger.debug('Cache miss')
                 return result
             else:
                 logger.debug('Cache hit')
                 return json.loads(cached_result)
         except ConnectionError:
+            if ctx.caching_available is None:
+                logger.warning('Redis ConnectionError')
             _caching_available = False
-            logger.warning('Redis ConnectionError')
 
         return await method(*args, **kwargs)
     return _wrapper
