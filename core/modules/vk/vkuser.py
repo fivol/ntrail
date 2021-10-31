@@ -1,17 +1,17 @@
+import logging
+
 from .vkgroups import VKGroups
-from core.module.one_object_represent import OneObjectRepresent
-from core.tools import once_property, valid_object_method, get_sites
+from module.one_object_represent import OneObjectRepresent
+from utils import once_property, valid_object_method, get_sites
 import matplotlib.pyplot as plt
 import io
 import re
-from core.glbal import logger
 from .vkapi import VKAPI
 from .vkphoto import VKPhotos, VKAlbums
-from core.call_worker.worker.api_errors import APIError, INVALID_ID_ERROR
-from core.constants import ACCOUNT_STATUS_BANNED, ACCOUNT_STATUS_DELETED, \
-    ACCOUNT_STATUS_PRIVATE, ACCOUNT_STATUS_ABSENT, \
-    ACCOUNT_STATUS_VALID, ACCOUNT_STATUS_PUBLIC
+from constants import *
 from .vkpost import VKPosts
+
+logger = logging.getLogger('vk-user')
 
 
 class VKUser(VKAPI, OneObjectRepresent):
@@ -83,9 +83,12 @@ class VKUser(VKAPI, OneObjectRepresent):
     def check_status(self):
         if not self.status:
             user_data = self.short_data
-            if APIError.is_error(user_data):
-                if APIError(user_data).code == INVALID_ID_ERROR:
-                    self.status = ACCOUNT_STATUS_ABSENT
+            # TODO Error handling
+            # if APIError.is_error(user_data):
+            #     if APIError(user_data).code == INVALID_ID_ERROR:
+            #         self.status = ACCOUNT_STATUS_ABSENT
+            if False:
+                pass
             elif isinstance(user_data, dict):
                 if 'deactivated' in user_data:
                     deactivated_status = user_data['deactivated']

@@ -1,16 +1,18 @@
-from core.modules.vk.vkgroup import VKGroup
+import logging
+
+from modules.vk.vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from core.constants import PLOT_CIRCULAR, PLOT_LINE
-from core.module.represent import Represent
-from core.module.represent_tools import RepresentTools
-from core.tools import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
+from constants import PLOT_CIRCULAR, PLOT_LINE
+from module.represent import Represent
+from module.represent_tools import RepresentTools
+from utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter
 from collections import Counter
 import networkx as nx
 import math
-from core.glbal import logger
-from core.tools import dict_from_dicts, prepare_list
-from core.modules.vk.vkapi import VKAPI
+from modules.vk.vkapi import VKAPI
+
+logger = logging.getLogger('vk-groups')
 
 age_limits_dict = {
     1: 'нет',
@@ -146,7 +148,7 @@ class VKGroups(VKAPI, Represent, RepresentTools):
         return g
 
     def get_members(self, each_amount=1000):
-        from core.modules.vk.vkcommunity import VKCommunity
+        from modules.vk.vkcommunity import VKCommunity
         return VKCommunity(sum([group.get_members(each_amount) for group in self.objects], []))
 
     def load_media_data(self, groups=None):

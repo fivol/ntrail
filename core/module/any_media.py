@@ -1,10 +1,10 @@
 
 import hashlib
 from pprint import pprint
-from core.tools import *
+from utils import *
 
 
-class AnyObject:
+class AnyMedia:
     @property
     def params(self):
         return None

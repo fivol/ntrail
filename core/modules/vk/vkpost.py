@@ -1,8 +1,8 @@
 from .media_object import MediaObject
 from .vkapi import VKAPI
-from core.tools import once_property, valid_object_method
+from utils import once_property, valid_object_method
 from collections import defaultdict
-from core.module.many_objects import ManyObjects
+from module.many_media import ManyMedia
 
 
 class VKPost(MediaObject, VKAPI):
@@ -70,7 +70,7 @@ class VKPost(MediaObject, VKAPI):
         return info
 
 
-class VKPosts(ManyObjects, VKAPI):
+class VKPosts(ManyMedia, VKAPI):
     base_class = VKPost
 
     def __init__(self, posts):

@@ -1,8 +1,0 @@
-numpy
-transliterate
-peewee
-pymorphy2
-vk==2.0.2
-bestconfig
-more-itertools
-python-louvain

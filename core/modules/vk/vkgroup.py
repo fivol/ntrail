@@ -1,9 +1,12 @@
-from core.constants import GROUP_STATUS_ABSENT, GROUP_STATUS_VALID, GROUP_STATUS_DEACTIVATED
-from core.module.one_object_represent import OneObjectRepresent
-from core.tools import once_property, valid_object_method, cache_method
-from core.glbal import logger
-from core.modules.vk.vkapi import VKAPI
-from core.call_worker.worker.api_errors import APIError, INVALID_ID_ERROR
+import logging
+
+from constants import GROUP_STATUS_ABSENT, GROUP_STATUS_VALID, GROUP_STATUS_DEACTIVATED
+from module.one_object_represent import OneObjectRepresent
+from utils import once_property, valid_object_method, cache_method
+from modules.vk.vkapi import VKAPI
+
+
+logger = logging.getLogger('vk-group')
 
 
 class VKGroup(OneObjectRepresent):

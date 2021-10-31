@@ -1,8 +1,8 @@
-from module.one_object import OneObject
+from module.single_media import SingleMedia
 from modules.vk.vkapi import VKAPI
 
 
-class MediaObject(OneObject, VKAPI):
+class MediaObject(SingleMedia, VKAPI):
     def __init__(self):
         super().__init__()
         self.id = None

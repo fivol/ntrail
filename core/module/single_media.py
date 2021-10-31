@@ -1,9 +1,9 @@
-from core.module.any_object import AnyObject
-from core.tools import align_string, once_property
+from module.any_media import AnyMedia
+from.tools import align_string, once_property
 import hashlib
 
 
-class OneObject(AnyObject):
+class SingleMedia(AnyMedia):
     many_objects_class = None
 
     def __init__(self):

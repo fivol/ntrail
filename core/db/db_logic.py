@@ -1,10 +1,14 @@
+import logging
+
 import peewee
 import hashlib
 
-from .tools import make_json_serializable
+from utils import make_json_serializable
 from collections import defaultdict
-from .glbal import logger
-from .models import UserModel, db, EntityModel, FeatureModel
+from models import UserModel, db, EntityModel, FeatureModel
+
+
+logger = logging.getLogger('db')
 
 
 class DB:

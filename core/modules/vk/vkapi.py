@@ -1,6 +1,8 @@
+import logging
 import math
-from glbal import logger
-from tools import list_from_dicts
+from utils import list_from_dicts
+
+logger = logging.getLogger('vk-api-module')
 
 
 def get_items(func):

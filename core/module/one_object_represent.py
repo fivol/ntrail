@@ -1,8 +1,8 @@
-from core.module.one_object import OneObject
-from core.module.selective_query_exeptions import QueryDataException, QueryProgrammingException
+from module.single_media import SingleMedia
+from module.selective_query_exeptions import QueryDataException, QueryProgrammingException
 
 
-class OneObjectRepresent(OneObject):
+class OneObjectRepresent(SingleMedia):
     def represent(self, force=False):
         many_objects_class = self.__class__.many_objects_class
         if many_objects_class:

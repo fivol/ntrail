@@ -1,6 +1,6 @@
 import re
 
-from core.module.frontend_preparing import is_number
+from module.frontend_preparing import is_number
 
 
 class TiedValue:

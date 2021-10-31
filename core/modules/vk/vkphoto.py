@@ -1,8 +1,11 @@
+import logging
+
 from .media_object import MediaObject
-from core.module.many_objects import ManyObjects
-from core.tools import once_property, valid_object_method, align_string
+from module.many_media import ManyMedia
+from utils import once_property, valid_object_method, align_string
 from .vkapi import VKAPI
-from core.glbal import logger
+
+logger = logging.getLogger('vk-photo')
 
 
 class VKAlbum(MediaObject, VKAPI):
@@ -36,7 +39,7 @@ class VKAlbum(MediaObject, VKAPI):
         return f'size: {align_string(self.full_data["size"], 4)} {self.full_data["title"]}'
 
 
-class VKAlbums(ManyObjects, VKAPI):
+class VKAlbums(ManyMedia, VKAPI):
     base_class = VKAlbum
 
     def __init__(self, albums):
@@ -112,7 +115,7 @@ class VKPhoto(MediaObject):
         pass
 
 
-class VKPhotos(ManyObjects, VKAPI):
+class VKPhotos(ManyMedia, VKAPI):
     base_class = VKPhoto
 
     def __init__(self, photos):

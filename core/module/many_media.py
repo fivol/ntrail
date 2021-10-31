@@ -1,15 +1,15 @@
 import bisect
 # from slmpy import ModularityOptimzer
-from core.module.any_object import AnyObject
-from core.tools import once_property, counter_top, get_color, cache_method
+from module.any_media import AnyMedia
+from utils import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 from functools import lru_cache
 import random
-from core.tools import self_replace
+from utils import self_replace
 import numpy as np
 import re
-from core.db_logic import DB
+from db.db_logic import DB
 import matplotlib.pyplot as plt
 from time import time
 import pandas as pd
@@ -17,7 +17,7 @@ import matplotlib.patches as mpatches
 import hashlib
 
 
-class ManyObjects(AnyObject):
+class ManyMedia(AnyMedia):
     # TODO Сделать класс абстрактным, убрать ошибки в наследниках
     # много полей не найдено, организовать правильную структуру
 
@@ -478,5 +478,5 @@ class ManyObjects(AnyObject):
         raise NotImplementedError
 
     def clusters(self):
-        from core.module.clusters import Clusters
+        from module.clusters import Clusters
         return Clusters(self)

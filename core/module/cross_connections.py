@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from ntmodule.represent import Represent
+from represent import Represent
 
 
 class NodeImportance(Represent):

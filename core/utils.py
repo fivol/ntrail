@@ -1,3 +1,4 @@
+import logging
 import random
 from collections import Counter
 from time import time, sleep
@@ -5,16 +6,17 @@ import numpy as np
 import re
 from functools import reduce, wraps
 import pickle
-from core.glbal import logger
 from threading import Thread
 import difflib
 import string
 import transliterate
 import math
 import pymorphy2
-from core.app_data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
-from core.module.tied_counter import TiedCounter
-from core.module.tied_value import TiedValue
+from data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
+from module.tied_counter import TiedCounter
+from module.tied_value import TiedValue
+
+logger = logging.getLogger('tools')
 
 morph = pymorphy2.MorphAnalyzer()
 
