@@ -94,8 +94,8 @@ class VkMethods(BaseParser):
     async def _wrapper(cls, method, args, kwargs):
         while True:
             try:
-                result = await method(*args, **kwargs)
                 logger.debug('Run method: %s', method.__name__)
+                result = await method(*args, **kwargs)
                 return result
             except RpsLimitException:
                 await asyncio.sleep(0.01)
