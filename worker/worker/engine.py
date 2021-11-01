@@ -19,13 +19,13 @@ class Engine:
 
     _instance_count = 0
 
-    def __init__(self, caching=True, **kwargs):
+    def __init__(self, caching=True, timeout=100, **kwargs):
         self._instance_count += 1
         assert self._instance_count <= 1, 'Engine must be in single instance'
         self._parsers = parsers
-        ctx.caching = caching
+        kwargs.update(caching=caching, timeout=timeout)
         self.__stopped = False
-        for name, value in kwargs:
+        for name, value in kwargs.items():
             setattr(ctx, name, value)
 
         self._init_modules()
@@ -37,6 +37,8 @@ class Engine:
     def _init_modules(cls):
         logger.info('Worker engine started')
         caching.init()
+        ctx.initialized = True
+        ctx.set_default('timeout', 3)
 
     async def _stop_all(self):
         self.__stopped = True

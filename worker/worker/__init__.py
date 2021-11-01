@@ -5,5 +5,5 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 
-from worker.parsers import *
-from .engine import Engine
+from worker.parsers.vk.vk import *
+from worker.engine import Engine

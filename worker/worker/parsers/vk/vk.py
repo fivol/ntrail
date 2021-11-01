@@ -16,6 +16,8 @@ from worker.session.exceptions import SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
 from worker.helpers.tools import assert_imported_once, decorate
+from worker.helpers.tools import assert_imported_once
+from worker.ctx import get_context
 
 logger = logging.getLogger('vk')
 
@@ -27,6 +29,8 @@ VK_API_TIMEOUT = 10
 
 assert_imported_once()
 
+ctx = get_context()
+
 
 class VkApiSession(SessionState):
     def __init__(self, *args, **kwargs):
@@ -34,7 +38,7 @@ class VkApiSession(SessionState):
         super().__init__(*args, **kwargs)
 
     def create(self, key: str):
-        session = TokenSession(access_token=key, timeout=3)
+        session = TokenSession(access_token=key, timeout=ctx.timeout)
         self.__vk_session = session
         session.API_VERSION = VK_API_VERSION
         return API(session)
@@ -50,6 +54,7 @@ class VkApiSession(SessionState):
 
 
 EXECUTE_QUERIES_BUNCH_COUNT = 25
+EXECUTE_MAX_LENGTH = 12000
 
 
 class VkMethods(BaseParser):
@@ -71,6 +76,7 @@ class VkMethods(BaseParser):
     _execute_epoch = 0
     _execute_results = {}
     _executable_pool = []
+    _execute_length = 0
 
     @classmethod
     @ignore_injection
@@ -101,12 +107,26 @@ class VkMethods(BaseParser):
         if not cls._executable_pool:
             raise IndexError
         logger.debug('Run execute pool %s', len(cls._executable_pool))
+
+        # Split execute command into parts
+        # tasks = []
+        # curr_commands = []
+        # cmd_length = 0
+        # for i, cmd in enumerate(cls._executable_pool + ['']):
+        #     if cmd_length + len(cmd) > EXECUTE_MAX_LENGTH or not cmd:
+        #         tasks.append(cls.execute(cls._gen_execute_code(curr_commands)))
+        #         curr_commands = []
+        #         cmd_length = 0
+        #     curr_commands.append(cmd)
+        #     cmd_length += len(cmd)
+
         execute_coro = cls.execute(cls._gen_execute_code(cls._executable_pool), only_user_access=only_user_access)
         execute_task = asyncio.create_task(execute_coro)
 
         cls._execute_results[cls._execute_epoch] = execute_task
         cls._execute_epoch += 1
         cls._executable_pool = []
+        cls._execute_length = 0
 
     @classmethod
     async def _run_query(cls, method, kwargs, apis, executable=False, only_user_access=False, **other):
@@ -119,7 +139,7 @@ class VkMethods(BaseParser):
             if isinstance(value, list):
                 return ','.join(map(str, value))
             return value
-        kwargs = {key: handle_value(value) for key, value in kwargs.items() if value is not None}
+        kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
 
         async def run_with_api():
             for i, api in enumerate(apis):
@@ -137,8 +157,16 @@ class VkMethods(BaseParser):
 
         cmd_idx = len(cls._executable_pool)
         curr_epoch = cls._execute_epoch
+        cmd_length = len(json.dumps((method, kwargs)))
+
+        if cmd_length > EXECUTE_MAX_LENGTH:
+            logger.warning('Too long command to use execute command: %s', cmd_length)
+            return await run_with_api()
+
         cls._executable_pool.append((method, kwargs))
-        if len(cls._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT:
+        cls._execute_length += cmd_length
+        if len(cls._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT or \
+                cls._execute_length + cmd_length > EXECUTE_MAX_LENGTH:
             await cls._run_execute_pool(only_user_access)
 
         # Very important. We should return control to collect many queries in pool in async
@@ -186,7 +214,7 @@ class VkMethods(BaseParser):
         return await cls._run_query(
             'execute',
             {'code': code}, ([] if only_user_access else [cls._comm_api]) + [cls._user_api],
-            executable=False,
+            executable=False, **kwargs
         )
 
     @classmethod
@@ -199,8 +227,9 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @count_offset_iterator(5000)
     @items_getter
-    async def friends(cls, user_id, **kwargs) -> list:
+    async def friends(cls, user_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'friends.get',
             {'user_id': user_id},

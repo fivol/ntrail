@@ -1,6 +1,8 @@
 import asyncio
 import inspect
 
+from parsers.exceptions import ParserRealError
+
 
 class MethodWrapper:
     def __init__(self, _method, _wrapper):
@@ -9,6 +11,50 @@ class MethodWrapper:
 
     async def __call__(self, *args, **kwargs):
         return await self._wrapper(self._method, args, kwargs)
+
+
+class MakeSynced:
+    """
+    Wraps method and give .sync interface to call async functions
+
+    --------------------
+    Async variant:
+
+        async def abc(x):
+            return x
+        print(asyncio.run(abs()))
+    --------------------
+    Sync variant:
+
+        @MakeSynced
+        async def abc(x):
+            return x
+
+        print(abc.sync(3))
+    """
+
+    def __init__(self, _method):
+        self._method = _method
+
+    async def __call__(self, *args, **kwargs):
+        return await self._method(*args, **kwargs)
+
+    def sync(self, *args, **kwargs):
+        loop = asyncio.get_event_loop()
+        try:
+            return loop.run_until_complete(self._method(*args, **kwargs))
+        except ParserRealError as e:
+            return e
+
+    async def map(self, items, **kwargs):
+        return await asyncio.gather(
+            *[self._method(item, **kwargs) for item in items],
+            return_exceptions=True
+        )
+
+    def sync_map(self, items, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.map(items, **kwargs))
 
 
 def inject_methods_wrappers(*wrappers):
