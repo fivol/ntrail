@@ -1,20 +1,19 @@
-import json
-import time
 import asyncio
+import json
 import logging
 import typing
+from functools import wraps
 
 from aiovk import TokenSession, API
-from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
-from worker.tools import assert_imported_once
 
-from worker.parsers.vk.data import *
 from worker.caching import cache_with_redis
+from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
 from worker.parsers.parser import BaseParser
+from worker.parsers.vk.data import *
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
-
+from worker.tools import assert_imported_once
 
 logger = logging.getLogger('vk')
 
@@ -49,12 +48,25 @@ class VkApiSession(SessionState):
 EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
+def items_getter(method):
+    @wraps(method)
+    async def wrapper(*args, **kwargs):
+        result = await method(*args, **kwargs)
+        if kwargs.get('raw_') and isinstance(result, dict):
+            return result
+        return result.get('items')
+
+    return wrapper
+
+
 @inject_methods_wrappers('_wrapper', cache_with_redis, MakeSynced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.
         Конструируется от токена пользователя, выполняющего запросы
+
+        https://github.com/fivol/ntrail-worker/blob/167e705d0d55e8f97995d3c1831f326fbf213727/modules/vk/vk.py
     """
     # Vk requests limits https://vk.com/dev/api_requests
     # 3 in docs
@@ -82,7 +94,9 @@ class VkMethods(BaseParser):
     async def _wrapper(cls, method, args, kwargs):
         while True:
             try:
-                return await method(*args, **kwargs)
+                result = await method(*args, **kwargs)
+                logger.debug('Run method: %s', method.__name__)
+                return result
             except RpsLimitException:
                 await asyncio.sleep(0.01)
                 continue
@@ -121,6 +135,11 @@ class VkMethods(BaseParser):
         Tried to group queries to execute it in single vk api execute commands
         If not enough commands, do is without execute, just with calling api
         """
+        def handle_value(value):
+            if isinstance(value, list):
+                return ','.join(map(str, value))
+            return value
+        kwargs = {key: handle_value(value) for key, value in kwargs.items() if value is not None}
 
         async def run_with_api():
             for i, api in enumerate(apis):
@@ -173,7 +192,7 @@ class VkMethods(BaseParser):
             fields = users_full_fields
         return await cls._run_query(
             'users.get',
-            {'user_ids': user_ids, 'fields': fields},
+            {'user_ids': ','.join([str(id) for id in user_ids]), 'fields': fields},
             [cls._app_api, cls._comm_api, cls._user_api],
             executable=True
         )
@@ -196,16 +215,14 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    async def friends(cls, user_id, raw_=False, **kwargs) -> typing.Union[list, dict]:
-        result = await cls._run_query(
+    @items_getter
+    async def friends(cls, user_id, raw_=False, **kwargs) -> list:
+        return await cls._run_query(
             'friends.get',
             {'user_id': user_id},
             [cls._app_api, cls._user_api],
             executable=True, **kwargs
         )
-        if raw_:
-            return result
-        return result['items']
 
     @classmethod
     async def followers(cls, user_id, offset=0, count=1000, **kwargs):
@@ -222,5 +239,24 @@ class VkMethods(BaseParser):
             'groups.getMembers',
             {'group_id': group_id, 'offset': offset, 'count': count},
             [cls._app_api, cls._comm_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @items_getter
+    async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> list:
+        return await cls._run_query(
+            'photos.get',
+            {'owner_id': owner_id, 'count': count, 'album_id': album_id},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
+        return await cls._run_query(
+            'photos.getById',
+            {'photos': photo_ids},
+            [cls._app_api, cls._user_api],
             executable=True, **kwargs
         )

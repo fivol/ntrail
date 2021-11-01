@@ -1,9 +1,11 @@
 import asyncio
+import logging
 
 from worker.parsers.vk.vk import VkMethods
 from worker.ctx import get_context
 from worker import caching
 
+logger = logging.getLogger('engine')
 
 parsers = [VkMethods]
 
@@ -33,6 +35,7 @@ class Engine:
 
     @classmethod
     def _init_modules(cls):
+        logger.info('Worker engine started')
         caching.init()
 
     async def _stop_all(self):
