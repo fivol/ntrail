@@ -1,6 +1,4 @@
 import asyncio
-import time
-import config  # noqa
 from timeit import default_timer as timer
 
 from worker import Engine, VkMethods
@@ -32,7 +30,9 @@ async def calculate_rps(epochs=10, count=100):
 
 async def main():
     # begin = timer()
-    print(await VkMethods.users([1]))
+    await VkMethods.users([1])
+    await VkMethods.users([2])
+    await VkMethods.users([3])
     # count = 25000
     # my_friends = await VkMethods.friends(245089915)
     # users = await asyncio.gather(*[VkMethods.friends(i) for i in my_friends], return_exceptions=True)

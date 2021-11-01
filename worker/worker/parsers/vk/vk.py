@@ -1,7 +1,3 @@
-import asyncio
-import json
-import logging
-
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkAPIError
 
@@ -9,12 +5,14 @@ from worker.helpers.caching import redis_cache
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
 from worker.parsers.vk.exceptions import VKError
+from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.session.exceptions import SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
 from worker.helpers.tools import assert_imported_once, decorate
 from worker.ctx import get_context
+from worker.config import config
 
 logger = logging.getLogger('vk')
 
@@ -54,86 +52,6 @@ EXECUTE_QUERIES_BUNCH_COUNT = 25
 EXECUTE_MAX_LENGTH = 12000
 
 
-class ExecuteRequestPool:
-    """
-    https://vk.com/dev/execute
-    """
-
-    def __init__(self):
-        self._execute_epoch = 0
-        self._execute_results = {}
-        self._executable_pool = []
-        self._execute_length = 0
-
-    @staticmethod
-    def _gen_execute_code(items) -> str:
-        """Item be like
-        [('users.get', {'user_id': 123})]
-        """
-        commands = [
-            f'API.{method_name}({json.dumps(kwargs, separators=(",", ":"))})'
-            for method_name, kwargs in items
-        ]
-        return f'return [{",".join(commands)}];'
-
-    async def _run_execute_pool(self, only_user_access=False):
-        # Label results as waiting
-        if not self._executable_pool:
-            raise IndexError
-        logger.debug('Run execute pool %s', len(self._executable_pool))
-        code = self._gen_execute_code(self._executable_pool)
-        execute_coro = VkMethods.execute(code, only_user_access=only_user_access)
-        execute_task = asyncio.create_task(execute_coro)
-
-        self._execute_results[self._execute_epoch] = execute_task
-        self._execute_epoch += 1
-        self._executable_pool = []
-        self._execute_length = 0
-
-    async def try_use_execute(self, method, kwargs, only_user_access=False):
-        """Tries to add request to execute pool, if success returns result, else None"""
-        cmd_idx = len(self._executable_pool)
-        curr_epoch = self._execute_epoch
-        cmd_length = len(json.dumps((method, kwargs)))
-
-        if cmd_length > EXECUTE_MAX_LENGTH:
-            logger.warning('Too long command to use execute command: %s', cmd_length)
-            return None
-
-        self._executable_pool.append((method, kwargs))
-        self._execute_length += cmd_length
-        if len(self._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT or \
-                self._execute_length + cmd_length > EXECUTE_MAX_LENGTH:
-            await self._run_execute_pool(only_user_access)
-
-        # Very important. We should return control to collect many queries in pool in async
-        await asyncio.sleep(0)
-        if len(self._executable_pool) < 15:
-            await asyncio.sleep(0.001)
-        if self._execute_epoch == curr_epoch and len(self._executable_pool) >= 3:
-            await self._run_execute_pool(only_user_access)
-        results = self._execute_results.get(curr_epoch, None)
-
-        if results is None:
-            self._executable_pool = []
-            return None
-
-        if isinstance(results, asyncio.Task):
-            real_results = await results
-            self._execute_results[curr_epoch] = [real_results, len(real_results)]
-
-        results, remain_count = self._execute_results[curr_epoch]
-        assert isinstance(results, list)
-        if results[0] is False:
-            logger.warning('Execute query returns False')
-            raise Warning('It seems, execute query failed')
-        self._execute_results[curr_epoch][1] -= 1
-        result = results[cmd_idx]
-        if not self._execute_results[curr_epoch][1]:
-            del self._execute_results[curr_epoch]
-        return result
-
-
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -144,11 +62,11 @@ class VkMethods(BaseParser):
     """
     # Vk requests limits https://vk.com/dev/api_requests
     # 3 in docs
-    _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=3)
+    _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=config.vk.rps.user)
     # # 3 in docs
-    _comm_api = SessionManager(key_type='vk.community.token', controller=VkApiSession, max_rps=3)
+    _comm_api = SessionManager(key_type='vk.community.token', controller=VkApiSession, max_rps=config.vk.rps.community)
     # # 5 in docs
-    _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=5)
+    _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=config.vk.rps.app)
 
     _execute_pool = ExecuteRequestPool()
 
@@ -195,7 +113,7 @@ class VkMethods(BaseParser):
         return execute_result
 
     @classmethod
-    @decorate(reliable_call, partition_split(1000), redis_cache, make_synced)
+    @decorate(reliable_call, method_logger(), partition_split(1000), redis_cache, make_synced)
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:

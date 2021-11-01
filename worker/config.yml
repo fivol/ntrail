@@ -1,0 +1,9 @@
+DEBUG: false
+vk:
+  EXECUTE_QUERIES_BUNCH_COUNT: 25
+  EXECUTE_MAX_LENGTH: 15000
+
+  rps:
+    user: 3
+    community: 3
+    app: 5

@@ -1,10 +1,10 @@
 import asyncio
+import inspect
 import logging
 from functools import wraps
 
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException
 from worker.helpers.tools import split_list
-
 
 logger = logging.getLogger('vk-layer')
 
@@ -14,6 +14,7 @@ def partition_split(segment_size):
     Assumes first argument of method is big list,
     splits it to several smaller lists of segment_size and calls this method again
     """
+
     def decorator(method):
         @wraps(method)
         async def wrapper(cls, items, **kwargs):
@@ -27,13 +28,16 @@ def partition_split(segment_size):
             ])
             assert isinstance(results_parts[0], list)
             return sum(results_parts, [])
+
         return wrapper
+
     return decorator
 
 
 # TODO Make this decorator after all others in class (not it is before others)
 def count_offset_iterator(max_count):
     """If passed too big "count", splits to several method calls"""
+
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
@@ -49,7 +53,9 @@ def count_offset_iterator(max_count):
                 count -= curr_count
             result = await asyncio.gather(*tasks)
             return sum(result, ListWithCount())
+
         return wrapper
+
     return decorator
 
 
@@ -120,12 +126,12 @@ make_synced = MakeSynced
 
 def reliable_call(method):
     """Reply request if rps limit exceeded or tokens ended"""
+
     @wraps(method)
     async def wrapper(*args, **kwargs):
         while True:
             try:
                 result = await method(*args, **kwargs)
-                logger.debug('Run method: %s', method.__name__)
                 return result
             except RpsLimitException:
                 await asyncio.sleep(0.01)
@@ -133,4 +139,44 @@ def reliable_call(method):
             except NoTokenAvailableException:
                 # TODO Think hard
                 raise
+
     return wrapper
+
+
+def method_logger(level: int = logging.DEBUG, enabled=True):
+    """Decorator to method or function. Prints arguments and results"""
+
+    def decorator(method):
+        def repr_args(args, kwargs) -> str:
+            def repr_value(value):
+                if inspect.isclass(value):
+                    return 'cls'
+                return str(value)
+
+            kwargs = ', '.join([f'{key}={repr_value(value)}' for key, value in kwargs])
+            args = ', '.join(map(repr_value, args))
+            return ', '.join(filter(bool, [args, kwargs]))
+
+        def repr_result(result):
+            def shorty(text: str, size):
+                if len(text) <= size:
+                    return text
+                return f'{text}...'
+            s = str(result)
+            return f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}> {shorty(s, 100)}'
+
+        @wraps(method)
+        async def wrapper(*args, **kwargs):
+            if not enabled:
+                return await method(*args, **kwargs)
+            try:
+                result = await method(*args, **kwargs)
+                logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
+                return result
+            except Exception as e:
+                logger.warning('%s(%s) -> %s', method.__name__, repr_args(args, kwargs), e)
+                raise
+
+        return wrapper
+
+    return decorator

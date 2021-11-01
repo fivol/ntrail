@@ -1,7 +1,7 @@
 import time
 from .instagramlib import Account, WebAgentAccount, HasMediaElement
 from .instagramlib.exceptions import InternetException, UnexpectedResponse
-from config import logger
+from worker.config import logger
 from worker.helpers.tools import ThreadResult, sequential_start, MemoryCache
 import random
 
