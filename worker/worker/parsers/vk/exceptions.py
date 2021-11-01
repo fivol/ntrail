@@ -1,7 +1,9 @@
 from aiovk.exceptions import VkAPIError
 
+from parsers.exceptions import ParserRealError
 
-class VKError(Exception):
+
+class VKError(ParserRealError):
 
     def __init__(self, error: VkAPIError):
         self._error = error

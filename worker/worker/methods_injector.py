@@ -1,6 +1,8 @@
 import asyncio
 import inspect
 
+from parsers.exceptions import ParserRealError
+
 
 class MethodWrapper:
     def __init__(self, _method, _wrapper):
@@ -39,11 +41,15 @@ class MakeSynced:
 
     def sync(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self._method(*args, **kwargs))
+        try:
+            return loop.run_until_complete(self._method(*args, **kwargs))
+        except ParserRealError as e:
+            return e
 
     async def map(self, items, **kwargs):
         return await asyncio.gather(
-            *[self._method(item, **kwargs) for item in items]
+            *[self._method(item, **kwargs) for item in items],
+            return_exceptions=True
         )
 
     def sync_map(self, items, **kwargs):
