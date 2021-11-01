@@ -1,7 +1,10 @@
+import logging
 import random
 import traceback
-from time import sleep, time
-from contextlib import contextmanager
+from time import sleep
+
+
+logger = logging.getLogger('tools')
 
 
 def split_list(list_object, segment_size):
