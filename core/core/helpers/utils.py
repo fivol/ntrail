@@ -49,18 +49,6 @@ def bool_filter(value):
     return [item for item in value if bool(item)]
 
 
-def valid_object_method(method):
-    @wraps(method)
-    def wrapper(obj, *args, **kwargs):
-        if obj.valid:
-            return method(obj, *args, **kwargs)
-        logger.warning("This object isn't valid! -> method %s in class %s can't be used.",
-                       method.__name__, obj.__class__)
-        return None
-
-    return wrapper
-
-
 def once_property(func):
     @property
     @wraps(func)

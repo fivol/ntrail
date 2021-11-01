@@ -1,8 +1,9 @@
 import warnings
 import core.config # noqa
 warnings.simplefilter('ignore')
+
 from core.modules import VKUser
-from worker import Engine, VkMethods
+from worker import Engine
 
 my_id = 245089915
 
@@ -18,11 +19,7 @@ my_id = 245089915
 
 
 def main():
-
-    user = VKUser('ffboris')
-    print(user)
-    # user.friends().friends().export(filename='.data/dania-friends-friends.csv')
-    # user.friends().export(filename='.data/dania-friends.csv')
+    VKUser('aido4kas').friends().friends().export('.data/friends-friends.csv')
 
 
 if __name__ == '__main__':

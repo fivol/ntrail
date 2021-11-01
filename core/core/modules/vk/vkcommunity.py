@@ -1,164 +1,22 @@
-# информация о полях из раздела «Жизненная позиция».
-# political (integer) — политические предпочтения. Возможные значения:
-# 1 — коммунистические;
-# 2 — социалистические;
-# 3 — умеренные;
-# 4 — либеральные;
-# 5 — консервативные;
-# 6 — монархические;
-# 7 — ультраконсервативные;
-# 8 — индифферентные;
-# 9 — либертарианские.
-# langs (array) — языки.
-# religion (string) — мировоззрение.
-# inspired_by (string) — источники вдохновения.
-# people_main (integer) — главное в людях. Возможные значения:
-# 1 — ум и креативность;
-# 2 — доброта и честность;
-# 3 — красота и здоровье;
-# 4 — власть и богатство;
-# 5 — смелость и упорство;
-# 6 — юмор и жизнелюбие.
-# life_main (integer) — главное в жизни. Возможные значения:
-# 1 — семья и дети;
-# 2 — карьера и деньги;
-# 3 — развлечения и отдых;
-# 4 — наука и исследования;
-# 5 — совершенствование мира;
-# 6 — саморазвитие;
-# 7 — красота и искусство;
-# 8 — слава и влияние;
-# smoking (integer) — отношение к курению. Возможные значения:
-# 1 — резко негативное;
-# 2 — негативное;
-# 3 — компромиссное;
-# 4 — нейтральное;
-# 5 — положительное.
-# alcohol (integer) — отношение к алкоголю. Возможные значения:
-# 1 — резко негативное;
-# 2 — негативное;
-# 3 — компромиссное;
-# 4 — нейтральное;
-# 5 — положительное.
 from functools import cache
-
+import numpy as np
+import networkx as nx
+import collections
+import datetime
+from itertools import groupby
+from core.constants import PlotType
 from more_itertools import unique_everseen
 
 from worker import VkMethods
-from .vkgroup import VKGroup
-from .vkgroups import VKGroups
+from core.modules.vk.data import *
+from core.modules.vk.vkgroup import VKGroup
+from core.modules.vk.vkgroups import VKGroups
 from core.module.represent import try_base_analog, Represent
 from core.module.represent_tools import RepresentTools
 from core.module.tied_value import get_tied_array_size
 from core.helpers.utils import *
-import numpy as np
-import networkx as nx
-import collections
-from collections import Counter
-import datetime
-from time import time
-from .vkuser import VKUser
-import math
-from itertools import groupby
+from core.modules.vk.vkuser import VKUser
 from core.helpers.utils import clear_list, prepare_list, list_from_dicts, is_good_username
-import re
-from core.constants import PlotType
-
-# @ - полное говнище, но надо куда нибудь прикрутить
-# # - параметр обработан
-# ! - доработать параметр
-
-
-# '@photo_200', '@about', '@activities', '#bdate', '@books', '@career', '#city', '@connections',
-# '#sex', '@contacts', '#country', '@education', '@exports', '#followers_count', '#home_town', '@interests',
-# '#last_seen', '@maiden_name', '@military', '@movies', '@music', '@nickname', '!occupation', '#online',
-# '#personal', '@quotes', '#relatives', '#relation', '!schools', '#site', '#status', '#trending', '#tv',
-# '!universities', '#verified', '#counters'
-# sex 2-man 1-woman
-
-vk_connections_names = ['skype', 'livejournal', 'instagram', 'facebook', 'twitter']
-
-account_status_dict = {
-    0: ('Открытый', '#00682E'),
-    1: ('Приватный', '#8D1E00'),
-    'deleted': ('Удаленный', '#000000'),
-    'banned': ('Забаненный', '#530742'),
-}
-relation_dict = {
-    1: 'Не женат',
-    2: 'Есть друг',
-    3: 'Помолвлен',
-    4: 'Женат',
-    5: 'Всё сложно',
-    6: 'В активном поиске',
-    7: 'Влюблён',
-    8: 'В гражданском браке',
-    0: 'Не указано',
-}
-relatives_dict = {
-    'child': 'Сын / Дочь',
-    'sibling': 'Брат / Сестра',
-    'parent': 'Отец / Мать',
-    'grandparent': 'Дедушка / Бабушка',
-    'grandchild': 'Внук / Внучка',
-}
-last_seen_platform_dict = {
-    1: 'Мобильная версия',
-    2: 'iPhone',
-    3: 'iPad',
-    4: 'Android',
-    5: 'Windows Phone',
-    6: 'Windows 10',
-    7: 'Сайт',
-}
-political_dict = {
-    1: 'Коммунистические',
-    2: 'Социалистические',
-    3: 'Умеренные',
-    4: 'Либеральные',
-    5: 'Консервативные',
-    6: 'Монархические',
-    7: 'Ультраконсервативные',
-    8: 'Индифферентные',
-    9: 'Либертарианские',
-}
-people_main_dict = {
-    1: 'Ум и креативность',
-    2: 'Доброта и честность',
-    3: 'Красота и здоровье',
-    4: 'Власть и богатство',
-    5: 'Смелость и упорство',
-    6: 'Юмор и жизнелюбие',
-}
-life_main_dict = {
-    1: 'Семья и дети',
-    2: 'Карьера и деньги',
-    3: 'Развлечения и отдых',
-    4: 'Наука и исследования',
-    5: 'Совершенствование мира',
-    6: 'Саморазвитие',
-    7: 'Красота и искусство',
-    8: 'Слава и влияние',
-}
-smoking_dict = {
-    1: 'Резко негативное',
-    2: 'Негативное',
-    3: 'Компромиссное',
-    4: 'Нейтральное',
-    5: 'Положительное',
-}
-alcohol_dict = {
-    1: 'Резко негативное',
-    2: 'Негативное',
-    3: 'Компромиссное',
-    4: 'Нейтральное',
-    5: 'Положительное',
-}
-occupation_type_dict = {
-    'work': 'Текущая работа',
-    'school': 'Текущая школа',
-    'university': 'Текущий университет'
-}
 
 
 class VKCommunity(Represent, RepresentTools):
@@ -191,7 +49,7 @@ class VKCommunity(Represent, RepresentTools):
                     if id_:
                         self.nodes = [VKUser._parse_id(id_) for id_ in users]
                     else:
-                        usernames = [VKUser.extract_username(url) for url in users]
+                        usernames = [VKUser._extract_username(url) for url in users]
                         usernames = clear_list(usernames)
                         VkMethods.resolve.sync(usernames)
                         self.nodes = [VKUser(username).id for username in usernames]
@@ -781,7 +639,7 @@ class VKCommunity(Represent, RepresentTools):
         ]
 
     def get_description(self):
-        return self.get_name() + f' ({self.size} чел.)'
+        return self.name + f' ({self.size} чел.)'
 
     def get_entities(self):
         return {
@@ -794,7 +652,8 @@ class VKCommunity(Represent, RepresentTools):
             'items': [user.get_entity() for user in self.objects],
         }
 
-    def get_name(self):
+    @property
+    def name(self):
         def n_persons_name():
             mod = self.size % 10
             persons_form = 'человек'
@@ -840,7 +699,7 @@ class VKCommunity(Represent, RepresentTools):
             'main': VKUser.gen_id(self.main),
             'fullEntitiesCount': 1,
             'id': self.hash,
-            'name': self.get_name(),
+            'name': self.name,
             'query': self.get_query(),
             'prefix': 'vk.users',
             'parent': parent
@@ -874,7 +733,3 @@ class VKCommunity(Represent, RepresentTools):
                 'mainID': self.hash,
             },
         }
-
-    @property
-    def name(self):
-        return self.get_name()

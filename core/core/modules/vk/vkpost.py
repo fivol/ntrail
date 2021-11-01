@@ -1,7 +1,8 @@
 from .media_object import MediaObject
-from core.helpers.utils import once_property, valid_object_method
+from core.helpers.utils import once_property
 from collections import defaultdict
 from core.module.many_media import ManyMedia
+from ...module.layers import public_object_method
 
 
 class VKPost(MediaObject):
@@ -20,7 +21,7 @@ class VKPost(MediaObject):
         self.full_data.get(key, None)
 
     @once_property
-    @valid_object_method
+    @public_object_method
     def full_data(self):
         return self.get_posts_by_ids([self.id])[0]
 

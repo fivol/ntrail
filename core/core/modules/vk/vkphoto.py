@@ -3,7 +3,8 @@ import logging
 from worker import VkMethods
 from .media_object import MediaObject
 from core.module.many_media import ManyMedia
-from core.helpers.utils import once_property, valid_object_method, align_string
+from core.helpers.utils import once_property, align_string
+from ...module.layers import public_object_method
 
 logger = logging.getLogger('vk-photo')
 
@@ -92,7 +93,7 @@ class VKPhoto(MediaObject):
         return 'https://vk.com/photo' + self.id
 
     @property
-    @valid_object_method
+    @public_object_method
     def source(self):
         return self.full_data['sizes'][-1]['url']
 

@@ -2,8 +2,9 @@ import logging
 from functools import cache
 
 from core.constants import GroupStatus
+from core.module.layers import public_object_method
 from core.module.one_object_represent import OneObjectRepresent
-from core.helpers.utils import once_property, valid_object_method
+from core.helpers.utils import once_property
 from worker import VkMethods
 
 logger = logging.getLogger('vk-group')
@@ -39,7 +40,7 @@ class VKGroup(OneObjectRepresent):
             raise TypeError('VKGroup wrong type', type(group))
 
     @once_property
-    @valid_object_method
+    @public_object_method
     def full_data(self):
         return self.data()
         # TODO Здесь стоит заглушка. Вместо полной подгружается краткая инфа о группах
@@ -55,7 +56,7 @@ class VKGroup(OneObjectRepresent):
         return self.data()
         return VKAPI.get_group_data(self.id, full=False)
 
-    @valid_object_method
+    @public_object_method
     def get_members(self, count=1000):
         from module_vk.vkcommunity import VKCommunity
         if count == -1:
@@ -142,6 +143,6 @@ class VKGroup(OneObjectRepresent):
         }
 
     @property
-    @valid_object_method
+    @public_object_method
     def url(self):
         return f"https://vk.com/{self.short_data['screen_name']}"

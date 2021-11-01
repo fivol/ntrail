@@ -1,28 +1,29 @@
+from enum import Enum
 
 
-class AccountStatus:
-    PRIVATE = 'ACCOUNT_STATUS_PRIVATE'
-    DELETED = 'ACCOUNT_STATUS_DELETED'
-    BANNED = 'ACCOUNT_STATUS_BANNED'
-    ABSENT = 'ACCOUNT_STATUS_ABSENT'
-    PUBLIC = 'ACCOUNT_STATUS_PUBLIC'
-    VALID = 'ACCOUNT_STATUS_VALID'
+class AccountStatus(Enum):
+    PRIVATE = 'PRIVATE'
+    DELETED = 'DELETED'
+    BANNED = 'BANNED'
+    ABSENT = 'ABSENT'
+    PUBLIC = 'PUBLIC'
+    VALID = 'VALID'
 
 
-class GroupStatus:
-    ABSENT = 'GROUP_STATUS_ABSENT'
-    VALID = 'GROUP_STATUS_VALID'
-    DEACTIVATED = 'GROUP_STATUS_DEACTIVATED'
+class GroupStatus(Enum):
+    ABSENT = 'ABSENT'
+    VALID = 'VALID'
+    DEACTIVATED = 'DEACTIVATED'
 
 
-class CacheType:
+class CacheType(Enum):
     ONLY_WRITE = 1
     ONLY_READ = 2
     FULL_USE = 3
     IGNORE = 4
 
 
-class PlotType:
+class PlotType(Enum):
     LINE = 'line'
     CIRCULAR = 'circular'
     HIST = 'hist'
