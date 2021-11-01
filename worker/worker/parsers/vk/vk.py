@@ -50,7 +50,7 @@ class VkApiSession(SessionState):
             raise error
 
 
-@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), make_synced)
+@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), redis_cache, make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -101,7 +101,7 @@ class VkMethods(BaseParser):
             if isinstance(value, list):
                 return ','.join(map(str, value))
             return value
-
+        kwargs.update({key: value for key, value in other.items() if not key.startswith('_') and not key.endswith('_')})
         kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
 
         if not executable:
@@ -113,7 +113,7 @@ class VkMethods(BaseParser):
         return execute_result
 
     @classmethod
-    @decorate(reliable_call, method_logger(), partition_split(1000), redis_cache)
+    @decorate(reliable_call, method_logger(), partition_split(1000))
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:
@@ -126,7 +126,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, redis_cache)
+    @decorate(reliable_call)
     async def execute(cls, code, only_user_access=False, **kwargs) -> list:
         return await cls._run_query(
             'execute',
@@ -135,7 +135,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, redis_cache)
+    @decorate(reliable_call)
     async def resolve(cls, screen_name, **kwargs) -> dict:
         return await cls._run_query(
             'utils.resolveScreenName',
@@ -145,7 +145,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(5000), redis_cache)
+    @decorate(reliable_call, items_getter, count_offset_iterator(5000))
     async def friends(cls, user_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'friends.get',
@@ -156,52 +156,104 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
-    async def followers(cls, user_id, offset=0, count=1000, **kwargs):
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000))
+    async def followers(cls, user_id, **kwargs):
         return await cls._run_query(
             'users.getFollowers',
-            {'user_id': user_id, 'offset': offset, 'count': count},
+            {'user_id': user_id},
             [cls._app_api, cls._user_api],
             executable=True, **kwargs
         )
 
     @classmethod
-    @decorate(reliable_call, method_logger(name='low'), items_getter, count_offset_iterator(1000), redis_cache)
-    async def members(cls, group_id, offset=0, count=1000, **kwargs) -> ListWithCount:
+    @decorate(reliable_call, items_getter, count_offset_iterator(200))
+    async def subscriptions(cls, user_id, **kwargs):
+        return await cls._run_query(
+            'users.getFollowers',
+            {'user_id': user_id},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call, method_logger(name='low'), items_getter, count_offset_iterator(1000))
+    async def members(cls, group_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',
-            {'group_id': group_id, 'offset': offset, 'count': count},
+            {'group_id': group_id},
             [cls._app_api, cls._comm_api, cls._user_api],
             executable=True, only_user_access=True,
             **kwargs
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
-    async def groups(cls, user_id, offset=0, count=1000, **kwargs) -> ListWithCount:
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000))
+    async def groups(cls, user_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.get',
-            {'user_id': user_id, 'offset': offset, 'count': count},
+            {'user_id': user_id},
             [cls._user_api],
             executable=True, **kwargs
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, partition_split(500), redis_cache)
-    async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> ListWithCount:
+    @decorate(reliable_call, items_getter, count_offset_iterator(500))
+    async def photos(cls, owner_id=None, album_id='profile', **kwargs) -> ListWithCount:
         return await cls._run_query(
             'photos.get',
-            {'owner_id': owner_id, 'count': count, 'album_id': album_id},
+            {'owner_id': owner_id, 'album_id': album_id},
             [cls._app_api, cls._user_api],
             executable=True, **kwargs
         )
 
     @classmethod
-    @decorate(reliable_call, partition_split(500), redis_cache)
-    async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
+    @decorate(reliable_call, partition_split(500))
+    async def photos_ids(cls, photos: list[int] = None, **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',
-            {'photos': photo_ids},
+            {'photos': photos},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call)
+    async def posts_ids(cls, posts: list[int], **kwargs) -> ListWithCount:
+        return await cls._run_query(
+            'wall.getById',
+            {'posts': posts},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call, items_getter, count_offset_iterator(100))
+    async def posts(cls, owner_id=None, **kwargs) -> ListWithCount:
+        return await cls._run_query(
+            'wall.get',
+            {'owner_id': owner_id},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call, items_getter, count_offset_iterator(100))
+    async def likes(cls, owner_id=None, type_=None, item_id=None, **kwargs) -> ListWithCount:
+        # https://vk.com/dev/likes.getList
+        return await cls._run_query(
+            'likes.getList',
+            {'owner_id': owner_id, 'type': type_, 'item_id': item_id},
+            [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call, items_getter, count_offset_iterator(100))
+    async def comments(cls, owner_id=None, post_id=None, **kwargs) -> ListWithCount:
+        # https://vk.com/dev/wall.getComments
+        return await cls._run_query(
+            'wall.getComments',
+            {'owner_id': owner_id, 'post_id': post_id},
             [cls._app_api, cls._user_api],
             executable=True, **kwargs
         )
