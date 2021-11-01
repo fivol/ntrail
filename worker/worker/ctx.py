@@ -1,4 +1,4 @@
-from worker.tools import assert_imported_once
+from worker.helpers.tools import assert_imported_once
 
 
 # Singleton app context

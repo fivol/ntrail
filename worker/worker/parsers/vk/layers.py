@@ -2,7 +2,8 @@ import asyncio
 import logging
 from functools import wraps
 
-from worker.tools import split_list
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException
+from worker.helpers.tools import split_list
 
 
 logger = logging.getLogger('vk-layer')
@@ -32,6 +33,7 @@ def partition_split(segment_size):
 
 # TODO Make this decorator after all others in class (not it is before others)
 def count_offset_iterator(max_count):
+    """If passed too big "count", splits to several method calls"""
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
@@ -70,4 +72,65 @@ def items_getter(method):
         items.count_ = result.get('count')
         return items
 
+    return wrapper
+
+
+class MakeSynced:
+    """
+    Wraps method and give .sync interface to call async functions
+
+    --------------------
+    Async variant:
+
+        async def abc(x):
+            return x
+        print(asyncio.run(abs()))
+    --------------------
+    Sync variant:
+
+        @MakeSynced
+        async def abc(x):
+            return x
+
+        print(abc.sync(3))
+    """
+
+    def __init__(self, _method):
+        self._method = _method
+
+    async def __call__(self, *args, **kwargs):
+        return await self._method(*args, **kwargs)
+
+    def sync(self, *args, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self._method(*args, **kwargs))
+
+    async def map(self, items, **kwargs):
+        return await asyncio.gather(
+            *[self._method(item, **kwargs) for item in items]
+        )
+
+    def sync_map(self, items, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.map(items, **kwargs))
+
+
+make_synced = MakeSynced
+
+
+def reliable_session_call(method):
+    """Reply request if rps limit exceeded or tokens ended"""
+    @wraps(method)
+    async def wrapper(*args, **kwargs):
+        while True:
+            try:
+                result = await method(*args, **kwargs)
+                logger.debug('Run method: %s', method.__name__)
+                return result
+            except RpsLimitException:
+                await asyncio.sleep(0.01)
+                continue
+            except NoTokenAvailableException:
+                # TODO Think hard
+                raise
     return wrapper

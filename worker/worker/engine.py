@@ -3,7 +3,7 @@ import logging
 
 from worker.parsers.vk.vk import VkMethods
 from worker.ctx import get_context
-from worker import caching
+from worker.helpers import caching
 
 logger = logging.getLogger('engine')
 

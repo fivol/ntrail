@@ -3,7 +3,8 @@ import time
 import config  # noqa
 from timeit import default_timer as timer
 
-from worker import Engine, VkMethods
+# from worker import Engine, VkMethods
+from worker.helpers.tools import decorate
 
 
 async def calculate_rps(epochs=10, count=100):
@@ -48,9 +49,24 @@ async def main():
     # print((await VkMethods.members(172053584, count=10000)).__len__())
 
 
+def decor(method):
+    def wrapper(*args, **kwargs):
+        return method(*args, **kwargs)
+    return wrapper
+
+
+class A:
+    @classmethod
+    @decorate(decor)
+    def x(cls, a):
+        print('a', a)
+        return a
+
+
 if __name__ == '__main__':
-    with Engine(caching=False):
-        asyncio.get_event_loop().run_until_complete(main())
+    pass
+    # with Engine(caching=False):
+    #     asyncio.get_event_loop().run_until_complete(main())
 
 
 """

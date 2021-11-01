@@ -1,6 +1,7 @@
 import logging
 import random
 import traceback
+from functools import wraps
 from time import sleep
 
 
@@ -42,3 +43,10 @@ def sequential_start(func):
 
     return wrapper
 
+
+def decorate(*decorators):
+    def chain_decorator(method):
+        for decorator in decorators:
+            method = (wraps(method)(decorator))(method)
+
+    return chain_decorator

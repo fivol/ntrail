@@ -5,16 +5,17 @@ import logging
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkAPIError
 
-from worker.caching import cache_with_redis
-from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
+from worker.helpers.caching import cache_with_redis
+from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
 from worker.parsers.vk.exceptions import VKError
-from worker.parsers.vk.layers import partition_split, count_offset_iterator, items_getter, ListWithCount
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
+from worker.parsers.vk.layers import partition_split, count_offset_iterator, items_getter, ListWithCount, make_synced, \
+    reliable_session_call
+from worker.session.exceptions import SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
-from worker.tools import assert_imported_once
+from worker.helpers.tools import assert_imported_once, decorate
 
 logger = logging.getLogger('vk')
 
@@ -51,7 +52,6 @@ class VkApiSession(SessionState):
 EXECUTE_QUERIES_BUNCH_COUNT = 25
 
 
-@inject_methods_wrappers('_wrapper', cache_with_redis, MakeSynced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -82,19 +82,7 @@ class VkMethods(BaseParser):
     # TODO Add ability to combine managers in context manager
     # To call any available api for example
 
-    @classmethod
-    async def _wrapper(cls, method, args, kwargs):
-        while True:
-            try:
-                result = await method(*args, **kwargs)
-                logger.debug('Run method: %s', method.__name__)
-                return result
-            except RpsLimitException:
-                await asyncio.sleep(0.01)
-                continue
-            except NoTokenAvailableException:
-                # TODO Think hard
-                raise
+
 
     @classmethod
     def _gen_execute_code(cls, items) -> str:
@@ -265,7 +253,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @partition_split(500)
+    @decorate(reliable_session_call, partition_split(500), cache_with_redis, make_synced)
     async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',
