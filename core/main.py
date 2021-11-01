@@ -6,19 +6,24 @@ from worker import Engine, VkMethods
 
 my_id = 245089915
 
+# private profiles
+# 431956287
+# 444845865
+# 455899120
+# 457559807
+# 460844711
+# 537901892
+# 558287310
+# 608492386
+
 
 def main():
-    # print(VKUser.extract_username('https://vk.com/ffboris'))
-    user = VKUser('ffboris')
-    print(user.friends().friends())
-    # print(user.data())
-    # print(me.photos().data())
-    # user.friends().friends().export('csv')
-    # print(VkMethods.users.sync([4215845, 4262614, 4583286]))
-    # print(VKUser(245089915).friends())
-    # print(VKUser(1))
+
+    user = VKUser('https://vk.com/id93454638')
+    user.friends().friends().export(filename='.data/dania-freinds-friends.csv')
+    user.friends().export(filename='.data/dania-freinds.csv')
 
 
 if __name__ == '__main__':
-    with Engine(caching=False):
+    with Engine(caching=True, timeout=10):
         main()

@@ -244,11 +244,12 @@ class VKCommunity(Represent, RepresentTools):
 
     @cache
     def data(self, force=False, full=True):
-        return VkMethods.users.sync(self.nodes, full=True)
+        return VkMethods.users.sync(self.nodes, full=full)
 
     @try_base_analog
     def friends(self):
         users_friends = VkMethods.friends.sync_map(self.nodes)
+        users_friends += [self.nodes]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
     def get_connections(self):

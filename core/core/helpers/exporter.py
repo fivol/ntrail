@@ -57,8 +57,8 @@ class DataExporter:
                 if not isinstance(value[0], dict):
                     result[key] = value
                     continue
-                list_begin = value[:2]
-                list_remain = value[2:]
+                list_begin = value[:3]
+                list_remain = value[3:]
                 if list_remain:
                     result[f'{key}-remain'] = list_remain
                 if list_begin:

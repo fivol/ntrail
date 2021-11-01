@@ -3,7 +3,9 @@ import hashlib
 import io
 import json
 import csv
+import os
 import typing
+from pathlib import Path
 from pprint import pprint
 from abc import abstractmethod
 
@@ -33,7 +35,7 @@ class AnyMedia:
         """
         pass
 
-    def export(self, format_: str = 'json', filename: str = None):
+    def export(self, format_: str = 'json', filename: str = ''):
         data = self.data(full=True)
 
         writers = {
@@ -42,9 +44,11 @@ class AnyMedia:
         }
 
         if filename:
-            format_ = format_ or file_extension(filename)
-        else:
-            filename = f'{self.__class__.__name__.lower()}-{datetime.datetime.now().isoformat()}.{format_}'
+            format_ = file_extension(filename) or format_
+
+        if not filename or Path(filename).is_dir():
+            file = f'{self.__class__.__name__.lower()}-{datetime.datetime.now().isoformat()}.{format_}'
+            filename = os.path.join(filename, file)
 
         from core.module.many_media import ManyMedia
         from core.module.single_media import SingleMedia
