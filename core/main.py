@@ -19,9 +19,10 @@ my_id = 245089915
 
 def main():
 
-    user = VKUser('https://vk.com/id93454638')
-    user.friends().friends().export(filename='.data/dania-freinds-friends.csv')
-    user.friends().export(filename='.data/dania-freinds.csv')
+    user = VKUser('ffboris')
+    print(user)
+    # user.friends().friends().export(filename='.data/dania-friends-friends.csv')
+    # user.friends().export(filename='.data/dania-friends.csv')
 
 
 if __name__ == '__main__':
