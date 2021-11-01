@@ -1,5 +1,5 @@
 from .media_object import MediaObject
-from core.utils import once_property, valid_object_method
+from core.helpers.utils import once_property, valid_object_method
 from collections import defaultdict
 from core.module.many_media import ManyMedia
 

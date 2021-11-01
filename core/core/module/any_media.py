@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import io
 import json
@@ -5,7 +6,9 @@ import csv
 import typing
 from pprint import pprint
 from abc import abstractmethod
-from core.utils import *
+
+from core.helpers.exporter import JsonWriter, CsvWriter, DictExporter, ListExporter
+from core.helpers.utils import *
 
 
 class AnyMedia:
@@ -30,32 +33,30 @@ class AnyMedia:
         """
         pass
 
-    def export(self, format: str = 'json', filename: str = None):
+    def export(self, format_: str = 'json', filename: str = None):
         data = self.data(full=True)
 
-        if filename:
-            guess_format = filename.split('.')[-1]
-            if len(guess_format) < 5 and guess_format != filename:
-                format = guess_format
+        writers = {
+            'json': JsonWriter,
+            'csv': CsvWriter
+        }
 
-        if format == 'json':
-            file_content = json.dumps(data)
-        elif format == 'csv':
-            if not isinstance(data, list):
-                raise TypeError(f'CSV can represent only list data, have {type(data)}')
-            output = io.StringIO()
-            writer = csv.DictWriter(output, dicts_keys(data))
-            writer.writeheader()
-            writer.writerows(data)
-            file_content = output.getvalue()
+        if filename:
+            format_ = format_ or file_extension(filename)
         else:
-            raise NotImplemented
+            filename = f'{self.__class__.__name__.lower()}-{datetime.datetime.now().isoformat()}.{format_}'
 
-        if filename:
-            with open(filename, 'w') as f:
-                f.write(file_content)
+        from core.module.many_media import ManyMedia
+        from core.module.single_media import SingleMedia
 
-        return file_content
+        if isinstance(self, ManyMedia):
+            exporter = ListExporter
+        elif isinstance(self, SingleMedia):
+            exporter = DictExporter
+        else:
+            raise NotImplementedError
+
+        exporter(data=data).write(writers[format_](filename=filename))
 
     def print_params(self):
         pprint(self.params, compact=True)

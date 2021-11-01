@@ -3,7 +3,7 @@ import logging
 from core.module.tied_value import TiedValue
 import numpy as np
 
-from core.utils import bool_filter, get_random_color
+from core.helpers.utils import bool_filter, get_random_color
 from core.constants import PlotType
 
 logger = logging.getLogger('represent')

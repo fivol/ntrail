@@ -3,7 +3,7 @@ import logging
 from worker import VkMethods
 from .media_object import MediaObject
 from core.module.many_media import ManyMedia
-from core.utils import once_property, valid_object_method, align_string
+from core.helpers.utils import once_property, valid_object_method, align_string
 
 logger = logging.getLogger('vk-photo')
 

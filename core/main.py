@@ -9,10 +9,11 @@ my_id = 245089915
 
 def main():
     # print(VKUser.extract_username('https://vk.com/ffboris'))
-    user = VKUser('niknepiaja')
+    user = VKUser('ffboris')
+    print(user.friends().friends())
     # print(user.data())
     # print(me.photos().data())
-    user.friends().export(filename='.data/nikita.csv')
+    # user.friends().friends().export('csv')
     # print(VkMethods.users.sync([4215845, 4262614, 4583286]))
     # print(VKUser(245089915).friends())
     # print(VKUser(1))

@@ -50,7 +50,7 @@ from .vkgroups import VKGroups
 from core.module.represent import try_base_analog, Represent
 from core.module.represent_tools import RepresentTools
 from core.module.tied_value import get_tied_array_size
-from core.utils import *
+from core.helpers.utils import *
 import numpy as np
 import networkx as nx
 import collections
@@ -60,7 +60,7 @@ from time import time
 from .vkuser import VKUser
 import math
 from itertools import groupby
-from core.utils import clear_list, prepare_list, list_from_dicts, is_good_username
+from core.helpers.utils import clear_list, prepare_list, list_from_dicts, is_good_username
 import re
 from core.constants import PlotType
 
@@ -248,7 +248,7 @@ class VKCommunity(Represent, RepresentTools):
 
     @try_base_analog
     def friends(self):
-        users_friends = self.get_users_friends(self.nodes)
+        users_friends = VkMethods.friends.sync_map(self.nodes)
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
     def get_connections(self):

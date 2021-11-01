@@ -1,5 +1,5 @@
 from core.module.any_media import AnyMedia
-from core.utils import align_string, once_property
+from core.helpers.utils import align_string, once_property
 import hashlib
 
 
@@ -39,9 +39,6 @@ class SingleMedia(AnyMedia):
 
         print(f'{self.hash} {align_string(self.url, 35)} {self.name} {extra_data}')
 
-    def __hash__(self):
-        return hash(self.id)
-
     @once_property
     def hash(self):
         obj_hash = hashlib.sha1(str(self.id).encode('UTF-8')).hexdigest()[-16:]
@@ -53,3 +50,6 @@ class SingleMedia(AnyMedia):
 
     def __eq__(self, other):
         return hash(other) == hash(self)
+
+    def __hash__(self):
+        return hash(self.id)

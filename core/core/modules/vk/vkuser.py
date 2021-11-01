@@ -4,7 +4,7 @@ from functools import cache
 from worker import VkMethods
 from .vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
-from core.utils import once_property, valid_object_method, get_sites
+from core.helpers.utils import once_property, valid_object_method, get_sites
 # import matplotlib.pyplot as plt
 import io
 import re
@@ -263,6 +263,9 @@ class VKUser(OneObjectRepresent):
             'name': self.data['first_name'] if self.valid else 'Не валиден',
             'query': f'GET vk.user {self.data["screen_name"]}' if self.valid else ''
         }
+
+    def __str__(self):
+        return self.name
 
     # def represent(self, force=False):
     #     if not self.valid:

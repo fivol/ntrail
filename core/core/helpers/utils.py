@@ -624,3 +624,10 @@ def dicts_keys(dicts):
     for d in dicts:
         keys.update(set(d))
     return list(keys)
+
+
+def file_extension(filename):
+    guess_format = filename.split('.')[-1]
+    if len(guess_format) < 5 and guess_format != filename:
+        return guess_format
+    return None

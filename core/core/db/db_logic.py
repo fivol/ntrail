@@ -3,7 +3,7 @@ import logging
 import peewee
 import hashlib
 
-from core.utils import make_json_serializable
+from core.helpers.utils import make_json_serializable
 from collections import defaultdict
 from core.models import UserModel, db, EntityModel, FeatureModel
 

@@ -1,12 +1,12 @@
 import bisect
 # from slmpy import ModularityOptimzer
 from core.module.any_media import AnyMedia
-from core.utils import once_property, counter_top, get_color, cache_method
+from core.helpers.utils import once_property, counter_top, get_color, cache_method
 from collections import Counter
 import networkx as nx
 from functools import lru_cache
 import random
-from core.utils import self_replace
+from core.helpers.utils import self_replace
 import re
 from core.db.db_logic import DB
 # import matplotlib.pyplot as plt
