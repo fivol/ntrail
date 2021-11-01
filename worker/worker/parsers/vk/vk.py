@@ -50,7 +50,7 @@ class VkApiSession(SessionState):
             raise error
 
 
-@inject_methods_wrappers(method_logger(only_errors=True), make_synced)
+@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -166,7 +166,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
+    @decorate(reliable_call, method_logger(name='low'), items_getter, count_offset_iterator(1000), redis_cache)
     async def members(cls, group_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',

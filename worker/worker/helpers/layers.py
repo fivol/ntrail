@@ -6,7 +6,7 @@ from functools import wraps
 logger = logging.getLogger('debugger')
 
 
-def method_logger(level: int = logging.DEBUG, enabled=True, only_errors=False):
+def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors=False):
     """Decorator to method or function. Prints arguments and results"""
 
     def decorator(method):
@@ -35,10 +35,10 @@ def method_logger(level: int = logging.DEBUG, enabled=True, only_errors=False):
             try:
                 result = await method(*args, **kwargs)
                 if not only_errors:
-                    logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
+                    logger.log(level, '[%s] %s(%s) -> %s', name, method.__name__, repr_args(args, kwargs), repr_result(result))
                 return result
             except Exception as e:
-                logger.warning('%s(%s) -> %s', method.__name__, repr_args(args, kwargs), e)
+                logger.warning('[%s] %s(%s) -> %s', name, method.__name__, repr_args(args, kwargs), e)
                 raise
 
         return wrapper

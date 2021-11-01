@@ -1,6 +1,6 @@
 
 # If "true" all loggers level sets to ERROR
-DEBUG: false
+DEBUG: true
 vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25

@@ -36,23 +36,34 @@ def partition_split(segment_size):
 
 # TODO Make this decorator after all others in class (not it is before others)
 def count_offset_iterator(max_count):
-    """If passed too big "count", splits to several method calls"""
+    """If passed too big "count", splits to several method calls
+        Argument "percent_" can be passed with [0, 1] diapason to load part from full count
+    """
 
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
             count = kwargs.pop('count', max_count)
-            if count <= max_count:
+            percent_ = kwargs.pop('percent_', None)
+
+            if not percent_ and count <= max_count:
                 return await method(*args, count=count, **kwargs)
             curr_offset = kwargs.pop('offset', 0)
             tasks = []
+            first_call = []
             while count > 0:
                 curr_count = min(count, max_count)
-                tasks.append(method(*args, offset=curr_offset, count=curr_count))
+                if percent_:
+                    first_call = await method(*args, offset=curr_offset, count=curr_count)
+                    full_count = first_call.count_
+                    count = int(full_count * percent_)
+                    percent_ = None
+                else:
+                    tasks.append(method(*args, offset=curr_offset, count=curr_count))
                 curr_offset += curr_count
                 count -= curr_count
             result = await asyncio.gather(*tasks)
-            return sum(result, ListWithCount())
+            return first_call + sum(result, ListWithCount())
 
         return wrapper
 
