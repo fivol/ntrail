@@ -40,6 +40,8 @@
 # 3 — компромиссное;
 # 4 — нейтральное;
 # 5 — положительное.
+from functools import cache
+
 from more_itertools import unique_everseen
 
 from worker import VkMethods
@@ -240,9 +242,9 @@ class VKCommunity(Represent, RepresentTools):
     def short_info(self):
         return ''
 
-    @cache_method
-    def data_list(self, force=False):
-        return self.get_users(self.nodes, full=True, force=force)
+    @cache
+    def data(self, force=False, full=True):
+        return VkMethods.users.sync(self.nodes, full=True)
 
     @try_base_analog
     def friends(self):

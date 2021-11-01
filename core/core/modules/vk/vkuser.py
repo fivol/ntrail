@@ -71,7 +71,7 @@ class VKUser(OneObjectRepresent):
 
     @valid_object_method
     def photos(self):
-        return VKPhotos(self.get_all_photos(self.id))
+        return VKPhotos(VkMethods.photos.sync(owner_id=self.id))
 
     @valid_object_method
     def user_photos(self):
@@ -142,7 +142,7 @@ class VKUser(OneObjectRepresent):
 
     @cache
     def data(self, force=False, full=True) -> dict:
-        return VkMethods.users.sync([self.id], full=True)[0]
+        return VkMethods.users.sync([self.id], full=full)[0]
 
     def get_attribute(self, key: str, default=None):
         """Возвращает один из базовых параметров аккаунта по ключу

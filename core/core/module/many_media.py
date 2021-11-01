@@ -21,6 +21,7 @@ class ManyMedia(AnyMedia):
     # много полей не найдено, организовать правильную структуру
 
     base_class = None
+    nodes = []
 
     @property
     def size(self):
@@ -111,9 +112,6 @@ class ManyMedia(AnyMedia):
     def valid(self):
         return True
 
-    def preload(self, full=False, force=False):
-        self.data_list(force=force)
-
     def print(self, k=50, shuffle=False):
         head_line = f'Class: {self.__class__}. Size: {self.size}'
         if len(self.nodes) != len(set(self.nodes)):
@@ -174,16 +172,12 @@ class ManyMedia(AnyMedia):
     def data_list(self, force=False):
         raise NotImplementedError()
 
-    @lru_cache(16)
     def data_dict(self, force=False):
         data = self.data_list(force)
         return {
             item['id']: item
             for item in data
         }
-
-    def preload(self, force=False, full=False):
-        self.data_list(force)
 
     def select(self, k=-1, break_point=1, rand=False):
         if rand and k > 0:
@@ -386,10 +380,8 @@ class ManyMedia(AnyMedia):
     def class_name(self):
         return type(self).__name__.lower()
 
-    @property
-    def name(self):
-        # TODO
-        return self.class_name()
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.nodes})'
 
     def collect_archive(self, count=200):
         assert isinstance(count, int)
@@ -463,9 +455,6 @@ class ManyMedia(AnyMedia):
 
     def __len__(self):
         return self.size
-
-    def __str__(self):
-        return self.name
 
     def __add__(self, other):
         assert other.base_class == self.base_class

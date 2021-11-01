@@ -1,20 +1,22 @@
+import difflib
 import logging
+import math
+import pickle
 import random
-from collections import Counter
-from time import time, sleep
 # import numpy as np
 import re
-from functools import reduce, wraps
-import pickle
-from threading import Thread
-import difflib
 import string
-import transliterate
-import math
+from collections import Counter
+from functools import reduce, wraps
+from threading import Thread
+from time import time, sleep
+
 import pymorphy2
-from data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
-from module.tied_counter import TiedCounter
-from module.tied_value import TiedValue
+import transliterate
+
+from core.data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
+from core.module.tied_counter import TiedCounter
+from core.module.tied_value import TiedValue
 
 logger = logging.getLogger('tools')
 
@@ -615,3 +617,10 @@ def concatenate_lists(lists_array):
     for item in lists_array:
         res = item + res
     return res
+
+
+def dicts_keys(dicts):
+    keys = set()
+    for d in dicts:
+        keys.update(set(d))
+    return list(keys)

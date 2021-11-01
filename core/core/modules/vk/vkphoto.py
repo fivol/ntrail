@@ -1,5 +1,6 @@
 import logging
 
+from worker import VkMethods
 from .media_object import MediaObject
 from core.module.many_media import ManyMedia
 from core.utils import once_property, valid_object_method, align_string
@@ -136,10 +137,6 @@ class VKPhotos(ManyMedia):
         if len(self.nodes) != len(set(self.nodes)):
             logger.warning('Photos nodes repeats')
 
-    @once_property
-    def full_data(self):
-        return self.get_photos_by_ids(self.nodes)
+    def data(self, force=False, full=True):
+        return VkMethods.photos_ids.sync(photo_ids=self.nodes)
 
-    def load_media_data(self, objects=None):
-        # Эта строка не бессмысленная, она подгружает full_data, которая хранится полем класса
-        self.full_data

@@ -1,9 +1,10 @@
 import logging
+from functools import cache
 
 from core.constants import GroupStatus
 from core.module.one_object_represent import OneObjectRepresent
 from core.utils import once_property, valid_object_method, cache_method
-
+from worker import VkMethods
 
 logger = logging.getLogger('vk-group')
 
@@ -45,9 +46,9 @@ class VKGroup(OneObjectRepresent):
         # Чтобы вернуть все как было нужно указать full=True
         return VKAPI.get_group_data(self.id, full=False)
 
-    @cache_method
+    @cache
     def data(self, force=False):
-        return VKAPI.get_group_data(self.id, full=False, force=force)
+        return VkMethods.get_group_data(self.id, full=False, force=force)
 
     @once_property
     def short_data(self):
