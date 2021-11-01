@@ -1,8 +1,6 @@
-import asyncio
 import logging
 import random
 import traceback
-from functools import wraps
 from time import sleep
 
 
@@ -43,27 +41,4 @@ def sequential_start(func):
         return result
 
     return wrapper
-
-
-def partition_split(segment_size):
-    """
-    Assumes first argument of method is big list,
-    splits it to several smaller lists of segment_size and calls this method again
-    """
-    def decorator(method):
-        @wraps(method)
-        async def wrapper(cls, items, **kwargs):
-            assert isinstance(items, list)
-            if len(items) <= segment_size:
-                return await method(cls, items, **kwargs)
-            items_parts = split_list(items, segment_size=segment_size)
-            logger.debug('Split query into %s parts', len(items_parts))
-            results_parts = await asyncio.gather(*[
-                method(cls, partition, **kwargs) for partition in items_parts
-            ])
-            assert isinstance(results_parts[0], list)
-            return sum(results_parts, [])
-        return wrapper
-    return decorator
-
 

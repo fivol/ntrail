@@ -10,10 +10,11 @@ from worker.caching import cache_with_redis
 from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
+from worker.parsers.vk.layers import partition_split, count_offset_iterator, items_getter, ListWithCount
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
-from worker.tools import assert_imported_once, partition_split
+from worker.tools import assert_imported_once
 
 logger = logging.getLogger('vk')
 
@@ -46,17 +47,6 @@ class VkApiSession(SessionState):
 
 
 EXECUTE_QUERIES_BUNCH_COUNT = 25
-
-
-def items_getter(method):
-    @wraps(method)
-    async def wrapper(*args, **kwargs):
-        result = await method(*args, **kwargs)
-        if kwargs.get('raw_') and isinstance(result, dict):
-            return result
-        return result.get('items')
-
-    return wrapper
 
 
 @inject_methods_wrappers('_wrapper', cache_with_redis, MakeSynced)
@@ -116,12 +106,12 @@ class VkMethods(BaseParser):
         return f'return [{",".join(commands)}];'
 
     @classmethod
-    async def _run_execute_pool(cls):
+    async def _run_execute_pool(cls, only_user_access=False):
         # Label results as waiting
         if not cls._executable_pool:
             raise IndexError
         logger.debug('Run execute pool %s', len(cls._executable_pool))
-        execute_coro = cls.execute(cls._gen_execute_code(cls._executable_pool))
+        execute_coro = cls.execute(cls._gen_execute_code(cls._executable_pool), only_user_access=only_user_access)
         execute_task = asyncio.create_task(execute_coro)
 
         cls._execute_results[cls._execute_epoch] = execute_task
@@ -129,7 +119,7 @@ class VkMethods(BaseParser):
         cls._executable_pool = []
 
     @classmethod
-    async def _run_query(cls, method, kwargs, apis, executable=False, **other):
+    async def _run_query(cls, method, kwargs, apis, executable=False, only_user_access=False, **other):
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
@@ -159,14 +149,14 @@ class VkMethods(BaseParser):
         curr_epoch = cls._execute_epoch
         cls._executable_pool.append((method, kwargs))
         if len(cls._executable_pool) == EXECUTE_QUERIES_BUNCH_COUNT:
-            await cls._run_execute_pool()
+            await cls._run_execute_pool(only_user_access)
 
         # Very important. We should return control to collect many queries in pool in async
         await asyncio.sleep(0)
         if len(cls._executable_pool) < 15:
             await asyncio.sleep(0.001)
         if cls._execute_epoch == curr_epoch and len(cls._executable_pool) >= 3:
-            await cls._run_execute_pool()
+            await cls._run_execute_pool(only_user_access)
         results = cls._execute_results.get(curr_epoch, None)
 
         if results is None:
@@ -179,6 +169,9 @@ class VkMethods(BaseParser):
 
         results, remain_count = cls._execute_results[curr_epoch]
         assert isinstance(results, list)
+        if results[0] is False:
+            logger.warning('Execute query returns False')
+            raise Warning('It seems, execute query failed')
         cls._execute_results[curr_epoch][1] -= 1
         result = results[cmd_idx]
         if not cls._execute_results[curr_epoch][1]:
@@ -199,11 +192,11 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    async def execute(cls, code, **kwargs) -> list:
+    async def execute(cls, code, only_user_access=False, **kwargs) -> list:
         return await cls._run_query(
             'execute',
-            {'code': code}, [cls._comm_api, cls._user_api],
-            executable=False
+            {'code': code}, ([] if only_user_access else [cls._comm_api]) + [cls._user_api],
+            executable=False,
         )
 
     @classmethod
@@ -226,6 +219,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @count_offset_iterator(1000)
     async def followers(cls, user_id, offset=0, count=1000, **kwargs):
         return await cls._run_query(
             'users.getFollowers',
@@ -235,17 +229,31 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    async def members(cls, group_id, offset=0, count=1000, **kwargs):
+    @count_offset_iterator(1000)
+    @items_getter
+    async def members(cls, group_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',
             {'group_id': group_id, 'offset': offset, 'count': count},
             [cls._app_api, cls._comm_api, cls._user_api],
+            executable=True, only_user_access=True,
+            **kwargs
+        )
+
+    @classmethod
+    @count_offset_iterator(1000)
+    @items_getter
+    async def groups(cls, user_id, offset=0, count=1000, **kwargs) -> ListWithCount:
+        return await cls._run_query(
+            'groups.get',
+            {'user_id': user_id, 'offset': offset, 'count': count},
+            [cls._user_api],
             executable=True, **kwargs
         )
 
     @classmethod
     @items_getter
-    async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> list:
+    async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> ListWithCount:
         return await cls._run_query(
             'photos.get',
             {'owner_id': owner_id, 'count': count, 'album_id': album_id},
