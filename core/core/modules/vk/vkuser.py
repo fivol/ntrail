@@ -1,6 +1,7 @@
 import logging
 from functools import cache
 
+from parsers.exceptions import ParserRealError
 from worker import VkMethods
 from .vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
@@ -199,6 +200,8 @@ class VKUser(OneObjectRepresent):
     def friends(self):
         from .vkcommunity import VKCommunity
         friend_ids = VkMethods.friends.sync(self.id)
+        if isinstance(friend_ids, ParserRealError):
+            return VKCommunity()
         friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
 
