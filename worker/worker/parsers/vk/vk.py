@@ -1,15 +1,15 @@
 import asyncio
 import json
 import logging
-import typing
-from functools import wraps
 
 from aiovk import TokenSession, API
+from aiovk.exceptions import VkAPIError
 
 from worker.caching import cache_with_redis
 from worker.methods_injector import inject_methods_wrappers, MakeSynced, ignore_injection
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
+from worker.parsers.vk.exceptions import VKError
 from worker.parsers.vk.layers import partition_split, count_offset_iterator, items_getter, ListWithCount
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from worker.session.session_manager import SessionManager
@@ -33,7 +33,7 @@ class VkApiSession(SessionState):
         super().__init__(*args, **kwargs)
 
     def create(self, key: str):
-        session = TokenSession(access_token=key)
+        session = TokenSession(access_token=key, timeout=3)
         self.__vk_session = session
         session.API_VERSION = VK_API_VERSION
         return API(session)
@@ -42,8 +42,10 @@ class VkApiSession(SessionState):
         await self.__vk_session.close()
 
     def handle_error(self, exc_type, exc_val, exc_tb):
-        logger.info('Vk Api error handle')
-        # TODO This is just example. Make normal
+        if exc_type == VkAPIError:
+            error = VKError(error=exc_val)
+            logger.warning('Catch vk api error: %s', error)
+            raise error
 
 
 EXECUTE_QUERIES_BUNCH_COUNT = 25
@@ -210,12 +212,13 @@ class VkMethods(BaseParser):
 
     @classmethod
     @items_getter
-    async def friends(cls, user_id, raw_=False, **kwargs) -> list:
+    async def friends(cls, user_id, **kwargs) -> list:
         return await cls._run_query(
             'friends.get',
             {'user_id': user_id},
             [cls._app_api, cls._user_api],
-            executable=True, **kwargs
+            executable=False,
+            **kwargs
         )
 
     @classmethod
