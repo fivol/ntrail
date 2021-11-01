@@ -30,9 +30,9 @@ async def calculate_rps(epochs=10, count=100):
 
 async def main():
     # begin = timer()
-    await VkMethods.users([1])
-    await VkMethods.users([2])
-    await VkMethods.users([3])
+    # await VkMethods.users([1])
+    # await VkMethods.users([2])
+    # await VkMethods.users([3])
     # count = 25000
     # my_friends = await VkMethods.friends(245089915)
     # users = await asyncio.gather(*[VkMethods.friends(i) for i in my_friends], return_exceptions=True)
@@ -43,7 +43,7 @@ async def main():
     # print(len(users))
     # print(users)
     # print(int(count / (timer() - begin)))
-    # print(await calculate_rps(epochs=10, count=10))
+    print(await calculate_rps(epochs=10, count=1000))
     # friends = await VkMethods.friends(102038177)
     # await VkMethods.friends()
     # print((await VkMethods.members(172053584, count=10000)).__len__())
