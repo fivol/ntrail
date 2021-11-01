@@ -18,3 +18,4 @@ class VKError(ParserRealError):
 
     def __str__(self):
         return f'VK API Error: ({self.code}) {self.msg}'
+

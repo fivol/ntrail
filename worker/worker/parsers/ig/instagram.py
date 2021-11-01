@@ -151,9 +151,9 @@ class InstRequest:
         to_good = set()
         to_dead = set()
         for agent in cls.wait_agents:
-            if agent.status() == STATUS_GOOD_AGENT:
+            if agent._status() == STATUS_GOOD_AGENT:
                 to_good.add(agent)
-            if agent.status() == STATUS_DEAD_AGENT:
+            if agent._status() == STATUS_DEAD_AGENT:
                 logger.warning('Found dead agent in WAIT LIST:', agent)
                 to_dead.add(agent)
 
@@ -199,7 +199,7 @@ class InstRequest:
     @classmethod
     @sequential_start
     def process_agent(cls, agent):
-        agent_status = agent.status()
+        agent_status = agent._status()
         if agent_status == STATUS_DEAD_AGENT:
             with open('data/dead_agents', 'a') as file:
                 file.write(agent.username + ',')
