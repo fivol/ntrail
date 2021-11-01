@@ -28,7 +28,7 @@ def init():
         logger.info('Caching disabled')
 
 
-def cache_with_redis(method):
+def redis_cache(method):
     async def _wrapper(*args, **kwargs):
         if not ctx.caching or ctx.caching_available is False:
             return await method(*args, **kwargs)

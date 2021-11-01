@@ -47,6 +47,7 @@ def sequential_start(func):
 def decorate(*decorators):
     def chain_decorator(method):
         for decorator in decorators:
-            method = (wraps(method)(decorator))(method)
-
+            new_method = decorator(method)
+            method = wraps(method)(new_method)
+        return method
     return chain_decorator

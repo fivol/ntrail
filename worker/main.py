@@ -3,8 +3,7 @@ import time
 import config  # noqa
 from timeit import default_timer as timer
 
-# from worker import Engine, VkMethods
-from worker.helpers.tools import decorate
+from worker import Engine, VkMethods
 
 
 async def calculate_rps(epochs=10, count=100):
@@ -33,12 +32,13 @@ async def calculate_rps(epochs=10, count=100):
 
 async def main():
     # begin = timer()
+    print(await VkMethods.users([1]))
     # count = 25000
-    my_friends = await VkMethods.friends(245089915)
-    users = await asyncio.gather(*[VkMethods.friends(i) for i in my_friends], return_exceptions=True)
-    for friends in users:
-        if isinstance(friends, Exception):
-            print(friends)
+    # my_friends = await VkMethods.friends(245089915)
+    # users = await asyncio.gather(*[VkMethods.friends(i) for i in my_friends], return_exceptions=True)
+    # for friends in users:
+    #     if isinstance(friends, Exception):
+    #         print(friends)
     # print(users)
     # print(len(users))
     # print(users)
@@ -49,24 +49,9 @@ async def main():
     # print((await VkMethods.members(172053584, count=10000)).__len__())
 
 
-def decor(method):
-    def wrapper(*args, **kwargs):
-        return method(*args, **kwargs)
-    return wrapper
-
-
-class A:
-    @classmethod
-    @decorate(decor)
-    def x(cls, a):
-        print('a', a)
-        return a
-
-
 if __name__ == '__main__':
-    pass
-    # with Engine(caching=False):
-    #     asyncio.get_event_loop().run_until_complete(main())
+    with Engine(caching=False):
+        asyncio.get_event_loop().run_until_complete(main())
 
 
 """

@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 
-from parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import ParserRealError
 
 
 class MethodWrapper:

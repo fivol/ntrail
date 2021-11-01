@@ -118,7 +118,7 @@ class MakeSynced:
 make_synced = MakeSynced
 
 
-def reliable_session_call(method):
+def reliable_call(method):
     """Reply request if rps limit exceeded or tokens ended"""
     @wraps(method)
     async def wrapper(*args, **kwargs):

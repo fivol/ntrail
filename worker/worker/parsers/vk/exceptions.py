@@ -1,6 +1,6 @@
 from aiovk.exceptions import VkAPIError
 
-from parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import ParserRealError
 
 
 class VKError(ParserRealError):

@@ -5,18 +5,16 @@ import logging
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkAPIError
 
-from worker.helpers.caching import cache_with_redis
-from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
+from worker.helpers.caching import redis_cache
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
 from worker.parsers.vk.exceptions import VKError
 from worker.parsers.vk.layers import partition_split, count_offset_iterator, items_getter, ListWithCount, make_synced, \
-    reliable_session_call
+    reliable_call
 from worker.session.exceptions import SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
 from worker.helpers.tools import assert_imported_once, decorate
-from worker.helpers.tools import assert_imported_once
 from worker.ctx import get_context
 
 logger = logging.getLogger('vk')
@@ -57,6 +55,10 @@ EXECUTE_QUERIES_BUNCH_COUNT = 25
 EXECUTE_MAX_LENGTH = 12000
 
 
+class ExecuteRequestPool:
+    pass
+
+
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -79,7 +81,6 @@ class VkMethods(BaseParser):
     _execute_length = 0
 
     @classmethod
-    @ignore_injection
     async def stop(cls):
         await cls._user_api.stop()
         await cls._comm_api.stop()
@@ -87,8 +88,6 @@ class VkMethods(BaseParser):
 
     # TODO Add ability to combine managers in context manager
     # To call any available api for example
-
-
 
     @classmethod
     def _gen_execute_code(cls, items) -> str:
@@ -107,18 +106,6 @@ class VkMethods(BaseParser):
         if not cls._executable_pool:
             raise IndexError
         logger.debug('Run execute pool %s', len(cls._executable_pool))
-
-        # Split execute command into parts
-        # tasks = []
-        # curr_commands = []
-        # cmd_length = 0
-        # for i, cmd in enumerate(cls._executable_pool + ['']):
-        #     if cmd_length + len(cmd) > EXECUTE_MAX_LENGTH or not cmd:
-        #         tasks.append(cls.execute(cls._gen_execute_code(curr_commands)))
-        #         curr_commands = []
-        #         cmd_length = 0
-        #     curr_commands.append(cmd)
-        #     cmd_length += len(cmd)
 
         execute_coro = cls.execute(cls._gen_execute_code(cls._executable_pool), only_user_access=only_user_access)
         execute_task = asyncio.create_task(execute_coro)
@@ -197,7 +184,7 @@ class VkMethods(BaseParser):
         return result
 
     @classmethod
-    @partition_split(1000)
+    @decorate(reliable_call, partition_split(1000), redis_cache, make_synced)
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:
@@ -210,6 +197,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @decorate(reliable_call, redis_cache, make_synced)
     async def execute(cls, code, only_user_access=False, **kwargs) -> list:
         return await cls._run_query(
             'execute',
@@ -218,6 +206,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @decorate(reliable_call, redis_cache, make_synced)
     async def resolve(cls, screen_name, **kwargs) -> dict:
         return await cls._run_query(
             'utils.resolveScreenName',
@@ -227,8 +216,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @count_offset_iterator(5000)
-    @items_getter
+    @decorate(reliable_call, items_getter, count_offset_iterator(5000), redis_cache, make_synced)
     async def friends(cls, user_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'friends.get',
@@ -239,7 +227,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @count_offset_iterator(1000)
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
     async def followers(cls, user_id, offset=0, count=1000, **kwargs):
         return await cls._run_query(
             'users.getFollowers',
@@ -249,8 +237,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @count_offset_iterator(1000)
-    @items_getter
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
     async def members(cls, group_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',
@@ -261,8 +248,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @count_offset_iterator(1000)
-    @items_getter
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
     async def groups(cls, user_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.get',
@@ -272,7 +258,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @items_getter
+    @decorate(reliable_call, items_getter, partition_split(500), redis_cache, make_synced)
     async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> ListWithCount:
         return await cls._run_query(
             'photos.get',
@@ -282,7 +268,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_session_call, partition_split(500), cache_with_redis, make_synced)
+    @decorate(reliable_call, partition_split(500), redis_cache, make_synced)
     async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',
