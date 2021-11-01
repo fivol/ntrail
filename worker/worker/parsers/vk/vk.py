@@ -1,6 +1,7 @@
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkAPIError
 
+from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
@@ -13,6 +14,7 @@ from worker.session.session_state import SessionState
 from worker.helpers.tools import assert_imported_once, decorate
 from worker.ctx import get_context
 from worker.config import config
+from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 
 logger = logging.getLogger('vk')
 
@@ -48,10 +50,7 @@ class VkApiSession(SessionState):
             raise error
 
 
-EXECUTE_QUERIES_BUNCH_COUNT = 25
-EXECUTE_MAX_LENGTH = 12000
-
-
+@inject_methods_wrappers(method_logger(only_errors=True), make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -71,6 +70,7 @@ class VkMethods(BaseParser):
     _execute_pool = ExecuteRequestPool()
 
     @classmethod
+    @ignore_injection
     async def stop(cls):
         await cls._user_api.stop()
         await cls._comm_api.stop()
@@ -113,7 +113,7 @@ class VkMethods(BaseParser):
         return execute_result
 
     @classmethod
-    @decorate(reliable_call, method_logger(), partition_split(1000), redis_cache, make_synced)
+    @decorate(reliable_call, method_logger(), partition_split(1000), redis_cache)
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:
@@ -126,7 +126,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, redis_cache, make_synced)
+    @decorate(reliable_call, redis_cache)
     async def execute(cls, code, only_user_access=False, **kwargs) -> list:
         return await cls._run_query(
             'execute',
@@ -135,7 +135,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, redis_cache, make_synced)
+    @decorate(reliable_call, redis_cache)
     async def resolve(cls, screen_name, **kwargs) -> dict:
         return await cls._run_query(
             'utils.resolveScreenName',
@@ -145,7 +145,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(5000), redis_cache, make_synced)
+    @decorate(reliable_call, items_getter, count_offset_iterator(5000), redis_cache)
     async def friends(cls, user_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'friends.get',
@@ -156,7 +156,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
     async def followers(cls, user_id, offset=0, count=1000, **kwargs):
         return await cls._run_query(
             'users.getFollowers',
@@ -166,7 +166,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
     async def members(cls, group_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',
@@ -177,7 +177,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache, make_synced)
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000), redis_cache)
     async def groups(cls, user_id, offset=0, count=1000, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.get',
@@ -187,7 +187,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, partition_split(500), redis_cache, make_synced)
+    @decorate(reliable_call, items_getter, partition_split(500), redis_cache)
     async def photos(cls, owner_id=None, count=None, album_id='profile', **kwargs) -> ListWithCount:
         return await cls._run_query(
             'photos.get',
@@ -197,7 +197,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, partition_split(500), redis_cache, make_synced)
+    @decorate(reliable_call, partition_split(500), redis_cache)
     async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',

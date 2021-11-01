@@ -113,7 +113,8 @@ class MakeSynced:
 
     async def map(self, items, **kwargs):
         return await asyncio.gather(
-            *[self._method(item, **kwargs) for item in items]
+            *[self._method(item, **kwargs) for item in items],
+            return_exceptions=True
         )
 
     def sync_map(self, items, **kwargs):
@@ -131,8 +132,7 @@ def reliable_call(method):
     async def wrapper(*args, **kwargs):
         while True:
             try:
-                result = await method(*args, **kwargs)
-                return result
+                return await method(*args, **kwargs)
             except RpsLimitException:
                 await asyncio.sleep(0.01)
                 continue
@@ -141,42 +141,3 @@ def reliable_call(method):
                 raise
 
     return wrapper
-
-
-def method_logger(level: int = logging.DEBUG, enabled=True):
-    """Decorator to method or function. Prints arguments and results"""
-
-    def decorator(method):
-        def repr_args(args, kwargs) -> str:
-            def repr_value(value):
-                if inspect.isclass(value):
-                    return 'cls'
-                return str(value)
-
-            kwargs = ', '.join([f'{key}={repr_value(value)}' for key, value in kwargs])
-            args = ', '.join(map(repr_value, args))
-            return ', '.join(filter(bool, [args, kwargs]))
-
-        def repr_result(result):
-            def shorty(text: str, size):
-                if len(text) <= size:
-                    return text
-                return f'{text}...'
-            s = str(result)
-            return f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}> {shorty(s, 100)}'
-
-        @wraps(method)
-        async def wrapper(*args, **kwargs):
-            if not enabled:
-                return await method(*args, **kwargs)
-            try:
-                result = await method(*args, **kwargs)
-                logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
-                return result
-            except Exception as e:
-                logger.warning('%s(%s) -> %s', method.__name__, repr_args(args, kwargs), e)
-                raise
-
-        return wrapper
-
-    return decorator
