@@ -31,8 +31,11 @@ async def calculate_rps(epochs=10, count=100):
 
 
 async def main():
-    # print(await VkMethods.users([1]))
-    print(await calculate_rps(epochs=10, count=10))
+    begin = timer()
+    count = 25000
+    len(await VkMethods.users(list(range(1, 1 + count))))
+    print(int(count / (timer() - begin)))
+    # print(await calculate_rps(epochs=10, count=10))
 
 
 if __name__ == '__main__':
@@ -45,4 +48,8 @@ if __name__ == '__main__':
 1000: 290
 100 new queries (cache misses) - 200 rps (20 tokens) 2500 with cache
 1000 users.get queries without caching - 313 rps (20 tokens) with normal limits (3 and 5 rps per token)
+
+10000 users data collected with rps 3797 
+25000 with rps 4459. Splitter divided it into 25 users.get queries and execute completes with single query
+-> 25000 users in one query
 """

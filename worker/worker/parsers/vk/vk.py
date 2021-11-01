@@ -13,7 +13,7 @@ from worker.parsers.vk.data import *
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionManagerException
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
-from worker.tools import assert_imported_once
+from worker.tools import assert_imported_once, partition_split
 
 logger = logging.getLogger('vk')
 
@@ -186,6 +186,7 @@ class VkMethods(BaseParser):
         return result
 
     @classmethod
+    @partition_split(1000)
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:
@@ -253,6 +254,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @partition_split(500)
     async def photos_ids(cls, photo_ids: list = None, **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',
