@@ -11,7 +11,7 @@ from core.module.layers import public_object_method, valid_object_method
 from core.modules.vk.vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
 from core.helpers.utils import get_sites
-from parsers.vk.exceptions import VKErrorType
+from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
 from worker import VkMethods, VKError

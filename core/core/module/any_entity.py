@@ -7,7 +7,7 @@ from abc import abstractmethod, ABCMeta
 
 from core.helpers.exporter import JsonWriter, CsvWriter, DictExporter, ListExporter
 from core.helpers.utils import *
-from parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import ParserRealError
 
 
 class AnyEntity(metaclass=ABCMeta):

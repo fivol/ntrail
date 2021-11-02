@@ -1,7 +1,7 @@
 from .call_worker.worker.query_object import BasicQuery
 from core.models import QueryModel, db
 import datetime
-from config import CACHE_TYPE
+from server.config import CACHE_TYPE
 from core.constants import CACHE_TYPE_ONLY_WRITE, CACHE_TYPE_ONLY_READ, CACHE_TYPE_IGNORE
 
 
