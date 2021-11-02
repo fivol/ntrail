@@ -1,11 +1,14 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from server.models import db, db_url
 from server.config import config
+from server.models import db, db_url
 from server.routes.vk import vk
 from server.routes import auth
 
+logger = logging.getLogger('main')
 
 app = FastAPI(
     debug=config.DEBUG,

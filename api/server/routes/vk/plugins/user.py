@@ -1,4 +1,4 @@
-from core.modules import VKUser
+from core import VKUser
 from server.plugin import BasePlugin
 
 

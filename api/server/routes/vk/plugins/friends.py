@@ -1,5 +1,5 @@
 from server.plugin import BasePlugin
-from core.modules import VKCommunity
+from core import VKCommunity
 
 
 class VKFriendsPlugin(BasePlugin):

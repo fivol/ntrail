@@ -33,6 +33,6 @@ def vk_analysis(token: str = Query(None, title='API токен'),
     """
     asyncio.set_event_loop(asyncio.new_event_loop())
     args = {'user': user}
-    with Engine():
+    with Engine(caching=False):
         manager = PluginManager(plugins, args, verbose=verbose, options=options)
         return manager.execute()

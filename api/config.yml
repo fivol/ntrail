@@ -27,18 +27,22 @@ logging:
     default:
       format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
   handlers:
-    console:
+    default:
       class: logging.StreamHandler
       level: DEBUG
       formatter: default
       stream: ext://sys.stdout
   loggers:
+    '':
+      level: DEBUG
+    vk-layer:
+      level: DEBUG
     vk:
       level: DEBUG
-    cache:
-      level: DEBUG
-    session:
+    debugger:
       level: DEBUG
   root:
     level: DEBUG
-    handlers: [ console ]
+    handlers: [default]
+    propagate: true
+
