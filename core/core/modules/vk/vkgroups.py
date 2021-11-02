@@ -38,12 +38,12 @@ class VKGroups(Represent, RepresentTools):
         self.main = None
 
         if not groups:
-            self.counter = Counter()
+            self._counter = Counter()
             self.nodes = []
             return
 
         if isinstance(groups, Counter):
-            self.counter = groups
+            self._counter = groups
             self.nodes = list([item for item, count in groups.most_common()])
         elif isinstance(groups, list) or isinstance(groups, set):
             groups = list(unique_everseen(groups))
@@ -58,7 +58,7 @@ class VKGroups(Represent, RepresentTools):
                 else:
                     raise ValueError('Unknown nodes type for groups')
 
-            self.counter = Counter(self.nodes)
+            self._counter = Counter(self.nodes)
 
         else:
             raise TypeError()
