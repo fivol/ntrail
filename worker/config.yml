@@ -13,3 +13,25 @@ vk:
     user: 3 # Can be increased to 5-7
     community: 3
     app: 5 # Can be increased to 20
+
+logging:
+  version: 1
+  formatters:
+    default:
+      format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      formatter: default
+      stream: ext://sys.stdout
+  loggers:
+    vk:
+      level: DEBUG
+    cache:
+      level: DEBUG
+    session:
+      level: DEBUG
+  root:
+    level: DEBUG
+    handlers: [ console ]
