@@ -7,13 +7,13 @@ from server.types import ResponseVerbose
 
 
 class PluginManager:
-    def __init__(self, plugins: list[type(BasePlugin)], args: dict, verbose: ResponseVerbose, options: list[str]):
+    def __init__(self, plugins: list[type(BasePlugin)], kwargs: dict, verbose: ResponseVerbose, options: list[str]):
         self._plugins_cls = {
             plugin.name: plugin for plugin in plugins
         }
         if len(self._plugins_cls) != len(plugins):
             raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT, detail=f'Repeating options')
-        self._args = args
+        self._kwargs = kwargs
         self._options = options
         self._verbose = verbose
 
@@ -47,6 +47,6 @@ class PluginManager:
         return response
 
     def _create_plugin(self, plugin_cls: type(BasePlugin)):
-        plugin = plugin_cls(manager=self, verbose=self._verbose)
+        plugin = plugin_cls(manager=self, verbose=self._verbose, **self._kwargs)
         plugin.init()
         return plugin

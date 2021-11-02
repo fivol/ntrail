@@ -19,3 +19,10 @@ class VKUserPlugin(BasePlugin):
 
     def response(self) -> dict:
         return self.result().summary()
+
+
+class VKUserDataPlugin(BasePlugin):
+    name = 'user-data'
+
+    def response(self) -> dict:
+        return self.get_plugin_result('user').data()

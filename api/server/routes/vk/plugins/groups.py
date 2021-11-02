@@ -1,8 +1,8 @@
 from server.plugin import BasePlugin
 
 
-class VKBasicPlugin(BasePlugin):
-    name = 'basic'
+class VKGroupsPlugin(BasePlugin):
+    name = 'groups'
 
     def response(self) -> dict:
         return {}

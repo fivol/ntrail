@@ -21,7 +21,8 @@ app.include_router(auth.router)
 
 @app.on_event("startup")
 async def startup_event():
-    await db.set_bind(db_url)
+    pass
+    # await db.set_bind(db_url)
 
 
 @app.get('/', response_class=RedirectResponse, include_in_schema=False)
