@@ -1,43 +1,54 @@
 import bisect
+from abc import abstractmethod
+from collections import Counter
+import hashlib
+
 # from slmpy import ModularityOptimzer
-from core.module.any_media import AnyMedia
-from core.helpers.utils import once_property, counter_top, get_color, cache_method
+
 from collections import Counter
 import networkx as nx
 from functools import lru_cache
 import random
-from core.helpers.utils import self_replace
 import re
-from core.db.db_logic import DB
 # import matplotlib.pyplot as plt
 from time import time
 # import pandas as pd
 # import matplotlib.patches as mpatches
-import hashlib
+from core.helpers.utils import self_replace
+from core.module.any_entity import AnyEntity
+from core.helpers.utils import counter_top, get_color
+from core.db.db_logic import DB
 
 
-class ManyMedia(AnyMedia):
-    # TODO Сделать класс абстрактным, убрать ошибки в наследниках
-    # много полей не найдено, организовать правильную структуру
-
-    base_class = None
-    nodes = []
+class ManyEntities(AnyEntity):
+    _single_media_cls = None
+    ids: list
 
     @property
     def size(self):
-        return len(self.nodes)
+        return len(self.ids)
 
-    def load_media_data(self, objects=None):
-        raise NotImplementedError
+    @property
+    def hash(self):
+        return hashlib.sha1(str(sorted(self.ids)).encode('UTF-8')).hexdigest()[-16:]
 
-    def get_connections(self, **kwargs):
-        return {}
+    @property
+    def counter(self) -> Counter:
+        return Counter(self.ids)
 
-    def get_id_prefix(self):
-        return self.__class__.base_class.id_prefix
+    def objects(self):
+        return [self.__class__._single_media_cls(node) for node in self.ids]
+
+    @abstractmethod
+    def connections(self, **kwargs) -> dict[list]:
+        """
+        Connections between nodes dict.
+        List consists of ids
+        """
+        pass
 
     @classmethod
-    def communities_from_graph(cls, graph_, algorithm, remove_node=None):
+    def _communities_from_graph(cls, graph_, algorithm, remove_node=None):
 
         if not graph_.number_of_nodes() or not graph_.number_of_edges():
             return []
@@ -51,7 +62,7 @@ class ManyMedia(AnyMedia):
             edges = np.array(graph.edges)
             mo = ModularityOptimzer(edges)
             graph_communities = mo(algorithm='local_moving')
-            nodes = np.sort(np.array(graph.nodes()))
+            nodes = np.sort(np.array(graph.ids()))
             nodes = list(zip(nodes, graph_communities))
             communities_lists = {}
             for id, com in nodes:
@@ -61,9 +72,9 @@ class ManyMedia(AnyMedia):
             return communities_list
 
         def algorithm_label_propagation():
-            node_group = dict([(node, i) for i, node in enumerate(graph.nodes)])
+            node_group = dict([(node, i) for i, node in enumerate(graph.ids)])
             new_node_group = {}
-            nodes = graph.nodes
+            nodes = graph.ids
             for ii in range(min(len(node_group) * 10, 1000)):
                 for node in random.sample(nodes, len(nodes)):
                     ne_groups = Counter(
@@ -108,13 +119,9 @@ class ManyMedia(AnyMedia):
 
         return res
 
-    @property
-    def valid(self):
-        return True
-
     def print(self, k=50, shuffle=False):
         head_line = f'Class: {self.__class__}. Size: {self.size}'
-        if len(self.nodes) != len(set(self.nodes)):
+        if len(self.ids) != len(set(self.ids)):
             pass
         if self.counter:
             objects = sorted(self.objects, key=lambda x: -self.counter[x.id])
@@ -133,57 +140,31 @@ class ManyMedia(AnyMedia):
             else:
                 obj.print()
 
-    @lru_cache(16)
-    @self_replace('graph')
+    @lru_cache(4)
     def pools(self, graph=None, algorithm='louvain'):
         main = None
         if hasattr(self, 'main') and self.main:
             main = self.main.id
-        communities = self.communities_from_graph(graph, algorithm, remove_node=main)
+        communities = self._communities_from_graph(graph, algorithm, remove_node=main)
         pools = [self.__class__(pool) for pool in communities]
         return pools
 
     @lru_cache(4)
     def get_node_cluster_dict(self):
         pools = self.pools()
-        all_nodes = self.nodes
+        all_nodes = self.ids
         clear_pools = list(filter(lambda x: x.size > 1, pools))
-        clusters_nodes = sum([cluster.nodes for cluster in clear_pools], [])
-        print(set(all_nodes) - set(clusters_nodes))
+        clusters_nodes = sum([cluster.ids for cluster in clear_pools], [])
         clear_pools += [self.__class__([free_node]) for free_node in set(all_nodes) - set(clusters_nodes)]
 
-        node_cluster_dict = {node: id_ + 1 for id_, cluster in enumerate(clear_pools) for node in cluster.nodes}
+        node_cluster_dict = {node: id_ + 1 for id_, cluster in enumerate(clear_pools) for node in cluster.ids}
         return node_cluster_dict
-
-    @once_property
-    def hash(self):
-        obj_hash = hashlib.sha1(str(sorted(self.nodes)).encode('UTF-8')).hexdigest()[-16:]
-        return obj_hash
-
-    def get_ids(self):
-        return [self.__class__.base_class.gen_id(id_) for id_ in self.nodes]
-
-    @once_property
-    def objects(self):
-        data_dict = self.data_dict()
-        return [self.__class__.base_class(data_dict[node]) for node in self.nodes]
-
-    @cache_method
-    def data_list(self, force=False):
-        raise NotImplementedError()
-
-    def data_dict(self, force=False):
-        data = self.data_list(force)
-        return {
-            item['id']: item
-            for item in data
-        }
 
     def select(self, k=-1, break_point=1, rand=False):
         if rand and k > 0:
-            nodes = self.nodes
+            nodes = self.ids
             random.shuffle(nodes)
-            nodes = self.nodes[:k]
+            nodes = self.ids[:k]
             return self.__class__(nodes)
 
         if k == -1:
@@ -193,11 +174,11 @@ class ManyMedia(AnyMedia):
     def graph(self, **kwargs):
         g = nx.Graph()
         connections = self.get_connections(**kwargs)
-        g.add_nodes_from(self.nodes)
-        for node in self.nodes:
+        g.add_nodes_from(self.ids)
+        for node in self.ids:
             links = connections.get(node, None)
             if links:
-                g.add_edges_from([(node, link) for link in links if link in self.nodes])
+                g.add_edges_from([(node, link) for link in links if link in self.ids])
         return g
 
     @staticmethod
@@ -211,7 +192,7 @@ class ManyMedia(AnyMedia):
     @self_replace('graph')
     def get_k_neighbors_nodes(self, graph, k=0):
         result = []
-        for node in graph.nodes:
+        for node in graph.ids:
             if len(list(graph.neighbors(node))) == k:
                 result.append(node)
 
@@ -232,9 +213,9 @@ class ManyMedia(AnyMedia):
                         [
                             list(
                                 zip(
-                                    pool.nodes,
+                                    pool.ids,
                                     [
-                                        (get_color(i + 1, len(pool.nodes)), pool)
+                                        (get_color(i + 1, len(pool.ids)), pool)
                                     ] * pool.size))
                             for i, pool in enumerate(pools)
                         ], []
@@ -277,7 +258,7 @@ class ManyMedia(AnyMedia):
                 # return math.log(members_count) * 5
 
             node_sizes = [get_node_size(groups_dict[id].get('members_count', 1))
-                          for id in graph.nodes]
+                          for id in graph.ids]
 
         pos = nx.spring_layout(graph)
         plt.figure(figsize=(10, 10))
@@ -374,15 +355,6 @@ class ManyMedia(AnyMedia):
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
 
-    def get_features(self):
-        raise NotImplementedError
-
-    def class_name(self):
-        return type(self).__name__.lower()
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}({self.nodes})'
-
     def collect_archive(self, count=200):
         assert isinstance(count, int)
         features = self.get_features()
@@ -438,7 +410,7 @@ class ManyMedia(AnyMedia):
 
     def save_features(self):
         features = self.get_features()
-        identity = self.nodes
+        identity = self.ids
         DB.save_json(
             features=features,
             identity=identity,
@@ -457,7 +429,7 @@ class ManyMedia(AnyMedia):
         return self.size
 
     def __add__(self, other):
-        assert other.base_class == self.base_class
+        assert self._single_media_cls == other._single_media_cls, 'You trying to sum different classes'
         return self.__class__(self.counter + other.counter)
 
     def __getitem__(self, key):
@@ -465,10 +437,13 @@ class ManyMedia(AnyMedia):
         return self.objects[key]
 
     def __or__(self, other):
-        return self.__class__(list(set(self.nodes) | set(other.nodes)))
+        return self.__class__(list(set(self.ids) | set(other.ids)))
 
     def __and__(self, other):
-        return self.__class__(list(set(self.nodes) & set(other.nodes)))
+        return self.__class__(list(set(self.ids) & set(other.ids)))
 
-    def __hash__(self):
-        return hash(self.hash)
+    def __repr__(self):
+        return f'{self.__class__.__name__}(<size: {self.size}>)'
+
+    def __str__(self):
+        name = getattr(self, naem)

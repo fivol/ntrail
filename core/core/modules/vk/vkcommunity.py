@@ -20,7 +20,7 @@ from core.helpers.utils import clear_list, prepare_list, list_from_dicts, is_goo
 
 
 class VKCommunity(Represent, RepresentTools):
-    base_class = VKUser
+    _single_media_cls = VKUser
     available_attributes = ['friends', 'clusters', 'groups']
 
     def __init__(self, users=None, main=None, clear=False, save_features=False, target=None, target_value=None, **kwargs):
@@ -30,39 +30,39 @@ class VKCommunity(Represent, RepresentTools):
             users = list(users)
         assert main is None or isinstance(main, VKUser) or isinstance(main, VKGroup), main
         self.main = main
-        self.nodes = []
-        self.counter = Counter()
+        self.ids = []
+        self._counter = Counter()
         self.target = target
 
         if isinstance(users, Counter):
-            self.counter = users
-            self.nodes = [i[0] for i in self.counter.most_common()]
+            self._counter = users
+            self.ids = [i[0] for i in self.counter.most_common()]
         elif isinstance(users, list):
             users = list(filter(lambda x: x is not None, unique_everseen(users)))
             if users:
                 if isinstance(users[0], VKUser):
-                    self.nodes = [user.id for user in users]
+                    self.ids = [user.id for user in users]
                 elif isinstance(users[0], int):
-                    self.nodes = users
+                    self.ids = users
                 elif isinstance(users[0], str):
                     id_ = VKUser._parse_id(users[0])
                     if id_:
-                        self.nodes = [VKUser._parse_id(id_) for id_ in users]
+                        self.ids = [VKUser._parse_id(id_) for id_ in users]
                     else:
                         usernames = [VKUser._extract_username(url) for url in users]
                         usernames = clear_list(usernames)
                         VkMethods.resolve.sync(usernames)
-                        self.nodes = [VKUser(username).id for username in usernames]
-                        self.nodes = clear_list(self.nodes)
+                        self.ids = [VKUser(username).id for username in usernames]
+                        self.ids = clear_list(self.ids)
                 else:
                     raise TypeError('user instance must be int or string, but' + str(type(users[0])))
-            self.counter = Counter(self.nodes)
+            self._counter = Counter(self.ids)
         elif isinstance(users, str):
             usernames = VKCommunity.parse_usernames(users)
             VkMethods.resolve.sync_map(usernames)
-            self.nodes = [VKUser(username).id for username in usernames]
-            self.nodes = clear_list(self.nodes)
-            self.counter = Counter(self.nodes)
+            self.ids = [VKUser(username).id for username in usernames]
+            self.ids = clear_list(self.ids)
+            self._counter = Counter(self.ids)
         elif not (users is None):
             raise TypeError('Wrong users type: {}'.format(type(users)))
         if 3 < self.size < 800 and save_features:
@@ -80,7 +80,7 @@ class VKCommunity(Represent, RepresentTools):
     def all_groups(self):
         all_groups_ids = sum(
             filter(
-                lambda x: isinstance(x, list), self.get_users_groups(self.nodes)),
+                lambda x: isinstance(x, list), self.get_users_groups(self.ids)),
             [])
         return VKGroups(all_groups_ids)
 
@@ -88,7 +88,7 @@ class VKCommunity(Represent, RepresentTools):
     def groups(self):
         all_groups = sum(
             filter(
-                lambda x: isinstance(x, list), self.get_users_groups(self.nodes)),
+                lambda x: isinstance(x, list), self.get_users_groups(self.ids)),
             [])
 
         counter = Counter(all_groups)
@@ -102,19 +102,19 @@ class VKCommunity(Represent, RepresentTools):
 
     @cache
     def data(self, force=False, full=True):
-        return VkMethods.users.sync(self.nodes, full=full)
+        return VkMethods.users.sync(self.ids, full=full)
 
     @try_base_analog
     def friends(self):
-        users_friends = VkMethods.friends.sync_map(self.nodes)
-        users_friends += [self.nodes]
+        users_friends = VkMethods.friends.sync_map(self.ids)
+        users_friends += [self.ids]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
     def get_connections(self):
-        connections = self.get_users_friends(self.nodes)
+        connections = self.get_users_friends(self.ids)
         return {
-            first_id: [second_id for second_id in connected_list if second_id in self.nodes]
-            for (first_id, connected_list) in zip(self.nodes, connections)
+            first_id: [second_id for second_id in connected_list if second_id in self.ids]
+            for (first_id, connected_list) in zip(self.ids, connections)
         }
 
     def only_valid(self):
@@ -172,7 +172,7 @@ class VKCommunity(Represent, RepresentTools):
         return cls(community)
 
     def get_features(self):
-        if not self.nodes:
+        if not self.ids:
             return {}
 
         data = self.process_data()
@@ -218,52 +218,41 @@ class VKCommunity(Represent, RepresentTools):
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
 
-    def get_ids(self):
-        return [VKUser.gen_id(id_) for id_ in self.nodes]
-
-    @once_property
-    def params(self):
+    def properties(self):
         params = {}
 
-        data_list = self.data_list()
-
-        def true_date(date_str):
-            try:
-                datetime.datetime.strptime(date_str, '%d.%m.%Y')
-                return True
-            except ValueError:
-                return False
+        data = self.data()
 
         for item_name in vk_connections_names:
-            params['connection_' + item_name] = get_field_values(data_list, item_name)
+            params['connection_' + item_name] = get_field_values(data, item_name)
 
-        params['sex'] = TiedCounter(get_field_values(data_list, 'sex'))
-        params['city'] = TiedCounter(get_field_values(data_list, 'city', key='title'))
-        params['country'] = TiedCounter(get_field_values(data_list, 'country', key='title'))
-        params['online'] = TiedCounter(get_field_values(data_list, 'online'))
-        params['online_mobile'] = TiedCounter(get_field_values(data_list, 'online_mobile'))
-        params['verified'] = TiedCounter(get_field_values(data_list, 'verified', clean=True))
-        params['home_town'] = TiedCounter(get_field_values(data_list, 'home_town', capitalize=True, clean=True))
-        params['online_app'] = TiedCounter(get_field_values(data_list, 'online_app'))
-        params['followers_count'] = sorted(get_field_values(data_list, 'followers_count'))
-        last_seen = get_field_values(data_list, 'last_seen')
+        params['sex'] = TiedCounter(get_field_values(data, 'sex'))
+        params['city'] = TiedCounter(get_field_values(data, 'city', key='title'))
+        params['country'] = TiedCounter(get_field_values(data, 'country', key='title'))
+        params['online'] = TiedCounter(get_field_values(data, 'online'))
+        params['online_mobile'] = TiedCounter(get_field_values(data, 'online_mobile'))
+        params['verified'] = TiedCounter(get_field_values(data, 'verified', clean=True))
+        params['home_town'] = TiedCounter(get_field_values(data, 'home_town', capitalize=True, clean=True))
+        params['online_app'] = TiedCounter(get_field_values(data, 'online_app'))
+        params['followers_count'] = sorted(get_field_values(data, 'followers_count'))
+        last_seen = get_field_values(data, 'last_seen')
         params['last_seen_platform'] = TiedCounter(list_from_dicts(last_seen, 'platform'))
         params['last_seen_time'] = sorted(list_from_dicts(last_seen, 'time'))
         params['bdate'] = sorted([TiedValue(datetime.datetime.strptime(bdate.value, '%d.%m.%Y').timestamp(), bdate.id)
-                                  for bdate in get_field_values(data_list, 'bdate') if
+                                  for bdate in get_field_values(data, 'bdate') if
                                   len(bdate.value.split('.')) == 3])
-        params['deactivated'] = TiedCounter(get_field_values(data_list, 'deactivated'))
-        params['is_closed'] = TiedCounter(get_field_values(data_list, 'is_closed', clean=False))
-        params['relation'] = TiedCounter(get_field_values(data_list, 'relation'))
-        relatives_list = concatenate_lists(get_field_values(data_list, 'relatives'))
+        params['deactivated'] = TiedCounter(get_field_values(data, 'deactivated'))
+        params['is_closed'] = TiedCounter(get_field_values(data, 'is_closed', clean=False))
+        params['relation'] = TiedCounter(get_field_values(data, 'relation'))
+        relatives_list = concatenate_lists(get_field_values(data, 'relatives'))
         params['relatives'] = TiedCounter(list_from_dicts(relatives_list, 'type'))
-        personal_list = get_field_values(data_list, 'personal')
+        personal_list = get_field_values(data, 'personal')
         params['personal_langs'] = TiedCounter(concatenate_lists(list_from_dicts(personal_list, 'langs')))
         params['personal_religion'] = TiedCounter(list_from_dicts(personal_list, 'religion', capitalize=True))
         for item in ['smoking', 'people_main', 'life_main', 'alcohol', 'political', 'inspired_by']:
             params['personal_' + item] = TiedCounter(list_from_dicts(personal_list, item, ignore_zero=True))
 
-        occupation = sorted(get_field_values(data_list, 'occupation'), key=lambda x: x['type'].get_value())
+        occupation = sorted(get_field_values(data, 'occupation'), key=lambda x: x['type'].get_value())
         params['occupation_type'] = TiedCounter(list_from_dicts(occupation, 'type'))
         occupations_dict = {
             occupation_type: TiedCounter(list_from_dicts(occupations, 'name'))
@@ -271,17 +260,17 @@ class VKCommunity(Represent, RepresentTools):
         }
         params['occupation'] = occupations_dict
 
-        params['mobile_phone'] = get_field_values(data_list, 'mobile_phone', clean=True)
-        params['home_phone'] = get_field_values(data_list, 'home_phone', clean=True)
-        params['site'] = get_field_values(data_list, 'site', clean=True)
-        params['status'] = get_field_values(data_list, 'status', clean=True)
+        params['mobile_phone'] = get_field_values(data, 'mobile_phone', clean=True)
+        params['home_phone'] = get_field_values(data, 'home_phone', clean=True)
+        params['site'] = get_field_values(data, 'site', clean=True)
+        params['status'] = get_field_values(data, 'status', clean=True)
 
         schools_list = TiedCounter(
-            list_from_dicts(concatenate_lists(get_field_values(data_list, 'schools')), 'name'))
+            list_from_dicts(concatenate_lists(get_field_values(data, 'schools')), 'name'))
         params['school'] = schools_list
 
         universities_list = TiedCounter(
-            list_from_dicts(concatenate_lists(get_field_values(data_list, 'universities')), 'name'))
+            list_from_dicts(concatenate_lists(get_field_values(data, 'universities')), 'name'))
         params['university'] = universities_list
 
         return params
@@ -298,7 +287,7 @@ class VKCommunity(Represent, RepresentTools):
 
     @cache_method
     def process_data(self):
-        params = self.params
+        props = self.properties()
         data = {
             'size': self.size
         }
@@ -333,7 +322,7 @@ class VKCommunity(Represent, RepresentTools):
                         usernames.append(username)
             return clear_list(usernames)
 
-        all_ids_set = set(self.nodes)
+        all_ids_set = set(self.ids)
 
         # groups = self.groups()
         # data['group'] = {
@@ -341,7 +330,7 @@ class VKCommunity(Represent, RepresentTools):
         #     'mean_count': groups.size / self.size,
         # }
 
-        age = sorted(time_delta(params['bdate'], dev=31536000))
+        age = sorted(time_delta(props['bdate'], dev=31536000))
 
         data['age'] = {
             'count': len(age),
@@ -349,60 +338,60 @@ class VKCommunity(Represent, RepresentTools):
             'source_list': age
         }
         data['followers_count'] = {
-            **prepare_list(params['followers_count'], clean=True, count=False),
-            'source_list': params['followers_count']
+            **prepare_list(props['followers_count'], clean=True, count=False),
+            'source_list': props['followers_count']
         }
         data['city'] = {
-            'count': params['city'].size,
-            'source_list': params['city'].most_common(10, True)
+            'count': props['city'].size,
+            'source_list': props['city'].most_common(10, True)
         }
         data['country'] = {
-            'count': params['country'].size,
-            'source_list': params['country'].most_common(10, True)
+            'count': props['country'].size,
+            'source_list': props['country'].most_common(10, True)
         }
         data['is_closed'] = {
-            'opened': params['is_closed'][0],
-            'closed': params['is_closed'][1],
-            'deleted': params['deactivated']['deleted'],
-            'banned': params['deactivated']['banned'],
-            'source_list': (params['is_closed'] + params['deactivated']).most_common()
+            'opened': props['is_closed'][0],
+            'closed': props['is_closed'][1],
+            'deleted': props['deactivated']['deleted'],
+            'banned': props['deactivated']['banned'],
+            'source_list': (props['is_closed'] + props['deactivated']).most_common()
         }
 
-        common_towns = params['home_town'].most_common(8, True)
+        common_towns = props['home_town'].most_common(8, True)
         data['home_town'] = {
-            'count': params['home_town'].size,
+            'count': props['home_town'].size,
             'source_list': common_towns,
         }
-        last_seen = time_delta(params['last_seen_time'], dev=86400)
+        last_seen = time_delta(props['last_seen_time'], dev=86400)
         data['last_seen_time'] = {
             **prepare_list(last_seen, count=False),
             'source_list': sorted(last_seen)
         }
 
         data['phone'] = {
-            'mobile': get_tied_array_size(params['mobile_phone']),
-            'home': get_tied_array_size(params['home_phone']),
+            'mobile': get_tied_array_size(props['mobile_phone']),
+            'home': get_tied_array_size(props['home_phone']),
         }
         data['status'] = {
-            'count': get_tied_array_size(params['status'])
+            'count': get_tied_array_size(props['status'])
         }
         data['site'] = {
-            'count': get_tied_array_size(params['site'])
+            'count': get_tied_array_size(props['site'])
         }
 
         data['last_seen_platform'] = {
-            'source_list': params['last_seen_platform'].most_common()
+            'source_list': props['last_seen_platform'].most_common()
         }
 
-        common_apps = params['online_app'].most_common()
+        common_apps = props['online_app'].most_common()
         VKAPI.get_apps_data([item[0].get_value() for item in common_apps])
         apps_list = [(value.with_value(VKAPI.get_apps_data([value.get_value()])[0]['title']), count)
                      for value, count in common_apps]
 
-        mobile_ids_set = set(params['online_mobile'][1].get_ids())
+        mobile_ids_set = set(props['online_mobile'][1].get_ids())
         mobile_other = list(mobile_ids_set - set(sum([item[0].get_ids() for item in apps_list], [])))
         online_mobile = (TiedValue('С мобилы (другое)', mobile_other), len(mobile_other))
-        online_ids_set = set(params['online'][1].get_ids())
+        online_ids_set = set(props['online'][1].get_ids())
         online_other_ids = list(online_ids_set - mobile_ids_set)
         online_other = (TiedValue('С компа', online_other_ids), len(online_other_ids))
         not_online_ids = list(all_ids_set - online_ids_set)
@@ -415,59 +404,59 @@ class VKCommunity(Represent, RepresentTools):
             'source_list': sorted(apps_list, key=lambda x: x[1], reverse=True)
         }
         data['online_mobile'] = {
-            'count': params['online_mobile'],
+            'count': props['online_mobile'],
         }
         # occupation personal_inspired_by
         # ? personal_religion relation
         data['personal_religion'] = {
-            'source_list': params['personal_religion'].most_common(),
-            'count': params['personal_religion'].size
+            'source_list': props['personal_religion'].most_common(),
+            'count': props['personal_religion'].size
         }
         for item in ['langs', 'alcohol', 'life_main', 'people_main', 'political', 'smoking', 'inspired_by']:
             item_name = 'personal_' + item
             data[item_name] = {
-                'source_list': params[item_name].most_common(),
-                'count': params[item_name].size
+                'source_list': props[item_name].most_common(),
+                'count': props[item_name].size
             }
 
         data['relation'] = {
-            'source_list': params['relation'].most_common()
+            'source_list': props['relation'].most_common()
         }
         data['relatives'] = {
-            'source_list': params['relatives'].most_common()
+            'source_list': props['relatives'].most_common()
         }
         data['sex'] = {
-            'man': params['sex'][2],
-            'woman': params['sex'][1],
-            'source_list': params['sex'].most_common()
+            'man': props['sex'][2],
+            'woman': props['sex'][1],
+            'source_list': props['sex'].most_common()
         }
         data['verified'] = {
-            'count': params['verified'].size
+            'count': props['verified'].size
         }
         data['occupation_type'] = {
-            'source_list': params['occupation_type'].most_common(),
-            'count': params['occupation_type'].size
+            'source_list': props['occupation_type'].most_common(),
+            'count': props['occupation_type'].size
         }
         data['occupation_school'] = {
-            'source_list': params['occupation'].get('school', TiedCounter([])).most_common(),
-            'count': params['occupation'].get('school', TiedCounter([])).size
+            'source_list': props['occupation'].get('school', TiedCounter([])).most_common(),
+            'count': props['occupation'].get('school', TiedCounter([])).size
         }
         data['occupation_work'] = {
-            'source_list': params['occupation'].get('work', TiedCounter([])).most_common(),
-            'count': params['occupation'].get('work', TiedCounter([])).size
+            'source_list': props['occupation'].get('work', TiedCounter([])).most_common(),
+            'count': props['occupation'].get('work', TiedCounter([])).size
         }
         data['occupation_university'] = {
-            'source_list': params['occupation'].get('university', TiedCounter([])).most_common(),
-            'count': params['occupation'].get('university', TiedCounter([])).size
+            'source_list': props['occupation'].get('university', TiedCounter([])).most_common(),
+            'count': props['occupation'].get('university', TiedCounter([])).size
         }
 
         data['school'] = {
-            'count': params['school'].size,
-            'source_list': params['school'].most_common(ignore_single=True)
+            'count': props['school'].size,
+            'source_list': props['school'].most_common(ignore_single=True)
         }
         data['university'] = {
-            'count': params['school'].size,
-            'source_list': params['university'].most_common(ignore_single=True)
+            'count': props['school'].size,
+            'source_list': props['university'].most_common(ignore_single=True)
         }
 
         return data
@@ -733,3 +722,12 @@ class VKCommunity(Represent, RepresentTools):
                 'mainID': self.hash,
             },
         }
+
+    def connections(self):
+        pass
+
+    def summary(self) -> dict:
+        return {}
+
+    def counter(self) -> Counter:
+        return self._counter

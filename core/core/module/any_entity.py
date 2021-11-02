@@ -3,32 +3,45 @@ import hashlib
 import os
 import typing
 from pathlib import Path
-from pprint import pprint
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from core.helpers.exporter import JsonWriter, CsvWriter, DictExporter, ListExporter
 from core.helpers.utils import *
+from parsers.exceptions import ParserRealError
 
 
-class AnyMedia:
-    @abstractmethod
-    def params(self):
-        """
-        Dict of object parameters
-        All interesting properties in folding-dict form
-        """
-        pass
+class AnyEntity(metaclass=ABCMeta):
 
     @property
+    @abstractmethod
     def name(self):
         """
         Human readable name of object
         """
-        raise NotImplementedError
+        pass
 
-    def summery(self):
+    @property
+    @abstractmethod
+    def hash(self):
+        """
+        Each media must have own unique string hash
+        """
+        str_id = str(self.__hash__()).encode('UTF-8')
+        obj_id = hashlib.sha1(str_id).hexdigest()[-16:]
+        set_obj(obj_id, self)
+        return obj_id
+
+    @abstractmethod
+    def summary(self) -> dict:
         """
         Little summery about object, most important info
+        """
+        pass
+
+    @abstractmethod
+    def data(self, force=False, full=True) -> typing.Union[list, dict, None, ParserRealError]:
+        """
+        Data structure about object, list or dict
         """
         pass
 
@@ -47,44 +60,24 @@ class AnyMedia:
             file = f'{self.__class__.__name__.lower()}-{datetime.datetime.now().isoformat()}.{format_}'
             filename = os.path.join(filename, file)
 
-        from core.module.many_media import ManyMedia
-        from core.module.single_media import SingleMedia
+        from core.module.many_entities import ManyEntities
+        from core.module.single_entity import SingleEntity
 
-        if isinstance(self, ManyMedia):
+        if isinstance(self, ManyEntities):
             exporter = ListExporter
-        elif isinstance(self, SingleMedia):
+        elif isinstance(self, SingleEntity):
             exporter = DictExporter
         else:
             raise NotImplementedError
 
         exporter(data=data).write(writers[format_](filename=filename))
 
-    def print_params(self):
-        pprint(self.params, compact=True)
-
-    def print(self):
-        pprint(self.data(), compact=True)
-
-    @once_property
-    def hash(self):
-        str_id = str(self.__hash__()).encode('UTF-8')
-        obj_id = hashlib.sha1(str_id).hexdigest()[-16:]
-        set_obj(obj_id, self)
-        return obj_id
-
-    @abstractmethod
-    def data(self, force=False, full=True) -> typing.Union[list, dict, None]:
-        """
-        Data structure about object, list or dict
-        """
-        pass
-
     def preload(self, force=False):
         self.data(force=force)
 
-    @abstractmethod
     def __hash__(self):
         """
         All objects must implement hash method
         """
-        pass
+        return hash(self.hash)
+

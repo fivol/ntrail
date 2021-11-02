@@ -12,7 +12,7 @@ class NodeImportance(Represent):
         return self.many_objects.hash + '__node_importance'
 
     def get_entities(self):
-        all_nodes = self.many_objects.nodes
+        all_nodes = self.many_objects.ids
         graph = self.many_objects.graph()
         node_cluster_dict = self.many_objects.get_node_cluster_dict()
         node_cross_cluster_connectedness = defaultdict(int)
@@ -25,7 +25,7 @@ class NodeImportance(Represent):
         important_nodes = sorted(node_cross_cluster_connectedness.items(), key=lambda x: x[1], reverse=True)
         entities = [
             {
-                **self.many_objects.base_class(node).get_entity(),
+                **self.many_objects._single_media_cls(node).get_entity(),
                 'weight': importance,
             }
             for node, importance in important_nodes
@@ -55,7 +55,7 @@ class CrossConnections(Represent):
         self.many_objects = objects
 
     def get_entities(self):
-        all_nodes = self.many_objects.nodes
+        all_nodes = self.many_objects.ids
         node_cluster_dict = self.many_objects.get_node_cluster_dict()
         graph = self.many_objects.graph()
         connected_nodes = set()
@@ -79,8 +79,8 @@ class CrossConnections(Represent):
             entities.append(
                 {
                     'items': [
-                        self.many_objects.base_class(n1).get_entity(),
-                        self.many_objects.base_class(n2).get_entity(),
+                        self.many_objects._single_media_cls(n1).get_entity(),
+                        self.many_objects._single_media_cls(n2).get_entity(),
                     ],
                     'weight': cluster_connectedness[(min(c1, c2), max(c1, c2))],
                     'valid': True,

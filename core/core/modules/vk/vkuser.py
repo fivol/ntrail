@@ -237,7 +237,7 @@ class VKUser(OneObjectRepresent):
             }
         }
 
-    def params(self):
+    def summary(self):
         return {
             'baseType': 'users',
             'service': 'vk',
@@ -248,12 +248,7 @@ class VKUser(OneObjectRepresent):
             'query': f'GET vk.user {self.data()["screen_name"]}' if self.valid else ''
         }
 
-    def __str__(self):
-        if not self.valid:
-            return f'Not valid: {self.status()}'
-        return self.name
-
 
 from .vkcommunity import VKCommunity
 
-VKUser.many_objects_class = VKCommunity
+VKUser._many_media_cls = VKCommunity

@@ -1,10 +1,10 @@
-from core.module.single_media import SingleMedia
+from core.module.single_entity import SingleEntity
 from core.module.selective_query_exeptions import QueryProgrammingException
 
 
-class OneObjectRepresent(SingleMedia):
+class OneObjectRepresent(SingleEntity):
     def represent(self, force=False):
-        many_objects_class = self.__class__.many_objects_class
+        many_objects_class = self.__class__._many_media_cls
         if many_objects_class:
             return many_objects_class([self.id]).represent()
         else:

@@ -1,7 +1,7 @@
 from .media_object import MediaObject
 from core.helpers.utils import once_property
 from collections import defaultdict
-from core.module.many_media import ManyMedia
+from core.module.many_entities import ManyEntities
 from ...module.layers import public_object_method
 
 
@@ -70,8 +70,8 @@ class VKPost(MediaObject):
         return info
 
 
-class VKPosts(ManyMedia):
-    base_class = VKPost
+class VKPosts(ManyEntities):
+    _single_media_cls = VKPost
 
     def __init__(self, posts):
         super().__init__()

@@ -28,7 +28,7 @@ groups_types_dict = {
 
 
 class VKGroups(Represent, RepresentTools):
-    base_class = VKGroup
+    _single_media_cls = VKGroup
     available_attributes = ['clusters', 'members']
 
     def __init__(self, groups=None, save_features=False, target=None, source=None, **kwargs):

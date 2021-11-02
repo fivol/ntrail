@@ -2,7 +2,7 @@ import logging
 
 from worker import VkMethods
 from .media_object import MediaObject
-from core.module.many_media import ManyMedia
+from core.module.many_entities import ManyEntities
 from core.helpers.utils import once_property, align_string
 from ...module.layers import public_object_method
 
@@ -40,8 +40,8 @@ class VKAlbum(MediaObject):
         return f'size: {align_string(self.full_data["size"], 4)} {self.full_data["title"]}'
 
 
-class VKAlbums(ManyMedia):
-    base_class = VKAlbum
+class VKAlbums(ManyEntities):
+    _single_media_cls = VKAlbum
 
     def __init__(self, albums):
         super().__init__()
@@ -116,8 +116,8 @@ class VKPhoto(MediaObject):
         pass
 
 
-class VKPhotos(ManyMedia):
-    base_class = VKPhoto
+class VKPhotos(ManyEntities):
+    _single_media_cls = VKPhoto
 
     def __init__(self, photos):
         super().__init__()

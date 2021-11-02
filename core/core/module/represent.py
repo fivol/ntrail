@@ -1,4 +1,4 @@
-from core.module.many_media import ManyMedia
+from core.module.many_entities import ManyEntities
 from core.module.selective_query_exeptions import QueryDataException
 from core.helpers.utils import merge_lists
 
@@ -10,7 +10,7 @@ from core.helpers.utils import merge_lists
 def try_base_analog(func):
     def wrapper(self, *args, **kwargs):
         func_name = func.__name__
-        base_class = self.__class__.base_class
+        base_class = self.__class__._single_media_cls
         if base_class and func_name in base_class.available_attributes and self.size == 1:
             obj = base_class(self.data_list()[0])
             return getattr(obj, func_name)(*args, **kwargs)
@@ -20,7 +20,7 @@ def try_base_analog(func):
     return wrapper
 
 
-class Represent(ManyMedia):
+class Represent(ManyEntities):
 
     def get_sub_properties_categories(self):
         categories = {
@@ -128,7 +128,7 @@ class Represent(ManyMedia):
         return {}
 
     def get_output_connections(self):
-        base_class = self.__class__.base_class
+        base_class = self.__class__._single_media_cls
         return {
             base_class.gen_id(first_id): [base_class.gen_id(id_) for id_ in connected_list]
             for (first_id, connected_list) in

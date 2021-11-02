@@ -1,10 +1,12 @@
 import warnings
+import logging.config
+from bestconfig import Config
 
 from core.constants import CacheType
 
 PLOT_CIRCULAR = 'circular'
-
 warnings.simplefilter("ignore")
+config = Config()
 
 
 # Способ кеширования
@@ -12,12 +14,5 @@ warnings.simplefilter("ignore")
 # TODO Add other ways to cache requests description
 CACHE_TYPE = CacheType.FULL_USE
 
-API_SERVER_REQUEST_VERSION = 0
-
-import logging.config
-from bestconfig import Config
-
 logger = logging.getLogger(__name__)
-logging_config = Config('logging.yml', exclude_default=True)
-logging.config.dictConfig(logging_config.to_dict())
-
+logging.config.dictConfig(config.logging.to_dict())

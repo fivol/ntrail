@@ -1,7 +1,7 @@
-from core.module.single_media import SingleMedia
+from core.module.single_entity import SingleEntity
 
 
-class MediaObject(SingleMedia):
+class MediaObject(SingleEntity):
     def __init__(self):
         super().__init__()
         self.id = None

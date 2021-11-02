@@ -19,7 +19,7 @@ my_id = 245089915
 
 
 def main():
-    VKUser('aido4kas').friends().friends().export('.data/friends-friends.csv')
+    VKUser('ffboris').friends().export('.data/friends-friends.csv')
 
 
 if __name__ == '__main__':
