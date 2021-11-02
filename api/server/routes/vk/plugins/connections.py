@@ -1,116 +1,24 @@
+from server.plugin import BasePlugin
+
+
+class VKConnectionsPlugin(BasePlugin):
+    name = 'connections'
+
+
+
 import datetime
-import math
 from contextlib import suppress
-from enum import Enum, auto
-from typing import Optional
+from fastapi import Query, HTTPException
+from starlette import status
 
-import aiohttp
-from fastapi import FastAPI, Query, HTTPException, status
-from fastapi.responses import RedirectResponse
-
-from models import Token, db, db_url
-from config import config
-from pydantic import BaseModel
-from fastapi.responses import PlainTextResponse
-from core.modules.vk.vkuser import VKUser
-
-from tools import SmartAccessDict
-
-app = FastAPI(
-    title='NTrail API',
-    version=config.get('VERSION'),
-    description='[Читать описание API на Gitbook](https://borisoffficial.gitbook.io/ntrail-api/). '
-                'Там подробно про каждый метод, лимиты, получение токена и т.д.'
-)
-
-
-@app.on_event("startup")
-async def startup_event():
-    await db.set_bind(db_url)
-
-
-@app.get('/', response_class=RedirectResponse, include_in_schema=False)
-async def index():
-    return RedirectResponse("/version/")
-
-
-@app.get('/version/', response_model=str)
-async def version():
-    """Текущая версия API"""
-    return config.get('VERSION')
-
-
-class VkRequestOption(Enum):
-    # Только базовая информация о пользователе
-    basic = 'basic'
-    # Анализировать связи с друзьями, подписчиками и прочее
-    connections = 'connections'
-    # Группы и сообщества человека
-    groups = 'groups'
-
-
-class ResponseVerbose(Enum):
-    """Уровень детализации информации в запросе"""
-    # Параметр по умолчанию, возвращать среднее количество информации
-    normal = 'normal'
-    # Упрощенный запрос, только необходимый минимум
-    simple = 'simple'
-    # Подробная инфа по запросу
-    detail = 'detail'
-
-
-class VkUserResponse(BaseModel):
-    user: Optional[dict]
-
-
-async def get_token(vk_id: str):
-    """Получаем токен"""
-    token = await Token.query.where(Token.id == vk_id).gino.first()
-    if not token:
-        token = await Token.create(auth_method='vk', id=vk_id)
-    return token.token
-
-
-async def check_token(token: str, **kwargs):
-    """Проверяет токен на валидность. И возвращает связанные с ним данные"""
-    model = await Token.query.where(Token.token == token).gino.first()
-    if not model:
-        raise HTTPException(status_code=401, detail="You should provide correct access token")
-
-
-@app.get('/verify/', response_class=PlainTextResponse, include_in_schema=False)
-async def vk_token_confirm(code: str):
-    """Получаем vk_id человека и выдаем ему токен"""
-    vk_access_token_url = 'https://oauth.vk.com/access_token'
-    async with aiohttp.ClientSession() as session:
-        async with session.get(vk_access_token_url, params={
-            'client_id': config.get('VK_APP.CLIENT_ID'),
-            'client_secret': config.get('VK_APP.SECRET'),
-            'code': code,
-            'redirect_uri': f'{config.get("BASE_URL")}/verify/'
-        }) as response:
-            try:
-                response = await response.json()
-                vk_id = response['user_id']
-            except:
-                return "Reloading page prohibited. Please, pass original link"
-    return bytes(await get_token(vk_id), 'utf-8')
-
-
-class PropertySource(Enum):
-    page = auto()
-    friends = auto()
-    followers = auto()
-    following = auto()
+from core.modules import VKUser
+from server.routes.auth import check_token
+from server.routes.vk.types import PropertySource, VkUserResponse
+from server.types import ResponseVerbose
 
 
 @app.get('/vk/user/', response_model=VkUserResponse, name='ВК аккаунт')
-async def vk_api(token: str = Query(None, title='API токен'),
-                 options: list[VkRequestOption] = Query(['basic'], title='API токен'),
-                 verbose: ResponseVerbose = Query(ResponseVerbose.simple, title='Детализация ответа'),
-                 user: str = Query(..., title='Аккаунт ВК',
-                                   description='username, ссылка или id пользователя ВК', min_length=2
-                                   )) -> dict:
+async def vk_api() -> dict:
     """Получить информацию об одном аккаунте ВКонтакте. Запрос собирается на основе списка `options` из аргументов
     Возможны следующие варианты
     - basic: только данные самого аккаунта, самые быстрый запрос, возвращает следующую информацию
@@ -237,3 +145,4 @@ async def vk_api(token: str = Query(None, title='API токен'),
     return {
         'user': user_data
     }
+

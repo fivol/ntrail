@@ -1,0 +1,34 @@
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+
+from server.models import db, db_url
+from server.config import config
+from server.routes.vk import vk
+from server.routes import auth
+
+
+app = FastAPI(
+    title='NTrail API',
+    version=config.get('VERSION'),
+    description='[Читать описание API на Gitbook](https://borisoffficial.gitbook.io/ntrail-api/). '
+                'Там подробно про каждый метод, лимиты, получение токена и т.д.'
+)
+
+app.include_router(vk.router)
+app.include_router(auth.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    await db.set_bind(db_url)
+
+
+@app.get('/', response_class=RedirectResponse, include_in_schema=False)
+async def index():
+    return RedirectResponse("/version/")
+
+
+@app.get('/version/', response_model=str)
+async def version():
+    """Текущая версия API"""
+    return config.get('VERSION')

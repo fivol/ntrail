@@ -6,6 +6,12 @@ authors = ["Boris Bondarenko <borisoffficial@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+fastapi = "^0.70.0"
+uvicorn = "^0.15.0"
+bestconfig = "^1.3.5"
+aiohttp = "^3.8.0"
+gino = "^1.0.1"
+jsonpath-ng = "^1.5.3"
 
 [tool.poetry.dev-dependencies]
 
