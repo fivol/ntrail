@@ -16,7 +16,7 @@ ln -s ntrail-core/core core
 
 ## Запуск API сервера в режиме разработки
 ```shell
-uvicorn main:app --reload
+uvicorn server.main:app --reload --debug
 ```
 
 ### Получить access_token можно [здесь](https://vkhost.github.io/)

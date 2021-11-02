@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Query
 
-from server.plugin import PluginManager
+from server.plugin_manager import PluginManager
 from server.routes.vk.plugins.friends import VKFriendsPlugin
 from server.types import ResponseVerbose
 
-router = APIRouter(prefix='/vk/')
+router = APIRouter(prefix='/vk')
 
 
 @router.get('/')

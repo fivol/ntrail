@@ -1,39 +1,32 @@
-from fastapi.exceptions import HTTPException
-from fastapi import status
-
-from server.types import ResponseVerbose
+import typing
+from abc import ABCMeta, abstractmethod
 
 
-class BasePlugin:
+class BasePlugin(metaclass=ABCMeta):
     name: str
 
-    def run(self):
-        pass
-
-
-class PluginManager:
-    def __init__(self, plugins: list[type(BasePlugin)], args: dict, verbose: ResponseVerbose, options: list[str]):
-        self._plugins_cls = {
-            plugin.name: plugin for plugin in plugins
-        }
-        self._args = args
-        self._options = options
+    def __init__(self, manager=None, verbose=None, **kwargs):
+        self.__manager = manager
         self._verbose = verbose
 
-        self._plugins_obj = {}
-        self._results = {}
+    def result(self) -> typing.Any:
+        """Main method of plugin, should return result (some object or dict)"""
+        return self.response()
 
-    @classmethod
-    def _run_plugin(cls, plugin: BasePlugin) -> dict:
-        plugin.run()
+    @abstractmethod
+    def response(self) -> dict:
+        """Return json dict to response, that will be shown to user"""
+        pass
 
-    def _get_plugin(self, name: str) -> BasePlugin:
-        plugin_cls = self._plugins_cls[name]
-        plugin_cls()
+    def init(self):
+        """Called after constructor"""
+        pass
 
-    def execute(self, ) -> dict:
-        for option in options:
-            if option not in self._plugins_cls:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Unknown option: {option}')
-            plugin = self._get_plugin(option)
-            result = self._run_plugin(plugin)
+    def get_plugin(self, name):
+        return self.__manager.get_plugin(name)
+
+    def get_plugin_result(self, name):
+        return self.__manager.get_plugin_result(name)
+
+    def get_plugin_response(self, name):
+        return self.__manager.get_plugin_response(name)

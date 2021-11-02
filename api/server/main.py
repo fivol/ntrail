@@ -8,6 +8,7 @@ from server.routes import auth
 
 
 app = FastAPI(
+    debug=config.DEBUG,
     title='NTrail API',
     version=config.get('VERSION'),
     description='[Читать описание API на Gitbook](https://borisoffficial.gitbook.io/ntrail-api/). '

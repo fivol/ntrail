@@ -2,17 +2,20 @@ from core.modules import VKUser
 from server.plugin import BasePlugin
 
 
-class VKBasicPlugin(BasePlugin):
-    name = 'basic'
+class VKUserPlugin(BasePlugin):
+    name = 'user'
 
     def __init__(self, user, **kwargs):
         super().__init__(**kwargs)
 
         self._user_input = user
-        self.user = None
+        self._user = None
 
     def init(self):
-        self.user = VKUser(self._user_input)
+        self._user = VKUser(self._user_input)
+
+    def result(self):
+        return self._user
 
     def response(self) -> dict:
-        return self.get_plugin_response('user')
+        return self.result().summary()
