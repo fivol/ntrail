@@ -238,14 +238,14 @@ class VKUser(OneObjectRepresent):
         }
 
     def summary(self):
+        result = {
+            'status': self.status()
+        }
+        if not self.valid:
+            return result
         return {
-            'baseType': 'users',
-            'service': 'vk',
-            'type': 'user',
-            'fullEntitiesCount': 1,
-            'id': self.hash,
-            'name': self.data()['first_name'] if self.valid else 'Не валиден',
-            'query': f'GET vk.user {self.data()["screen_name"]}' if self.valid else ''
+            'id': self.id,
+            'name': self.name if self.valid else 'Не валиден'
         }
 
 

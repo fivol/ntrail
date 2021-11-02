@@ -14,5 +14,6 @@ config = Config()
 # TODO Add other ways to cache requests description
 CACHE_TYPE = CacheType.FULL_USE
 
-logger = logging.getLogger(__name__)
 logging.config.dictConfig(config.logging.to_dict())
+logger = logging.getLogger(__name__)
+
