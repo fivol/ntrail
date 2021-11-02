@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import logging
 from functools import wraps
 

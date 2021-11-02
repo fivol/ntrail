@@ -113,7 +113,7 @@ class VkMethods(BaseParser):
         return execute_result
 
     @classmethod
-    @decorate(reliable_call, method_logger(), partition_split(1000))
+    @decorate(reliable_call, partition_split(1000))
     async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
         fields = []
         if full:
