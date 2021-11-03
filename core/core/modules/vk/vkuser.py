@@ -5,7 +5,6 @@ import re
 from core.modules.vk.vkphoto import VKPhotos
 from core.constants import AccountStatus, NO_AVA_IMG
 from core.modules.vk.vkpost import VKPosts
-from core.module.layers import public_object_method
 from core.modules.vk.vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
 from worker.parsers.vk.exceptions import VKErrorType
