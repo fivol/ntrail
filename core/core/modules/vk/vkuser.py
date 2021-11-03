@@ -158,7 +158,7 @@ class VKUser(OneObjectRepresent):
             'id': self.id,
             'url': self.url,
             'name': self.name,
-            'img': self.data().get('photo_100', NO_AVA_IMG),
+            'img': self.data().get('photo_200', NO_AVA_IMG),
             'username': self.data().get("screen_name", 'id' + str(self.id)),
             'verified': self.data().get('verified', False),
             'private': self.status() == AccountStatus.PRIVATE,

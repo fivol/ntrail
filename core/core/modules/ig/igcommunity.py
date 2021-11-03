@@ -83,7 +83,7 @@ class IGCommunity(ManyObjects):
 
     def get_connections(self, **kwargs):
         self.friends()
-        return dict([(obj, obj.friends().ids) for obj in self.objects])
+        return dict([(obj, obj.friends().nodes) for obj in self.objects])
 
     @once_property
     def short_info(self):

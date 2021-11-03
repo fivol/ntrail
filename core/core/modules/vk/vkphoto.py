@@ -3,7 +3,6 @@ import logging
 from worker import VkMethods
 from .media_object import MediaObject
 from core.module.many_entities import ManyEntities
-from core.helpers.utils import once_property, align_string
 from ...module.layers import public_object_method
 
 logger = logging.getLogger('vk-photo')
@@ -27,7 +26,6 @@ class VKAlbum(MediaObject):
     def url(self):
         return 'https://vk.com/album' + self.id
 
-    @once_property
     def full_data(self):
         return self.get_albums_by_ids([self.id])[0]
 
@@ -59,7 +57,6 @@ class VKAlbums(ManyEntities):
         else:
             raise TypeError('Wrong albums type')
 
-    @once_property
     def full_data(self):
         if not self.nodes:
             return []
@@ -84,7 +81,6 @@ class VKPhoto(MediaObject):
         else:
             raise TypeError('Wrong Photo type')
 
-    @once_property
     def full_data(self):
         return self.get_photos_by_ids([self.id])[0]
 

@@ -12,7 +12,7 @@ class NodeImportance(Represent):
         return self.many_objects.hash + '__node_importance'
 
     def get_entities(self):
-        all_nodes = self.many_objects.ids
+        all_nodes = self.many_objects.nodes
         graph = self.many_objects.graph()
         node_cluster_dict = self.many_objects.get_node_cluster_dict()
         node_cross_cluster_connectedness = defaultdict(int)
@@ -55,7 +55,7 @@ class CrossConnections(Represent):
         self.many_objects = objects
 
     def get_entities(self):
-        all_nodes = self.many_objects.ids
+        all_nodes = self.many_objects.nodes
         node_cluster_dict = self.many_objects.get_node_cluster_dict()
         graph = self.many_objects.graph()
         connected_nodes = set()

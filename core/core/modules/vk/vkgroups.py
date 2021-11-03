@@ -5,13 +5,11 @@ from server.helpers.types import PlotType
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from core.module.represent import Represent
-from core.module.represent_tools import RepresentTools
-from core.helpers.utils import once_property, get_common_texts_terms, get_field_values, bool_filter, dict_from_dicts, \
-    prepare_list
 from collections import Counter
 import networkx as nx
 import math
+
+from ...module.many_entities import ManyEntities
 
 logger = logging.getLogger('vk-groups')
 
@@ -28,7 +26,7 @@ groups_types_dict = {
 }
 
 
-class VKGroups(Represent, RepresentTools):
+class VKGroups(ManyEntities):
     _single_media_cls = VKGroup
     available_attributes = ['clusters', 'members']
 
@@ -71,10 +69,6 @@ class VKGroups(Represent, RepresentTools):
         return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
                       key=lambda x: -len(x.objects))
 
-    @once_property
-    def short_data(self):
-        return self.data_list()
-
     def only_valid(self):
         return VKGroups([group for group in self.objects if group.valid])
 
@@ -92,7 +86,6 @@ class VKGroups(Represent, RepresentTools):
         # А пока пусть будет заглушка, чтобы работало быстро
         return self.get_groups_data(self.nodes, one_by_one=full, force=force)
 
-    @once_property
     def full_data(self):
         return self.data_list()
 
@@ -132,7 +125,6 @@ class VKGroups(Represent, RepresentTools):
             for node in self.nodes
         }
 
-    @once_property
     def links_graph(self):
         groups_data = self.full_data
         groups_names_dict = dict_from_dicts(groups_data, 'name')
@@ -155,7 +147,6 @@ class VKGroups(Represent, RepresentTools):
     def load_media_data(self, groups=None):
         self.short_data
 
-    @once_property
     def short_info(self):
         frequent_words = self.process_data()['name']['source_list']
         if frequent_words:
@@ -201,7 +192,6 @@ class VKGroups(Represent, RepresentTools):
         if order_type == 'reverse':
             return VKGroups(Counter(dict([(item, 1 / count) for item, count in self.counter.most_common()])))
 
-    @once_property
     def params(self):
         logger.debug('@ get groups params')
         params = {}

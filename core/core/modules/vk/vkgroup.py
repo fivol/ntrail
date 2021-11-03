@@ -4,7 +4,6 @@ from functools import cache
 from core.constants import GroupStatus
 from core.module.layers import public_object_method
 from core.module.one_object_represent import OneObjectRepresent
-from core.helpers.utils import once_property
 from worker import VkMethods
 
 logger = logging.getLogger('vk-group')
@@ -39,8 +38,6 @@ class VKGroup(OneObjectRepresent):
         else:
             raise TypeError('VKGroup wrong type', type(group))
 
-    @once_property
-    @public_object_method
     def full_data(self):
         return self.data()
         # TODO Здесь стоит заглушка. Вместо полной подгружается краткая инфа о группах
@@ -51,12 +48,10 @@ class VKGroup(OneObjectRepresent):
     def data(self, force=False):
         return VkMethods.get_group_data(self.id, full=False, force=force)
 
-    @once_property
     def short_data(self):
         return self.data()
         return VKAPI.get_group_data(self.id, full=False)
 
-    @public_object_method
     def get_members(self, count=1000):
         from module_vk.vkcommunity import VKCommunity
         if count == -1:
@@ -89,7 +84,6 @@ class VKGroup(OneObjectRepresent):
                     self.status = GroupStatus.VALID
         return self.status
 
-    @once_property
     def valid(self):
         status = self.check_status()
         assert not (status is None), status

@@ -1,5 +1,4 @@
 from .media_object import MediaObject
-from core.helpers.utils import once_property
 from collections import defaultdict
 from core.module.many_entities import ManyEntities
 from ...module.layers import public_object_method
@@ -20,8 +19,6 @@ class VKPost(MediaObject):
     def option(self, key):
         self.full_data.get(key, None)
 
-    @once_property
-    @public_object_method
     def full_data(self):
         return self.get_posts_by_ids([self.id])[0]
 
@@ -37,7 +34,6 @@ class VKPost(MediaObject):
     def views(self):
         return self.full_data.get('views', {}).get('count', None)
 
-    @once_property
     def attachments(self):
         atts = self.full_data.get('attachments', [])
         attachments = defaultdict(list)
@@ -90,7 +86,6 @@ class VKPosts(ManyEntities):
             else:
                 raise TypeError('Wrong posts type', type(posts))
 
-    @once_property
     def full_data(self):
         if not self.posts_dicts and self.nodes:
             self.posts_dicts = self.get_posts_by_ids(self.nodes)

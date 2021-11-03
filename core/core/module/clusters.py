@@ -8,8 +8,8 @@ class Clusters:
     def represent(self):
         pools = self.objects.pools()
         pools = list(filter(lambda x: x.size > 1, pools))
-        pools_nodes = set(sum([pool.ids for pool in pools], []))
-        all_nodes = self.objects.ids
+        pools_nodes = set(sum([pool.nodes for pool in pools], []))
+        all_nodes = self.objects.nodes
         single_nodes = [node for node in all_nodes if node not in pools_nodes]
         single_nodes_obj = self.objects.__class__(single_nodes, target='loners')
 

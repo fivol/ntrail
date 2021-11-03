@@ -28,7 +28,6 @@ class AnyEntity(metaclass=ABCMeta):
         """
         str_id = str(self.__hash__()).encode('UTF-8')
         obj_id = hashlib.sha1(str_id).hexdigest()[-16:]
-        set_obj(obj_id, self)
         return obj_id
 
     @abstractmethod
@@ -80,4 +79,7 @@ class AnyEntity(metaclass=ABCMeta):
         All objects must implement hash method
         """
         return hash(self.hash)
+
+    def __str__(self):
+        return self.name
 
