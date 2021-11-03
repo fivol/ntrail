@@ -62,11 +62,7 @@ class PluginManager:
 
     @staticmethod
     def _add_result(response: dict, option: str, result: dict):
-        if '.' not in option:
-            response[option] = result
-        else:
-            plugin, attr = option.split('.')
-            response[plugin] = result
+        response[option] = result
         return response
 
     def execute(self) -> dict:

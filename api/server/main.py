@@ -7,6 +7,8 @@ from server.config import config
 from server.models import db, db_url
 from server.routes.vk import vk
 from server.routes import auth
+from server.plugin.register import register_plugins
+
 
 logger = logging.getLogger('main')
 
@@ -20,6 +22,8 @@ app = FastAPI(
 
 app.include_router(vk.router)
 app.include_router(auth.router)
+
+register_plugins()
 
 
 @app.on_event("startup")
