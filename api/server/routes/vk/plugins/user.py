@@ -40,7 +40,7 @@ class VKUserData(BasePlugin):
         self._user = user
 
     def response(self) -> dict:
-        return self._user.data()
-
-    def summery(self):
         return self._user.summary()
+
+    def data(self):
+        return self._user.data()

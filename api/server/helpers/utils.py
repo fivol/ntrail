@@ -12,12 +12,10 @@ class SmartAccessDict(dict):
             return default
 
 
-if __name__ == '__main__':
-    a = SmartAccessDict({'a': {'b': 123, 'd': 'hello'}, 'x': [0, 3, 4]})
-    assert a.get('a.b') == 123
-    assert a.get('a.k') is None
-    assert a.get('a.d') == 'hello'
-    assert a.get('x[1]') == 3
-    assert a.get('unknown') is None
-    assert a.get('unknown', 34) == 34
-    assert a.get('unknown.asdf.asdf[1]', 34) == 34
+def get_value_by_path(data, full_path):
+    path_elements = full_path.split('.')
+    obj = data
+    for key in path_elements:
+        obj = obj[key]
+    return obj
+

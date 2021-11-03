@@ -9,5 +9,5 @@ register_plugins()
 if __name__ == '__main__':
     with Engine(caching=False):
         arguments = {'user': 'ffboris'}
-        response = PluginManager(arguments, input_plugins=['user'], options=['user']).execute()
+        response = PluginManager(arguments, input_plugins=['user', 'friends'], options=['community.size']).execute()
         pprint(response)

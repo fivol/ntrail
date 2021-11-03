@@ -8,7 +8,7 @@ from worker import assert_imported_once
 
 _plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput,
             VKFriendsInput, VKCommunityPropsPlugin,
-            VKUserData, VKCommunityData]
+            VKUserData, VKCommunityPlugin]
 
 assert_imported_once()
 

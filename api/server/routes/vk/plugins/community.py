@@ -1,3 +1,5 @@
+import re
+
 from server.helpers.tied_value import TiedValue
 from pycommon.decors import cache_method
 from server.helpers.types import PlotType
@@ -5,12 +7,22 @@ from server.plugin.plugin import BasePlugin
 from core import VKCommunity
 
 
-class VKCommunityData(BasePlugin):
-    name = 'community-data'
+class VKCommunityPlugin(BasePlugin):
+    name = 'community'
+    _proxy_attributes = ['name', 'size']
 
     def __init__(self, community: VKCommunity, **kwargs):
         super().__init__(**kwargs)
         self._community = community
+
+    def size(self):
+        return self._community.size
+
+    def summery(self):
+        return {
+            'name': self._community.name,
+            'size': self._community.size
+        }
 
     def response(self) -> dict:
         return self._community.data()
@@ -468,5 +480,137 @@ class VKCommunityPropsPlugin(BasePlugin):
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
 
+    def order_features(self, archive_size=200, version=0):
+        assert isinstance(archive_size, int)
+        assert isinstance(version, int)
+
+        def calculate_priority(archive_list, value):
+            # archive_list = sorted(list(set(archive_list)))
+            ordered_list = archive_list
+            if len(archive_list) < max(archive_size / 4, 50):
+                return -1
+            half_len = len(feature_list) // 2
+
+            if version == 0:
+                index_left = bisect.bisect_left(ordered_list, value)
+                index_right = bisect.bisect_right(ordered_list, value)
+                if index_left <= half_len <= index_right:
+                    return 0
+
+                return min(abs(index_left - half_len), abs(index_right - half_len)) \
+                       / max(half_len, 1)
+            if version == 1:
+                median = ordered_list[half_len - 1]
+                f1 = ordered_list[half_len // 2 - 1]
+                f2 = ordered_list[half_len // 2 * 3 - 1]
+                if f2 == f1:
+                    return -1
+                return (value - median) / (f2 - f1)
+
+            raise NotImplementedError
+
+        features_collection = self.collect_archive(archive_size)
+        features_priority = []
+        for feature_name, (feature_value, feature_list) in features_collection.items():
+            if feature_list:
+                priority = calculate_priority(feature_list, feature_value)
+                features_priority.append((priority, feature_value, feature_name))
+            else:
+                features_priority.append((-1, feature_value, feature_name))
+
+        return sorted(features_priority, reverse=True)
+
+    @classmethod
+    def get_common_features(cls, data, category_frequency_features=None,
+                            plain_features=None, frequency_features=None):
+        if not data:
+            return {}
+        if not data['size']:
+            return {}
+
+        features = {}
+        assert isinstance(data, dict)
+        plain_features_attributes = {
+            'mean', 'median', 'fourth', 'fourth2',
+            'common_mean', 'common_median',
+            'max', 'min'
+        }
+        frequency_features_attributes = {
+            'count', 'all_count'
+        }
+
+        counter_common_list_attribute = 'common_list'
+        size = data['size']
+        features['size'] = size
+
+        for feature_name, feature_value in data.items():
+            if isinstance(feature_value, dict):
+                for attr_name, attr_value in feature_value.items():
+                    name = f'{feature_name}.{attr_name}'
+                    if attr_name in plain_features_attributes:
+                        features[name] = attr_value
+                    elif attr_name in frequency_features_attributes:
+                        features[name] = attr_value / size
+                    elif attr_name == counter_common_list_attribute:
+                        assert isinstance(attr_value, list)
+                        if len(attr_value):
+                            features[name] = attr_value[0][1] / size
+
+        for feature in plain_features:
+            features[feature] = cls.get_value_by_path(data, feature)
+        for feature in frequency_features:
+            features[feature] = cls.get_value_by_path(data, feature) / size
+
+        for feature in category_frequency_features:
+            for key, value in cls.get_value_by_path(data, feature):
+                if isinstance(key, str):
+                    key = re.sub('[^а-яa-z0-9]', ' ', key.lower())
+                    key = '_'.join(key.split())
+                else:
+                    assert isinstance(key, int)
+                features[f'{feature}-{key}'] = value / size
+
+        features = {key: value for key, value in features.items() if not np.isnan(value)}
+        return features
+
     def response(self) -> dict:
         return self.all()
+
+
+class ExpandCommunityPlugin(BasePlugin):
+    def __init__(self, community: VKCommunity):
+        self._community = community
+
+    @classmethod
+    def expand(cls, nodes_part, weight_reduction_ratio=0.95, break_point=10, max_nodes=300):
+        community = set(nodes_part)
+        VkMethods.friends.sync_map(community)
+        friends_counter = collections.Counter(
+            sum([list(set(VkMethods.friends.sync(user)) - set(community)) for user in community], []))
+        community_friends_amount_changes = []
+        max_iterations = max_nodes
+        count = 0
+        curr_weight = 1
+        while friends_counter.most_common(1)[0][1] > break_point and max_iterations > 0:
+            count += 1
+            curr_weight *= weight_reduction_ratio
+            max_iterations -= 1
+            new_participant, community_friends_amount = friends_counter.most_common(1)[0]
+            community_friends_amount_changes.append(community_friends_amount)
+            community.add(new_participant)
+            del friends_counter[new_participant]
+            unique_friends = set(VkMethods.friends.sync(new_participant)) - set(community)
+            new_participant_unique_friends = collections.Counter(
+                dict(
+                    zip(
+                        unique_friends,
+                        [curr_weight] * len(unique_friends)
+                    )
+
+                )
+            )
+            friends_counter += new_participant_unique_friends
+        return cls(community)
+
+    def response(self) -> dict:
+        return {}
