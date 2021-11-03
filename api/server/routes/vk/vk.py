@@ -13,12 +13,12 @@ router = APIRouter(prefix='/vk')
 logger = logging.getLogger('vk-route')
 
 
-@router.get('/')
-def vk_analysis(token: str = Query(None, title='API токен'),
-                options: list[str] = Query(['user'], title='Опиции запроса, список необходимых плагинов'),
-                verbose: ResponseVerbose = Query(ResponseVerbose.simple, title='Детализация ответа'),
-                user: str = Query(..., title='Аккаунт ВК',
-                                  description='Username, ссылка или id пользователя ВК', min_length=2)) -> dict:
+@router.get('/user/')
+def vk_user(token: str = Query(None, title='API токен'),
+            options: list[str] = Query(['user'], title='Опиции запроса, список необходимых плагинов'),
+            verbose: ResponseVerbose = Query(ResponseVerbose.simple, title='Детализация ответа'),
+            user: str = Query(..., title='Аккаунт ВК',
+                              description='Username, ссылка или id пользователя ВК', min_length=2)) -> dict:
     """
 
     - basic: только базовая информация о пользователе
