@@ -1,48 +1,36 @@
 import logging
 import typing
 
-from fastapi import HTTPException, status
-
 from server.exceptions import WrongInputError, ServerError
-from server.plugin.plugin import BasePlugin, InputPlugin
-from server.types import ResponseVerbose
-
+from server.plugin.plugin import Plugin, BasePlugin
 
 logger = logging.getLogger()
 
 
 class PluginManager:
-    _plugins_cls: dict[str, type(BasePlugin)] = {}
+    _plugins_cls: dict[str, type(Plugin)] = {}
 
-    def __init__(self, input_plugins: list[InputPlugin], kwargs: dict, options: list[str]):
-        self._kwargs = kwargs
+    def __init__(self, kwargs: dict, input_plugins: list[str], options: list[str]):
+        self._kwargs = kwargs or {}
         self._options = options
         self._input_plugins = input_plugins
 
         self._responses = {}
 
     @classmethod
-    def register_plugin(cls, plugin: type(BasePlugin)):
+    def register_plugin(cls, plugin: type(Plugin)):
         cls._plugins_cls[plugin.name] = plugin
-
-    def get_plugin(self, name: str) -> BasePlugin:
-        if name not in self._plugins_obj:
-            if name not in self._plugins_cls:
-                raise WrongInputError(f'Unknown plugin: {name}')
-            plugin_cls = self._plugins_cls[name]
-            self._plugins_obj[name] = self._create_plugin(plugin_cls)
-        return self._plugins_obj[name]
 
     def call_plugin(self, option) -> typing.Optional[dict]:
         path_items = option.split('.')
         if not path_items:
             raise WrongInputError('Empty option')
-        result = self.get_plugin(path_items[0])
+        result = self._create_plugin(path_items[0])
         for path in path_items[1:]:
             if path.startswith('_'):
                 raise WrongInputError("Can't access private method")
             if result is None:
-                return result
+                break
             if isinstance(result, dict):
                 result = result.get(result)
             elif hasattr(result, path):
@@ -57,17 +45,34 @@ class PluginManager:
                 raise WrongInputError(f'Unknown path: {path} in option: {option}')
 
         if isinstance(result, BasePlugin):
-            return result.response()
+            result = result.response()
         return result
 
     def execute(self) -> dict:
         response = {}
+        for plugin in self._input_plugins:
+            self._run_input_plugin(plugin)
+
         for option in self._options:
             name = option.split('.')[0]
             response[name] = self.call_plugin(option)
         return response
 
-    def _create_plugin(self, plugin_cls: type(BasePlugin)):
-        plugin = plugin_cls(manager=self, verbose=self._verbose, **self._kwargs)
+    def _create_plugin(self, name: str):
+        plugin_cls = self.get_plugin(name)
+        plugin = plugin_cls(manager=self, **self._kwargs)
         plugin.init()
         return plugin
+
+    def get_plugin(self, name):
+        try:
+            return self._plugins_cls[name]
+        except KeyError:
+            raise WrongInputError(f'Unknown plugin: {name}')
+
+    def _run_input_plugin(self, name: str):
+        try:
+            kwargs = self.get_plugin(name).read(**self._kwargs)
+            self._kwargs.update(kwargs)
+        except TypeError as e:
+            raise WrongInputError(f'Incorrect input: {e}')

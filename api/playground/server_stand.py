@@ -17,5 +17,4 @@ class ServerStand:
 
     def run(self, options, verbose=ResponseVerbose.normal, **kwargs):
         assert isinstance(options, list)
-        return PluginManager(plugins=self._all_plugins, kwargs=kwargs,
-                             verbose=verbose, options=options).execute()
+        return

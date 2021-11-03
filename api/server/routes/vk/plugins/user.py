@@ -1,5 +1,5 @@
 from core import VKUser
-from server.plugin.plugin import InputPlugin
+from server.plugin.plugin import InputPlugin, BasePlugin
 
 
 class VKUserInput(InputPlugin):
@@ -30,3 +30,14 @@ class VKGroupsInput(InputPlugin):
         return {
             'groups': user.groups()
         }
+
+
+class VKUserData(BasePlugin):
+    name = 'user-data'
+
+    def __init__(self, user: VKUser, **kwargs):
+        super().__init__(**kwargs)
+        self._user = user
+
+    def response(self) -> dict:
+        return self._user.data()

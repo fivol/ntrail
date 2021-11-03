@@ -6,14 +6,14 @@ from server.routes.vk.plugins.connections import *
 from server.routes.vk.plugins.groups import *
 from worker import assert_imported_once
 
-_plugins = [VKGroupsPlugin, VKUserInput, VKFriendsPlugin, VKBasicPlugin, VKUserDataPlugin]
+_plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput,
+            VKFriendsInput, VKCommunityPropsPlugin,
+            VKUserData, VKCommunityData]
 
 assert_imported_once()
 
 
-def register_plugins(plugins):
-    for plugin in plugins:
+def register_plugins():
+    for plugin in _plugins:
         PluginManager.register_plugin(plugin)
 
-
-register_plugins(_plugins)
