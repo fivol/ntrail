@@ -1,16 +1,13 @@
 import logging
 from functools import cache
-# import matplotlib.pyplot as plt
-import io
 import re
 
 from core.modules.vk.vkphoto import VKPhotos
-from core.constants import AccountStatus
+from core.constants import AccountStatus, NO_AVA_IMG
 from core.modules.vk.vkpost import VKPosts
-from core.module.layers import public_object_method, valid_object_method
+from core.module.layers import public_object_method
 from core.modules.vk.vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
-from core.helpers.utils import get_sites
 from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
@@ -20,8 +17,6 @@ logger = logging.getLogger('vk-user')
 
 
 class VKUser(OneObjectRepresent):
-    _id_prefix = 'vku_'
-    available_attributes = ['friends', 'follows', 'followers', 'groups']
 
     def __init__(self, user, **kwargs):
         super().__init__()
@@ -36,8 +31,6 @@ class VKUser(OneObjectRepresent):
         if isinstance(user, str):
             if not user:
                 self._status = AccountStatus.ABSENT
-            elif user.startswith(self._id_prefix):
-                self.id = int(user[4:])
             else:
                 username = VKUser._extract_username(user)
                 user_dict = VkMethods.resolve.sync(username)
@@ -150,39 +143,6 @@ class VKUser(OneObjectRepresent):
         return f'https://vk.com/id{self.id}'
 
     @public_object_method
-    def get_key_words(self):
-        site_string = ' '.join([str(item) for key, item in self.data().items() if not key.startswith('photo')])
-        sites = get_sites(site_string)
-        sites_username = []
-        for host, site in sites:
-            try:
-                if site.endswith('/'):
-                    site = site[:-1]
-                path_items = site.split('//')[1].split('/')
-                if len(path_items) >= 2:
-                    sites_username.append(path_items[-1])
-            except:
-                logger.exception('Fail to get username from site: %s', site)
-
-        data = self.data()
-        key_words = [
-            self.name,
-            data.get('first_name', None),
-            data.get('last_name', None),
-            data.get('screen_name', None),
-            data.get('skype', None),
-            data.get('livejournal', None),
-            data.get('instagram', None),
-            data.get('twitter', None),
-            data.get('facebook', None),
-            data.get('maiden_name', None),
-            data.get('nickname', None),
-            *sites_username
-        ]
-        key_words = list(filter(lambda x: bool(x), key_words))
-        return key_words
-
-    @public_object_method
     def friends(self):
         from .vkcommunity import VKCommunity
         friend_ids = VkMethods.friends.sync(self.id)
@@ -191,61 +151,24 @@ class VKUser(OneObjectRepresent):
         friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
 
-    @valid_object_method
-    def show_icon(self):
-        user = self.data(full=False)
-        url = user['photo_200']
-        a = io.imread(url)
-        plt.figure(figsize=(1, 1))
-        plt.axis('off')
-        plt.imshow(a)
-        plt.show()
-
-    def get_entity(self):
-        response = {
-            'id': self.get_id(),
-            'accessStatus': self._status(),
-        }
-        if not self.valid:
-            return {
-                **response,
-                'url': self.url,
-                'img': 'https://vk.com/images/deactivated_100.png?ava=1',
-                'name': 'Пользователь не валиден',
-                'valid': False,
-                'properties': {
-                    'color': 'black',
-                    'weight': 0,
-                    'connections': [],
-                }
-            }
-        return {
-            **response,
-            'url': self.url,
-            'img': self.data().get('photo_100', 'https://vk.com/images/camera_100.png?ava=1'),
-            'name': self.name,
-            'username': self.data().get("screen_name", 'id' + str(self.id)),
-            'nativeID': self.id,
-            'valid': True,
-            'verified': self.data().get('verified', False),
-            'accessStatus': self._status(),
-            'private': self._status() == AccountStatus.PRIVATE,
-            'properties': {
-                'color': 'blue' if self.data().get('sex', 2) == 2 else 'red',
-                'weight': 1,
-                'connections': []
-            }
-        }
-
     def summary(self):
         result = {
-            'status': self.status()
+            'valid': self.valid,
+            'status': self.status().name,
+            'img': 'https://vk.com/images/deactivated_100.png?ava=1',
+            'name': 'Пользователь не валиден',
         }
         if not self.valid:
             return result
         return {
+            **result,
             'id': self.id,
-            'name': self.name if self.valid else 'Не валиден'
+            'url': self.url,
+            'name': self.name,
+            'img': self.data().get('photo_100', NO_AVA_IMG),
+            'username': self.data().get("screen_name", 'id' + str(self.id)),
+            'verified': self.data().get('verified', False),
+            'private': self.status() == AccountStatus.PRIVATE,
         }
 
 

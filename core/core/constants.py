@@ -23,7 +23,4 @@ class CacheType(Enum):
     IGNORE = 4
 
 
-class PlotType(Enum):
-    LINE = 'line'
-    CIRCULAR = 'circular'
-    HIST = 'hist'
+NO_AVA_IMG = 'https://vk.com/images/camera_100.png?ava=1'

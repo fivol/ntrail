@@ -1,12 +1,12 @@
 import logging
 
+from server.helpers.types import PlotType
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
-from core.constants import PlotType
 from core.module.represent import Represent
 from core.module.represent_tools import RepresentTools
-from core.helpers.utils import once_property, get_common_texts_terms, cache_method, get_field_values, bool_filter, dict_from_dicts, \
+from core.helpers.utils import once_property, get_common_texts_terms, get_field_values, bool_filter, dict_from_dicts, \
     prepare_list
 from collections import Counter
 import networkx as nx
@@ -244,7 +244,6 @@ class VKGroups(Represent, RepresentTools):
 
         return params
 
-    @cache_method
     def process_data(self):
         params = self.params
         data = {

@@ -15,8 +15,8 @@ import pymorphy2
 import transliterate
 
 from core.data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
-from core.module.tied_counter import TiedCounter
-from core.module.tied_value import TiedValue
+from server.helpers.tied_counter import TiedCounter
+from server.helpers.tied_value import TiedValue
 
 logger = logging.getLogger('tools')
 
@@ -59,20 +59,6 @@ def once_property(func):
             return getattr(class_obj, class_value_name)
         method_result = func(class_obj)
         setattr(class_obj, class_value_name, method_result)
-        return method_result
-
-    return wrapper
-
-
-def cache_method(func):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        func_name = func.__name__
-        class_value_name = f'{func_name}_{args}_{kwargs}'
-        if hasattr(self, class_value_name):
-            return getattr(self, class_value_name)
-        method_result = func(self, *args, **kwargs)
-        setattr(self, class_value_name, method_result)
         return method_result
 
     return wrapper
@@ -451,42 +437,6 @@ def value_to_color(x):
     if len(color) == 1:
         color += color
     return f'#{color * 3}'
-
-
-def get_sites(site_string):
-    site_string = str(site_string)
-    regex = r'('
-    regex += r'(?:(?:https|http):\/\/)?'
-    regex += r'(?:www\.)?'
-    regex += r'(?:(?:[a-z0-9][a-z0-9-]{0,61}[a-z0-9]\.)+)'
-    regex += r'(?:[a-z]{2,6})'
-    regex += r'(?:(?:\/[a-z0-9_\-.]+)*)'
-    regex += r'(?:\?[^;\s]+)?'
-    regex += r')'
-    urls = re.findall(regex, site_string)
-
-    sites = []
-    for inst_username in re.findall(r'\W@([a-zA-Z0-9_.]+)', site_string):
-        sites.append(('instagram', 'https://www.instagram.com/{}/'.format(inst_username)))
-
-    for site in urls:
-        try:
-            if (site.startswith('www') or '//www.' in site) and len(site.split('.')) <= 2:
-                continue
-
-            if not site.startswith('http://') and not site.startswith('https://'):
-                site = 'https://' + site
-
-            host = site.split('//')[1]
-            if host.startswith('www.'):
-                host = host[4:]
-
-            host_name = host.split('/')[0].split('.')[-2]
-            sites.append((host_name, site))
-        except:
-            logger.exception('Fail to parse site: %s', site)
-
-    return sites
 
 
 def get_common_texts_terms(texts):
