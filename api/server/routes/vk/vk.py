@@ -3,12 +3,12 @@ import logging
 
 from fastapi import APIRouter, Query
 
-from server.plugin_manager import PluginManager
+from server.plugin.plugin_manager import PluginManager
 from server.types import ResponseVerbose
 
 from server.routes.vk.plugins.basic import VKBasicPlugin
 from server.routes.vk.plugins.friends import VKFriendsPlugin
-from server.routes.vk.plugins.user import VKUserPlugin, VKUserDataPlugin
+from server.routes.vk.plugins.user import VKUserInput, VKUserDataPlugin
 from server.routes.vk.plugins.groups import VKGroupsPlugin
 from worker import Engine
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix='/vk')
 
 logger = logging.getLogger('vk-route')
 
-plugins = [VKGroupsPlugin, VKUserPlugin, VKFriendsPlugin, VKBasicPlugin, VKUserDataPlugin]
+plugins = [VKGroupsPlugin, VKUserInput, VKFriendsPlugin, VKBasicPlugin, VKUserDataPlugin]
 
 
 @router.get('/')

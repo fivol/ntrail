@@ -1,28 +1,32 @@
 from core import VKUser
-from server.plugin import BasePlugin
+from server.plugin.plugin import InputPlugin
 
 
-class VKUserPlugin(BasePlugin):
+class VKUserInput(InputPlugin):
     name = 'user'
 
-    def __init__(self, user, **kwargs):
-        super().__init__(**kwargs)
-
-        self._user_input = user
-        self._user = None
-
-    def init(self):
-        self._user = VKUser(self._user_input)
-
-    def result(self):
-        return self._user
-
-    def response(self) -> dict:
-        return self.result().summary()
+    @classmethod
+    def read(cls, user: str, **kwargs) -> dict:
+        return {
+            'user': VKUser(user)
+        }
 
 
-class VKUserDataPlugin(BasePlugin):
-    name = 'user-data'
+class VKFriendsInput(InputPlugin):
+    name = 'friends'
 
-    def response(self) -> dict:
-        return self.get_plugin_result('user').data()
+    @classmethod
+    def read(cls, user: VKUser, **kwargs) -> dict:
+        return {
+            'community': user.friends()
+        }
+
+
+class VKGroupsInput(InputPlugin):
+    name = 'user-groups'
+
+    @classmethod
+    def read(cls, user: VKUser, **kwargs) -> dict:
+        return {
+            'groups': user.groups()
+        }

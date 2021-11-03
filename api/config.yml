@@ -41,6 +41,10 @@ logging:
       level: DEBUG
     debugger:
       level: DEBUG
+    peewee:
+      level: WARNING
+    pymorphy2.opencorpora_dict:
+      level: WARNING
   root:
     level: DEBUG
     handlers: [default]

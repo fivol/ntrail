@@ -1,10 +1,15 @@
+from __future__ import annotations
 import typing
 from abc import ABCMeta, abstractmethod
 
 from server.types import ResponseVerbose
 
 
-class BasePlugin(metaclass=ABCMeta):
+class Plugin(metaclass=ABCMeta):
+    name: str
+
+
+class BasePlugin(Plugin):
     name: str
 
     def __init__(self, manager=None, verbose: ResponseVerbose = None, **kwargs):
@@ -24,11 +29,15 @@ class BasePlugin(metaclass=ABCMeta):
         """Called after constructor"""
         pass
 
-    def get_plugin(self, name):
+    def get_plugin(self, name) -> BasePlugin:
         return self.__manager.get_plugin(name)
 
-    def get_plugin_result(self, name):
-        return self.__manager.get_plugin_result(name)
 
-    def get_plugin_response(self, name):
-        return self.__manager.get_plugin_response(name)
+class InputPlugin:
+    name: str
+
+    @classmethod
+    @abstractmethod
+    def read(cls, **kwargs) -> dict:
+        pass
+
