@@ -12,6 +12,7 @@ class VKErrorType(Enum):
     USER_WAS_BANNED = 37
     UNKNOWN_USER = 39
     UNKNOWN_GROUP = 40
+    INVALID_USER_ID = 113
 
 
 class VKError(ParserRealError):
@@ -29,7 +30,10 @@ class VKError(ParserRealError):
 
     @property
     def type(self):
-        return VKErrorType(self.code)
+        try:
+            return VKErrorType(self.code)
+        except ValueError:
+            return VKErrorType(-1)
 
     def __str__(self):
         return f'VK API Error: ({self.code}) {self.msg}'

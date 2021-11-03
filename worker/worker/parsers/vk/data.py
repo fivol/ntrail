@@ -6,7 +6,7 @@ groups_full_fields = ['activity', 'age_limits', 'city', 'country', 'has_photo',
 
 # Аналогично для людей. Список полей API запроса
 users_full_fields = [
-    'photo_200', 'photo_max', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
+    'photo_max_orig', 'photo_max', 'photo_id', 'about', 'activities', 'bdate', 'books', 'career', 'city', 'connections',
     'sex', 'contacts', 'country', 'education', 'exports', 'followers_count', 'home_town', 'interests',
     'last_seen', 'maiden_name', 'military', 'movies', 'music', 'nickname', 'occupation', 'online',
     'personal', 'quotes', 'relatives', 'relation', 'schools', 'site', 'status', 'trending', 'tv',
