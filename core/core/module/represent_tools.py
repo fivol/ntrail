@@ -4,7 +4,6 @@ from server.helpers.tied_value import TiedValue
 import numpy as np
 
 from core.helpers.utils import bool_filter, get_random_color
-from core.constants import PlotType
 
 logger = logging.getLogger('represent')
 

@@ -66,7 +66,6 @@ class VKUser(OneObjectRepresent):
             return None
         return usernames[0]
 
-    @public_object_method
     def photos(self):
         return VKPhotos(VkMethods.photos.sync(owner_id=self.id))
 
@@ -103,20 +102,17 @@ class VKUser(OneObjectRepresent):
             status == AccountStatus.PUBLIC or \
             status == AccountStatus.PRIVATE
 
-    @public_object_method
     def followers(self):
         from .vkcommunity import VKCommunity
         followers = VkMethods.followers.sync(self.id)
         return VKCommunity(followers)
 
-    @public_object_method
     def subscriptions(self):
         from .vkcommunity import VKCommunity
         subscriptions = VkMethods.subscriptions(self.id)
         assert isinstance(subscriptions, list)
         return VKCommunity(subscriptions)
 
-    @public_object_method
     def groups(self):
         return VKGroups(VkMethods.groups(self.id), source=self).order()
 
@@ -129,12 +125,10 @@ class VKUser(OneObjectRepresent):
     def data(self, force=False, full=True) -> dict:
         return VkMethods.users.sync([self.id], full=full)[0]
 
-    @public_object_method
     def posts(self):
         return VKPosts(VkMethods.posts(self.id))
 
     @property
-    @public_object_method
     def name(self):
         return f"{self.data(full=False)['first_name']} {self.data(full=False)['last_name']}"
 
@@ -142,7 +136,6 @@ class VKUser(OneObjectRepresent):
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    @public_object_method
     def friends(self):
         from .vkcommunity import VKCommunity
         friend_ids = VkMethods.friends.sync(self.id)

@@ -7,12 +7,11 @@ def public_object_method(method):
     """Method valid and public"""
     @wraps(method)
     def wrapper(obj, *args, **kwargs):
-        if obj.valid:
+        if not obj.valid:
             logger.warning("This object isn't accessible (maybe private), %s.%s",
                            obj.__class__.__name__, method.__name__)
-            return method(obj, *args, **kwargs)
-
-        return None
+            raise
+        return method(obj, *args, **kwargs)
 
     return wrapper
 

@@ -1,5 +1,6 @@
 import logging
 
+from pycommon.decors import cache_method
 from server.helpers.types import PlotType
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
