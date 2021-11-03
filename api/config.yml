@@ -4,10 +4,12 @@ VK_APP:
   CLIENT_ID: 7898476
   SECRET: VOlOMVKWwkCMxP6PrEBQ
 
-
+CACHING: true
 
 # If "true" all loggers level sets to ERROR
-DEBUG: true
+# Rewrite in env_file
+
+# DEBUG: true
 vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25

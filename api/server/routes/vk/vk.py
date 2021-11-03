@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 
 from server.plugin.plugin_manager import PluginManager
 from server.types import ResponseVerbose
+from server.config import config
 
 from worker import Engine
 
@@ -27,6 +28,6 @@ def vk_user(token: str = Query(None, title='API токен'),
     """
     asyncio.set_event_loop(asyncio.new_event_loop())
     kwargs = {'user': user}
-    with Engine(caching=False):
+    with Engine(caching=config.bool('CACHING')):
         manager = PluginManager(kwargs=kwargs, input_plugins=['user'], options=options)
         return manager.execute()
