@@ -3,6 +3,7 @@ import typing
 
 from server.exceptions import WrongInputError, ServerError
 from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
+from worker.parsers.exceptions import ParserRealError
 
 logger = logging.getLogger()
 
@@ -50,6 +51,10 @@ class PluginManager:
                 if callable(result):
                     try:
                         result = result()
+                    except WrongInputError:
+                        raise
+                    except ParserRealError:
+                        raise
                     except Exception:
                         logger.exception('Option method executing')
                         raise ServerError(f'Method running error: {path}')

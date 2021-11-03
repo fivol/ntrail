@@ -1,13 +1,14 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException, status
 
+from server.exceptions import ServerError, WrongInputError
 from server.plugin.plugin_manager import PluginManager
 from server.types import ResponseVerbose
 from server.config import config
 
-from worker import Engine
+from worker import Engine, VKError
 
 router = APIRouter(prefix='/vk')
 
@@ -30,4 +31,14 @@ def vk_user(token: str = Query(None, title='API токен'),
     kwargs = {'user': user}
     with Engine(caching=config.bool('CACHING')):
         manager = PluginManager(kwargs=kwargs, input_plugins=['user'], options=options)
-        return manager.execute()
+        try:
+            result = manager.execute()
+            logger.debug('Response: %s', result)
+            return result
+        except VKError as e:
+            raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                                detail={'code': e.code, 'type': e.type.name, 'message': e.msg})
+        except ServerError as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        except WrongInputError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
