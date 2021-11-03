@@ -33,6 +33,8 @@ class PluginManager:
 
     def call_plugin(self, option) -> typing.Optional[dict]:
         path_items = option.split('.')
+        if len(path_items) > 2:
+            raise WrongInputError(f'Incorrect option (too many dots): {option}')
         if not path_items:
             raise WrongInputError('Empty option')
         result = self._create_plugin(path_items[0])
@@ -58,14 +60,24 @@ class PluginManager:
             result = result.response()
         return result
 
+    @staticmethod
+    def _add_result(response: dict, option: str, result: dict):
+        if '.' not in option:
+            response[option] = result
+        else:
+            plugin, attr = option.split('.')
+            response[plugin] = result
+        return response
+
     def execute(self) -> dict:
         response = {}
         for plugin in self._input_plugins:
             self._run_input_plugin(plugin)
 
         for option in self._options:
-            name = option.split('[')[0]
-            response[name] = self.call_plugin(option)
+            result = self.call_plugin(option)
+            response = self._add_result(response, option, result)
+
         return response
 
     def _create_plugin(self, name: str):
