@@ -33,7 +33,7 @@ class VKGroupsInput(InputPlugin):
 
 
 class VKUserData(BasePlugin):
-    name = 'user-data'
+    name = 'user'
 
     def __init__(self, user: VKUser, **kwargs):
         super().__init__(**kwargs)
@@ -41,3 +41,6 @@ class VKUserData(BasePlugin):
 
     def response(self) -> dict:
         return self._user.data()
+
+    def summery(self):
+        return self._user.summary()

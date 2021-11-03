@@ -5,13 +5,11 @@ from abc import ABCMeta, abstractmethod
 from server.types import ResponseVerbose
 
 
-class Plugin(metaclass=ABCMeta):
+class Plugin:
     name: str
 
 
 class BasePlugin(Plugin):
-    name: str
-
     def __init__(self, manager=None, verbose: ResponseVerbose = None, **kwargs):
         self.__manager = manager
         self._verbose = verbose
@@ -33,8 +31,7 @@ class BasePlugin(Plugin):
         return self.__manager.get_plugin(name)
 
 
-class InputPlugin:
-    name: str
+class InputPlugin(Plugin):
 
     @classmethod
     @abstractmethod

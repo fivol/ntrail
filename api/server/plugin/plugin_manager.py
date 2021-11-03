@@ -2,7 +2,7 @@ import logging
 import typing
 
 from server.exceptions import WrongInputError, ServerError
-from server.plugin.plugin import Plugin, BasePlugin
+from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
 
 logger = logging.getLogger()
 
@@ -17,9 +17,19 @@ class PluginManager:
 
         self._responses = {}
 
+    @staticmethod
+    def _plugin_name(plugin):
+        return PluginManager._full_plugin_name(plugin.name, is_input=issubclass(plugin, InputPlugin))
+
+    @staticmethod
+    def _full_plugin_name(name: str, is_input: bool) -> str:
+        if is_input:
+            return f'input.{name}'
+        return f'plugin.{name}'
+
     @classmethod
     def register_plugin(cls, plugin: type(Plugin)):
-        cls._plugins_cls[plugin.name] = plugin
+        cls._plugins_cls[cls._plugin_name(plugin)] = plugin
 
     def call_plugin(self, option) -> typing.Optional[dict]:
         path_items = option.split('.')
@@ -54,25 +64,25 @@ class PluginManager:
             self._run_input_plugin(plugin)
 
         for option in self._options:
-            name = option.split('.')[0]
+            name = option.split('[')[0]
             response[name] = self.call_plugin(option)
         return response
 
     def _create_plugin(self, name: str):
-        plugin_cls = self.get_plugin(name)
+        plugin_cls = self.get_plugin(name, is_input=False)
         plugin = plugin_cls(manager=self, **self._kwargs)
         plugin.init()
         return plugin
 
-    def get_plugin(self, name):
+    def get_plugin(self, name, is_input=False):
         try:
-            return self._plugins_cls[name]
+            return self._plugins_cls[self._full_plugin_name(name, is_input)]
         except KeyError:
             raise WrongInputError(f'Unknown plugin: {name}')
 
     def _run_input_plugin(self, name: str):
         try:
-            kwargs = self.get_plugin(name).read(**self._kwargs)
+            kwargs = self.get_plugin(name, is_input=True).read(**self._kwargs)
             self._kwargs.update(kwargs)
         except TypeError as e:
             raise WrongInputError(f'Incorrect input: {e}')
