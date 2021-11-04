@@ -6,9 +6,9 @@ class VKUserInput(InputPlugin):
     name = 'user'
 
     @classmethod
-    def read(cls, user: str, **kwargs) -> dict:
+    async def read(cls, user: str, **kwargs) -> dict:
         return {
-            'user': VKUser(user)
+            'user': await VKUser.create(user)
         }
 
 

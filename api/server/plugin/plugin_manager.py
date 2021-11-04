@@ -1,3 +1,4 @@
+import inspect
 import logging
 import typing
 
@@ -32,7 +33,7 @@ class PluginManager:
     def register_plugin(cls, plugin: type(Plugin)):
         cls._plugins_cls[cls._plugin_name(plugin)] = plugin
 
-    def call_plugin(self, option) -> typing.Optional[dict]:
+    async def call_plugin(self, option) -> typing.Optional[dict]:
         path_items = option.split('.')
         if len(path_items) > 2:
             raise WrongInputError(f'Incorrect option (too many dots): {option}')
@@ -51,6 +52,8 @@ class PluginManager:
                 if callable(result):
                     try:
                         result = result()
+                        if inspect.isawaitable(result):
+                            result = await result
                     except WrongInputError:
                         raise
                     except ParserRealError:
@@ -63,6 +66,8 @@ class PluginManager:
 
         if isinstance(result, BasePlugin):
             result = result.response()
+            if inspect.isawaitable(result):
+                result = await result
         return result
 
     @staticmethod
@@ -82,15 +87,16 @@ class PluginManager:
             raise WrongInputError('Incorrect option format')
         return response
 
-    def execute(self) -> dict:
+    async def execute(self) -> dict:
         response = {}
         for plugin in self._input_plugins:
-            self._run_input_plugin(plugin)
+            await self._run_input_plugin(plugin)
 
         for option in self._options:
             try:
-                result = self.call_plugin(option)
+                result = await self.call_plugin(option)
             except:
+                logger.exception('Plugin call error')
                 result = None
             response = self._add_result(response, option, result)
 
@@ -108,9 +114,9 @@ class PluginManager:
         except KeyError:
             raise WrongInputError(f'Unknown plugin: {name}')
 
-    def _run_input_plugin(self, name: str):
+    async def _run_input_plugin(self, name: str):
         try:
-            kwargs = self.get_plugin(name, is_input=True).read(**self._kwargs)
+            kwargs = await self.get_plugin(name, is_input=True).read(**self._kwargs)
             self._kwargs.update(kwargs)
         except TypeError as e:
             raise WrongInputError(f'Incorrect input: {e}')

@@ -1,3 +1,4 @@
+import inspect
 from functools import wraps
 
 
@@ -9,8 +10,9 @@ def cache_method_ignore_args(method):
     def data(self):
         return 123
     """
+
     @wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def sync_wrapper(self, *args, **kwargs):
         cache_field = f'_{method.__name__}'
         if hasattr(self, cache_field):
             return getattr(self, cache_field)
@@ -18,5 +20,16 @@ def cache_method_ignore_args(method):
         setattr(self, cache_field, method_result)
         return method_result
 
-    return wrapper
+    @wraps(method)
+    async def wrapper(self, *args, **kwargs):
+        cache_field = f'_{method.__name__}'
+        if hasattr(self, cache_field):
+            return getattr(self, cache_field)
+        method_result = await method(self, *args, **kwargs)
+        setattr(self, cache_field, method_result)
+        return method_result
+
+    if inspect.iscoroutinefunction(method):
+        return wrapper
+    return sync_wrapper
 
