@@ -39,6 +39,11 @@ def vk_user(token: str = Query(None, title='API токен'),
             raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,
                                 detail={'code': e.code, 'type': e.type.name, 'message': e.msg})
         except ServerError as e:
+            logger.exception('ServerError')
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         except WrongInputError as e:
+            logger.exception('WrongInputError')
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except Exception:
+            logger.exception('Unknown server exception')
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
