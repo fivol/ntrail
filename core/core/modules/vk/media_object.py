@@ -1,7 +1,9 @@
 from core.module.single_entity import SingleEntity
+from worker import VkMethods
+from abc import ABCMeta
 
 
-class MediaObject(SingleEntity):
+class MediaObject(SingleEntity, metaclass=ABCMeta):
     def __init__(self):
         super().__init__()
         self.id = None
@@ -9,4 +11,5 @@ class MediaObject(SingleEntity):
 
     def likes(self):
         from core.modules.vk.vkcommunity import VKCommunity
-        return VKCommunity(self.get_object_likes(self.type, self.id))
+        owner_id, item_id = self.id.split('_')
+        return VKCommunity(VkMethods.likes.sync(type_='post', item_id=item_id, owner_id=owner_id))

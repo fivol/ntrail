@@ -81,7 +81,7 @@ class VKPhoto(MediaObject):
         else:
             raise TypeError('Wrong Photo type')
 
-    def full_data(self):
+    def data(self):
         return self.get_photos_by_ids([self.id])[0]
 
     @property
@@ -91,11 +91,11 @@ class VKPhoto(MediaObject):
     @property
     @public_object_method
     def source(self):
-        return self.full_data['sizes'][-1]['url']
+        return self.data()['sizes'][-1]['url']
 
     @property
     def valid(self):
-        return isinstance(self.full_data, dict)
+        return isinstance(self.data(), dict) and self.data()
 
     @property
     def name(self):

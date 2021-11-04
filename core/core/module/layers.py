@@ -10,7 +10,7 @@ def public_object_method(method):
         if not obj.valid:
             logger.warning("This object isn't accessible (maybe private), %s.%s",
                            obj.__class__.__name__, method.__name__)
-            raise
+            raise AssertionError('Object is not public')
         return method(obj, *args, **kwargs)
 
     return wrapper
@@ -22,6 +22,6 @@ def valid_object_method(method):
         if not obj.valid:
             logger.warning("This object isn't valid! -> method %s in class %s can't be used.",
                            obj.__class__.__name__, method.__name__)
-            return None
+            raise AssertionError('Object is not valid')
         return method(obj, *args, **kwargs)
     return wrapper

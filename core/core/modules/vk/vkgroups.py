@@ -1,6 +1,6 @@
 import logging
 
-from pycommon.decors import cache_method
+from pycommon.decors import cache_method_ignore_args
 from server.helpers.types import PlotType
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
@@ -80,7 +80,7 @@ class VKGroups(ManyEntities):
         from .vkcommunity import VKCommunity
         return VKCommunity(members_ids, target='members', main=self.objects[0])
 
-    @cache_method
+    @cache_method_ignore_args
     def data_list(self, force=False, full=False):
         # TODO Разобраться, нужно ли загружать полную инфу о группах, если нужно, все оптимизировать
         # А пока пусть будет заглушка, чтобы работало быстро

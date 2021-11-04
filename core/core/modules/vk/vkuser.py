@@ -11,6 +11,7 @@ from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
 from worker import VkMethods, VKError
+from ...module.layers import public_object_method
 
 logger = logging.getLogger('vk-user')
 
@@ -32,6 +33,7 @@ class VKUser(OneObjectRepresent):
                 self._status = AccountStatus.ABSENT
             else:
                 username = VKUser._extract_username(user)
+                print(username)
                 user_dict = VkMethods.resolve.sync(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
@@ -60,7 +62,7 @@ class VKUser(OneObjectRepresent):
         if re.fullmatch(r'[0-9a-z._]+', url):
             return url
         from .vkcommunity import VKCommunity
-        usernames = VKCommunity.parse_usernames(url)
+        usernames = VKCommunity._parse_usernames(url)
         if not usernames:
             return None
         return usernames[0]
@@ -124,8 +126,9 @@ class VKUser(OneObjectRepresent):
     def data(self, force=False, full=True) -> dict:
         return VkMethods.users.sync([self.id], full=full)[0]
 
-    def posts(self):
-        return VKPosts(VkMethods.posts(self.id))
+    @public_object_method
+    def posts(self) -> VKPosts:
+        return VKPosts(VkMethods.posts.sync(self.id))
 
     @property
     def name(self):

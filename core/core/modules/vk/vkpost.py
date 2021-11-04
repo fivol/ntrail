@@ -1,7 +1,10 @@
+from functools import cache
+
+from pycommon.decors import cache_method_ignore_args
 from .media_object import MediaObject
 from collections import defaultdict
 from core.module.many_entities import ManyEntities
-from ...module.layers import public_object_method
+from worker import VkMethods
 
 
 class VKPost(MediaObject):
@@ -9,33 +12,35 @@ class VKPost(MediaObject):
         super().__init__()
         self.type = 'post'
         if isinstance(post, dict):
-            self.full_data_ = post
             self.id = f'{post["owner_id"]}_{post["id"]}'
+            self._data = post
         elif isinstance(post, str):
             self.id = post
         else:
             raise TypeError('Wrong post type', type(post))
 
-    def option(self, key):
-        self.full_data.get(key, None)
+    @cache_method_ignore_args
+    def data(self, force=False, full=True) -> dict:
+        return VkMethods.posts_ids.sync([self.id])[0]
 
-    def full_data(self):
-        return self.get_posts_by_ids([self.id])[0]
+    def summary(self) -> dict:
+        # TODO
+        return {}
 
     @property
     def text(self):
-        return self.full_data.get('text', '')
+        return self.data().get('text', '')
 
     @property
-    def images(self):
-        return []
+    def photos(self):
+        return self.attachments().get('photo', [])
 
     @property
     def views(self):
-        return self.full_data.get('views', {}).get('count', None)
+        return self.data().get('views', {}).get('count', None)
 
     def attachments(self):
-        atts = self.full_data.get('attachments', [])
+        atts = self.data().get('attachments', [])
         attachments = defaultdict(list)
         for attachment in atts:
             attachments[attachment['type']].append(
@@ -44,11 +49,16 @@ class VKPost(MediaObject):
         return dict(attachments)
 
     def comments(self):
-        return self.get_comments(self.id)
+        # TODO
+        return []
 
     @property
     def valid(self):
         return bool(self.id)
+
+    @property
+    def status(self):
+        return None
 
     @property
     def url(self):
@@ -56,11 +66,11 @@ class VKPost(MediaObject):
 
     @property
     def name(self):
-        info = ''
-        if 'copy_history' in self.full_data:
+        info = 'POST: '
+        if 'copy_history' in self.data():
             info += 'REPOST '
-        if self.attachments:
-            info += ', '.join(self.attachments.keys()) + ' '
+        if self.attachments():
+            info += ', '.join(self.attachments().keys()) + ' '
         if self.text:
             info += 'text: ' + self.text[:30] + ('...' if len(self.text) > 30 else '')
         return info
@@ -72,7 +82,7 @@ class VKPosts(ManyEntities):
     def __init__(self, posts):
         super().__init__()
         assert isinstance(posts, list)
-        self.posts_dicts = []
+        self.nodes = []
         if not posts:
             self.nodes = []
         else:
@@ -86,12 +96,15 @@ class VKPosts(ManyEntities):
             else:
                 raise TypeError('Wrong posts type', type(posts))
 
-    def full_data(self):
-        if not self.posts_dicts and self.nodes:
-            self.posts_dicts = self.get_posts_by_ids(self.nodes)
-        return self.posts_dicts
+    def name(self):
+        return ''
 
-    def load_media_data(self, objects=None):
-        # TODO Сделать норм загрузку, выглядит ужасно
-        self.full_data
+    @cache
+    def data(self, force=False, full=True) -> list:
+        return VkMethods.posts_ids.sync_map(self.nodes)
 
+    def summary(self) -> dict:
+        return {}
+
+    def connections(self, **kwargs) -> dict[list]:
+        pass
