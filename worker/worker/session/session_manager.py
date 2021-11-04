@@ -3,7 +3,8 @@ from random import randint
 from time import time
 
 from worker.session.credentials import CredentialsServerApi
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove, \
+    TokenAuthFailed
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState
 
@@ -92,9 +93,17 @@ class SessionManager:
 
             return session
 
-    def return_session(self, session, action: SessionAction = None):
-        self._active_sessions.remove(self._all_sessions[hash(session)])
-        self._add_active_session(session)
+    def return_session(self, session: SessionState, action: SessionAction = None):
+        if isinstance(action, SessionRemove):
+            # TODO Return to credentials server
+            self._active_sessions.remove(self._all_sessions[hash(session)])
+            del self._all_sessions[hash(session)]
+            self._all_keys.remove(session.key)
+            logger.error('SESSION REMOVING')
+            raise TokenAuthFailed()
+        else:
+            self._active_sessions.remove(self._all_sessions[hash(session)])
+            self._add_active_session(session)
         # TODO handle session actions
 
     async def stop(self):

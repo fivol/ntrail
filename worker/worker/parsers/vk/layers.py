@@ -2,7 +2,7 @@ import asyncio
 import logging
 from functools import wraps
 
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
 from worker.helpers.tools import split_list
 
 logger = logging.getLogger('vk-layer')
@@ -12,12 +12,15 @@ def partition_split(segment_size):
     """
     Assumes first argument of method is big list,
     splits it to several smaller lists of segment_size and calls this method again
+    If input list is empty returns empty without making queries
     """
 
     def decorator(method):
         @wraps(method)
         async def wrapper(cls, items, **kwargs):
             assert isinstance(items, list)
+            if not items:
+                return []
             if len(items) <= segment_size:
                 return await method(cls, items, **kwargs)
             items_parts = split_list(items, segment_size=segment_size)
@@ -26,7 +29,8 @@ def partition_split(segment_size):
                 method(cls, partition, **kwargs) for partition in items_parts
             ])
             assert isinstance(results_parts[0], list)
-            return sum(results_parts, [])
+            results = sum(results_parts, [])
+            return results
 
         return wrapper
 
@@ -42,6 +46,7 @@ def count_offset_iterator(max_count):
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
+            print(args, kwargs)
             count = kwargs.pop('count', max_count)
             percent_ = kwargs.pop('percent_', None)
 
@@ -53,7 +58,7 @@ def count_offset_iterator(max_count):
             while count > 0:
                 curr_count = min(count, max_count)
                 if percent_:
-                    first_call = await method(*args, offset=curr_offset, count=curr_count)
+                    first_call = await method(*args, **kwargs, offset=curr_offset, count=curr_count)
                     full_count = first_call.count_
                     count = int(full_count * percent_)
                     percent_ = None
@@ -145,6 +150,8 @@ def reliable_call(method):
                 return await method(*args, **kwargs)
             except RpsLimitException:
                 await asyncio.sleep(0.01)
+                continue
+            except TokenAuthFailed:
                 continue
             except NoTokenAvailableException:
                 # TODO Think hard

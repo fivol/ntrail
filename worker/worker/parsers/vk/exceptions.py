@@ -8,6 +8,7 @@ from worker.parsers.exceptions import ParserRealError
 class VKErrorType(Enum):
     UNKNOWN = -1
 
+    ACCESS_DENIED = 15
     PRIVATE_PROFILE = 30
     USER_WAS_BANNED = 37
     UNKNOWN_USER = 39

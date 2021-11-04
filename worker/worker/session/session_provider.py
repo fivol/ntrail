@@ -1,6 +1,6 @@
 import asyncio
 
-from worker.session.exceptions import SessionAction
+from worker.session.exceptions import SessionAction, SessionRemove
 
 
 class SessionProvider:
@@ -18,8 +18,10 @@ class SessionProvider:
         if exc_type:
             try:
                 self._session.handle_error(exc_type, exc_val, exc_tb)
-            except SessionAction as action:
+            except SessionRemove as action:
                 self._manager.return_session(self._session, action=action)
+                return False
+            except SessionAction:
                 return False
 
         self._manager.return_session(self._session)

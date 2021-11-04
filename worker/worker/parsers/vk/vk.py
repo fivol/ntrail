@@ -1,5 +1,5 @@
 from aiovk import TokenSession, API
-from aiovk.exceptions import VkAPIError
+from aiovk.exceptions import VkAPIError, VkAuthError
 
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
@@ -8,7 +8,7 @@ from worker.parsers.vk.data import *
 from worker.parsers.vk.exceptions import VKError
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
-from worker.session.exceptions import SessionManagerException
+from worker.session.exceptions import SessionManagerException, SessionRemove
 from worker.session.session_manager import SessionManager
 from worker.session.session_state import SessionState
 from worker.helpers.tools import assert_imported_once, decorate
@@ -48,9 +48,11 @@ class VkApiSession(SessionState):
             error = VKError(error=exc_val)
             logger.warning('Catch vk api error: %s', error)
             raise error
+        if exc_type == VkAuthError:
+            raise SessionRemove()
 
 
-@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), redis_cache, make_synced)
+@inject_methods_wrappers(method_logger(only_errors=False, name='injected'), redis_cache, make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -80,17 +82,21 @@ class VkMethods(BaseParser):
     # To call any available api for example
 
     @classmethod
-    async def _call_api(cls, method, kwargs, apis):
+    async def _call_api(cls, method, kwargs, apis, assert_response=False):
         for i, api in enumerate(apis):
             try:
                 with api.get() as session:
-                    return await session(method, **kwargs, lang='ru')
+                    result = await session(method, **kwargs, lang='ru')
+                if not result:
+                    raise TokenAccessDenied()
+                return result
             except SessionManagerException:
                 if i == len(apis) - 1:
                     raise
 
     @classmethod
-    async def _run_query(cls, method, kwargs, apis, executable=False, only_user_access=False, **other):
+    async def _run_query(cls, method, kwargs, apis, executable=False, assert_response=False,
+                         only_user_access=False, **other):
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
@@ -105,12 +111,13 @@ class VkMethods(BaseParser):
         kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
 
         if not executable:
-            return await cls._call_api(method, kwargs, apis)
+            response = await cls._call_api(method, kwargs, apis, assert_response=assert_response)
+        else:
+            response = await cls._execute_pool.try_use_execute(method, kwargs, only_user_access)
+            if response is None:
+                response = await cls._call_api(method, kwargs, apis, assert_response=assert_response)
 
-        execute_result = await cls._execute_pool.try_use_execute(method, kwargs, only_user_access)
-        if execute_result is None:
-            return await cls._call_api(method, kwargs, apis)
-        return execute_result
+        return response
 
     @classmethod
     @decorate(reliable_call, partition_split(1000))
@@ -217,8 +224,8 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call)
-    async def posts_ids(cls, posts: list[int], **kwargs) -> ListWithCount:
+    @decorate(reliable_call, partition_split(100))
+    async def posts_ids(cls, posts: list[int], **kwargs) -> list:
         return await cls._run_query(
             'wall.getById',
             {'posts': posts},
@@ -229,6 +236,7 @@ class VkMethods(BaseParser):
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(100))
     async def posts(cls, owner_id=None, **kwargs) -> ListWithCount:
+        print('owner_id', owner_id)
         return await cls._run_query(
             'wall.get',
             {'owner_id': owner_id},

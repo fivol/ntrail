@@ -11,6 +11,14 @@ class RpsLimitException(SessionManagerException):
     pass
 
 
+class TokenAuthFailed(SessionManagerException):
+    pass
+
+
+class TokenAccessDenied(SessionManagerException):
+    pass
+
+
 class SessionException(Exception):
     """Trouble with API itself"""
 
@@ -30,3 +38,4 @@ class SessionRemove(SessionAction):
     """Can't use this session anymore, should be removed from storage. It is just rubbish"""
     def __init__(self, reason: str = None):
         self.reason = reason
+

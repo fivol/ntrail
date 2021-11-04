@@ -17,7 +17,7 @@ class SessionState:
     def __init__(self, key, key_type):
         self._key_type = key_type
         self.session = self.create(key)
-        self._key = key
+        self.key = key
         self.last_used_time = None
         # Если словил limit, это значение указывает, когда снова будет в строю (если известно)
         self.will_ready_time = None
@@ -47,7 +47,7 @@ class SessionState:
         pass
 
     def __hash__(self):
-        return hash(self._key)
+        return hash(self.key)
 
     @abstractmethod
     async def close(self):
@@ -55,7 +55,7 @@ class SessionState:
 
     async def single_close(self):
         if self.__closed:
-            logger.warning(f'Closing session second time. (key: {self._key}')
+            logger.warning(f'Closing session second time. (key: {self.key}')
             return
         self.__closed = True
         await self.close()
