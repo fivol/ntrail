@@ -88,7 +88,10 @@ class PluginManager:
             self._run_input_plugin(plugin)
 
         for option in self._options:
-            result = self.call_plugin(option)
+            try:
+                result = self.call_plugin(option)
+            except:
+                result = None
             response = self._add_result(response, option, result)
 
         return response

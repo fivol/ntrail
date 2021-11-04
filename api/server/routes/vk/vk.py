@@ -29,6 +29,7 @@ def vk_user(token: str = Query(None, title='API токен'),
     """
     asyncio.set_event_loop(asyncio.new_event_loop())
     kwargs = {'user': user}
+    # TODO Do not initialize all sessions for each request
     with Engine(caching=config.bool('CACHING')):
         manager = PluginManager(kwargs=kwargs, input_plugins=['user'], options=options)
         try:

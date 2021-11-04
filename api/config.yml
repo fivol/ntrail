@@ -14,13 +14,14 @@ vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25
   # TODO This is random value, must be specified
-  EXECUTE_MAX_LENGTH: 15000
+  EXECUTE_MAX_LENGTH: 30000
 
   rps:
     # RPS limit to each of token types
     # https://vk.com/dev/api_requests
     user: 3 # Can be increased to 5-7
     community: 3
+    # 5 in docs
     app: 5 # Can be increased to 20
 
 logging:

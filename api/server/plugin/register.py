@@ -3,12 +3,14 @@ from server.plugin.plugin_manager import PluginManager
 from server.routes.vk.plugins.user import *
 from server.routes.vk.plugins.community import *
 from server.routes.vk.plugins.connections import *
+from server.routes.vk.plugins.zodiac import *
+from server.routes.vk.plugins.fans import *
 from server.routes.vk.plugins.groups import *
 from worker import assert_imported_once
 
 _plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput,
             VKFriendsInput, VKCommunityPropsPlugin,
-            VKUserData, VKCommunityPlugin]
+            VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin]
 
 assert_imported_once()
 
