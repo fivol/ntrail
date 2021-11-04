@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from functools import wraps
 
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
@@ -122,7 +123,7 @@ class MakeSynced:
         return await self._method(*args, **kwargs)
 
     def sync(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
+        raise DeprecationWarning()
         return loop.run_until_complete(self._method(*args, **kwargs))
 
     async def map(self, items, **kwargs):

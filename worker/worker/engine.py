@@ -40,7 +40,7 @@ class Engine:
         ctx.initialized = True
         ctx.set_default('timeout', 3)
 
-    async def _stop_all(self):
+    async def stop(self):
         self.__stopped = True
         await asyncio.gather(
             *[cls.stop() for cls in self._parsers]
@@ -51,7 +51,7 @@ class Engine:
             assert asyncio.get_running_loop()
         except RuntimeError:
             asyncio.get_event_loop().run_until_complete(
-                self._stop_all()
+                self.stop()
             )
         else:
             raise EnvironmentError
