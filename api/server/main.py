@@ -55,3 +55,12 @@ async def index():
 async def version():
     """Текущая версия API"""
     return config.get('VERSION')
+
+
+@app.get('/config/', response_model=str)
+async def version():
+    """Текущая версия API"""
+    return {
+        'DEBUG': config.get('DEBUG'),
+        'CACHING': config.get('CACHING'),
+    }
