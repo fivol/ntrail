@@ -123,7 +123,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, partition_split(1000))
-    async def users(cls, user_ids: list, full=False, **kwargs) -> dict:
+    async def users(cls, user_ids: list, full=True, **kwargs) -> dict:
         fields = []
         if full:
             fields = users_full_fields
