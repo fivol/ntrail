@@ -7,6 +7,7 @@ from core.constants import AccountStatus, NO_AVA_IMG
 from core.modules.vk.vkpost import VKPosts
 from core.modules.vk.vkgroups import VKGroups
 from core.module.one_object_represent import OneObjectRepresent
+from pycommon.decors import cache_method_ignore_args
 from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
@@ -42,7 +43,7 @@ class VKUser(OneObjectRepresent):
         super().__init__()
         self.id = user_id
         self._status = status
-        assert isinstance(user_id, int)
+        assert isinstance(user_id, int) or user_id is None
 
     @staticmethod
     def _extract_username(url):
@@ -109,15 +110,16 @@ class VKUser(OneObjectRepresent):
         from .vkcommunity import VKCommunity
         return VKCommunity.random(1).objects[0]
 
-    async def data(self, force=False, full=True) -> dict:
-        return (await VkMethods.users([self.id], full=full))[0]
+    @cache_method_ignore_args
+    async def data(self) -> dict:
+        return (await VkMethods.users([self.id]))[0]
 
     @public_object_method
     async def posts(self) -> VKPosts:
         return VKPosts(await VkMethods.posts(self.id))
 
     async def name(self):
-        return f"{(await self.data(full=False))['first_name']} {(await self.data(full=False))['last_name']}"
+        return f"{(await self.data())['first_name']} {(await self.data())['last_name']}"
 
     @property
     def url(self):
@@ -133,12 +135,12 @@ class VKUser(OneObjectRepresent):
 
     async def summary(self):
         result = {
-            'valid': self.valid,
+            'valid': await self.valid(),
             'status': (await self.status()).name,
             'img': 'https://vk.com/images/deactivated_100.png?ava=1',
             'name': 'Пользователь не валиден',
         }
-        if not self.valid:
+        if not await self.valid():
             return result
         data = await self.data()
         return {

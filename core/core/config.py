@@ -1,3 +1,4 @@
+import os
 import warnings
 import logging.config
 from bestconfig import Config
@@ -14,6 +15,7 @@ config = Config()
 # TODO Add other ways to cache requests description
 CACHE_TYPE = CacheType.FULL_USE
 
-logging.config.dictConfig(config.logging.to_dict())
-logger = logging.getLogger(__name__)
+if not os.environ.get('LOGGING_CONFIGURED'):
+    logging.config.dictConfig(config.logging.to_dict())
+    logger = logging.getLogger(__name__)
 

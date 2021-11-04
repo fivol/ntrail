@@ -1,6 +1,7 @@
+import logging
 from functools import wraps
 
-from core.config import logger
+logger = logging.getLogger()
 
 
 def public_object_method(method):

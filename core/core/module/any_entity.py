@@ -38,14 +38,14 @@ class AnyEntity(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def data(self, force=False, full=True) -> typing.Union[list, dict, None, ParserRealError]:
+    def data(self) -> typing.Union[list, dict, None]:
         """
         Data structure about object, list or dict
         """
         pass
 
     def export(self, filename: str = '', format_: str = 'json',):
-        data = self.data(full=True)
+        data = self.data()
 
         writers = {
             'json': JsonWriter,
