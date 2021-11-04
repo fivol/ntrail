@@ -1,7 +1,7 @@
 import re
 
 from server.helpers.tied_value import TiedValue
-from pycommon.decors import cache_method
+from pycommon.decors import cache_method_ignore_args
 from server.helpers.types import PlotType
 from server.plugin.plugin import BasePlugin
 from core import VKCommunity
@@ -35,7 +35,7 @@ class VKCommunityPropsPlugin(BasePlugin):
         super().__init__(**kwargs)
         self._community = community
 
-    @cache_method
+    @cache_method_ignore_args
     def process_data(self):
         props = self.properties()
         data = {
