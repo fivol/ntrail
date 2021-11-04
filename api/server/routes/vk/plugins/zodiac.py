@@ -60,8 +60,8 @@ class UserZodiacPlugin(BasePlugin):
     def _date_to_zodiac_sign(cls, dm):
         return cls.zodiac_sign[cls._get_dd_mm(dm)]
 
-    def response(self) -> dict:
-        bdate = self._user.data().get('bdate')
+    async def response(self) -> dict:
+        bdate = (await self._user.data()).get('bdate')
         if not bdate:
             return {}
         dd_mm = '.'.join(bdate.split('.')[:2])

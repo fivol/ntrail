@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import logging
 import typing
@@ -71,7 +72,7 @@ class PluginManager:
         return result
 
     @staticmethod
-    def _add_result(response: dict, option: str, result: dict):
+    def _add_result(response: dict, option: str, result):
         items = option.split('.')
         if len(items) == 1:
             items.append('main')
@@ -92,11 +93,15 @@ class PluginManager:
         for plugin in self._input_plugins:
             await self._run_input_plugin(plugin)
 
-        for option in self._options:
-            try:
-                result = await self.call_plugin(option)
-            except:
-                logger.exception('Plugin call error')
+        results = await asyncio.gather(
+            *[
+                self.call_plugin(option)
+                for option in self._options
+            ], return_exceptions=True
+        )
+        for option, result in zip(self._options, results):
+            if isinstance(result, Exception):
+                logger.error('Plugin ends with exception %s', result)
                 result = None
             response = self._add_result(response, option, result)
 

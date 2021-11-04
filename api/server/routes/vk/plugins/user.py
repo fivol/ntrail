@@ -39,8 +39,8 @@ class VKUserData(BasePlugin):
         super().__init__(**kwargs)
         self._user = user
 
-    def response(self) -> dict:
-        return self._user.summary()
+    async def response(self) -> dict:
+        return await self._user.summary()
 
     def data(self):
         return self._user.data()

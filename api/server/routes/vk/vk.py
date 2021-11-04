@@ -27,7 +27,6 @@ async def vk_user(token: str = Query(None, title='API токен'),
     - connections: анализировать связи с друзьями, подписчиками и прочее
     - groups: группы и сообщества человека
     """
-    asyncio.set_event_loop(asyncio.new_event_loop())
     kwargs = {'user': user}
     # TODO Do not initialize all sessions for each request
     manager = PluginManager(kwargs=kwargs, input_plugins=['user'], options=options)

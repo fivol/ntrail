@@ -8,8 +8,8 @@ CACHING: true
 
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file
+DEBUG: true
 
-# DEBUG: true
 vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25

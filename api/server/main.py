@@ -24,9 +24,8 @@ engine: Engine
 
 
 @app.on_event('shutdown')
-def shutdown_event():
-    print('shutdown')
-    engine.stop()
+async def shutdown_event():
+    await engine.stop()
 
 
 @app.on_event('startup')
