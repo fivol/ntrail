@@ -84,7 +84,7 @@ class VkMethods(BaseParser):
         for i, api in enumerate(apis):
             try:
                 with api.get() as session:
-                    return await session(method, **kwargs)
+                    return await session(method, **kwargs, lang='ru')
             except SessionManagerException:
                 if i == len(apis) - 1:
                     raise
