@@ -8,7 +8,7 @@ from worker.session.exceptions import NoTokenAvailableException, RpsLimitExcepti
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState
 
-logger = logging.getLogger('session')
+logger = logging.getLogger()
 
 
 class SessionManager:
@@ -79,7 +79,6 @@ class SessionManager:
         while True:
             if not len(self._active_sessions) or not randint(0, 10):
                 self._check_waiting_queue()
-
             if not self._active_sessions:
                 if self._receive_keys():
                     continue
@@ -96,11 +95,11 @@ class SessionManager:
     def return_session(self, session: SessionState, action: SessionAction = None):
         if isinstance(action, SessionRemove):
             # TODO Return to credentials server
-            self._active_sessions.remove(self._all_sessions[hash(session)])
-            del self._all_sessions[hash(session)]
-            self._all_keys.remove(session.key)
-            logger.error('SESSION REMOVING')
-            raise TokenAuthFailed()
+            if hash(session) in self._all_sessions:
+                self._active_sessions.remove(self._all_sessions[hash(session)])
+                del self._all_sessions[hash(session)]
+                self._all_keys.remove(session.key)
+                logger.error('SESSION REMOVING')
         else:
             self._active_sessions.remove(self._all_sessions[hash(session)])
             self._add_active_session(session)
@@ -108,10 +107,15 @@ class SessionManager:
 
     async def stop(self):
         self._stop_called = True
+        keys = list(self._all_keys)
         while self._active_sessions:
             rps, session = self._active_sessions.pop()
             await session.single_close()
+        self._all_keys.clear()
+        self._active_sessions.clear()
+        CredentialsServerApi.return_keys(key_type=self._key_type, keys=keys)
 
     def __del__(self):
+        # TODO make cool
         if self._all_sessions:
             assert self._stop_called, 'Must close session, may be you forgot "with Engine()" statement'

@@ -52,7 +52,7 @@ class VkApiSession(SessionState):
             raise SessionRemove()
 
 
-@inject_methods_wrappers(method_logger(only_errors=False, name='injected'), redis_cache, make_synced)
+@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), redis_cache, make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -87,10 +87,12 @@ class VkMethods(BaseParser):
             try:
                 with api.get() as session:
                     result = await session(method, **kwargs, lang='ru')
-                if not result:
+                if not result and assert_response:
                     raise TokenAccessDenied()
                 return result
-            except SessionManagerException:
+            except SessionManagerException as e:
+                if not isinstance(e, RpsLimitException):
+                    logger.exception('Try next token')
                 if i == len(apis) - 1:
                     raise
 
@@ -110,7 +112,7 @@ class VkMethods(BaseParser):
         kwargs.update({key: value for key, value in other.items() if not key.startswith('_') and not key.endswith('_')})
         kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
 
-        if not executable:
+        if not executable or True:
             response = await cls._call_api(method, kwargs, apis, assert_response=assert_response)
         else:
             response = await cls._execute_pool.try_use_execute(method, kwargs, only_user_access)
@@ -236,7 +238,6 @@ class VkMethods(BaseParser):
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(100))
     async def posts(cls, owner_id=None, **kwargs) -> ListWithCount:
-        print('owner_id', owner_id)
         return await cls._run_query(
             'wall.get',
             {'owner_id': owner_id},
@@ -252,7 +253,7 @@ class VkMethods(BaseParser):
             'likes.getList',
             {'owner_id': owner_id, 'type': type_, 'item_id': item_id},
             [cls._app_api, cls._user_api],
-            executable=True, **kwargs
+            executable=False, **kwargs
         )
 
     @classmethod

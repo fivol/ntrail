@@ -5,7 +5,7 @@ from functools import wraps
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
 from worker.helpers.tools import split_list
 
-logger = logging.getLogger('vk-layer')
+logger = logging.getLogger()
 
 
 def partition_split(segment_size):
@@ -46,7 +46,6 @@ def count_offset_iterator(max_count):
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
-            print(args, kwargs)
             count = kwargs.pop('count', max_count)
             percent_ = kwargs.pop('percent_', None)
 

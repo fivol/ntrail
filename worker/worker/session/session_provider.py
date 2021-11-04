@@ -1,6 +1,6 @@
 import asyncio
 
-from worker.session.exceptions import SessionAction, SessionRemove
+from worker.session.exceptions import SessionAction, SessionRemove, TokenAuthFailed
 
 
 class SessionProvider:
@@ -14,15 +14,16 @@ class SessionProvider:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type == asyncio.CancelledError:
+            self._manager.return_session(self._session)
             return False
         if exc_type:
             try:
                 self._session.handle_error(exc_type, exc_val, exc_tb)
-            except SessionRemove as action:
+            except SessionAction as action:
                 self._manager.return_session(self._session, action=action)
-                return False
-            except SessionAction:
-                return False
+                raise TokenAuthFailed()
+            except:
+                pass
 
         self._manager.return_session(self._session)
         return False
