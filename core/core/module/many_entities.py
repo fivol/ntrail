@@ -5,6 +5,7 @@ from collections import Counter
 import random
 from core.module.any_entity import AnyEntity
 from core.helpers.utils import counter_top
+from pycommon.decors import cache_method_ignore_args
 
 
 class ManyEntities(AnyEntity):
@@ -22,10 +23,9 @@ class ManyEntities(AnyEntity):
     def hash(self):
         return hashlib.sha1(str(sorted(self.nodes)).encode('UTF-8')).hexdigest()[-16:]
 
+    @cache_method_ignore_args
     def counter(self) -> Counter:
-        if not self._counter:
-            self._counter = self._counter or Counter(self.nodes)
-        return self._counter
+        return Counter(self.nodes)
 
     def objects(self):
         return [self.__class__._single_media_cls(node) for node in self.nodes]
@@ -58,7 +58,7 @@ class ManyEntities(AnyEntity):
 
     def __add__(self, other):
         assert self._single_media_cls == other._single_media_cls, 'You trying to sum different classes'
-        return self.__class__(self.counter + other.counter)
+        return self.__class__(self.counter() + other.counter())
 
     def __getitem__(self, key):
         assert isinstance(key, int), key

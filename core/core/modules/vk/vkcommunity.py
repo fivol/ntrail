@@ -25,12 +25,12 @@ class VKCommunity(ManyEntities):
         self.nodes = []
         self._counter = Counter()
         self.target = target
-
+        if not users:
+            return
         if isinstance(users, Counter):
             self._counter = users
             self.nodes = [i[0] for i in self._counter.most_common()]
         elif isinstance(users, list):
-            users = list(filter(lambda x: x is not None, unique_everseen(users)))
             if users:
                 if isinstance(users[0], VKUser):
                     self.nodes = [user.id for user in users]
@@ -45,6 +45,7 @@ class VKCommunity(ManyEntities):
                 else:
                     raise TypeError('user instance must be int or string, but' + str(type(users[0])))
             self._counter = Counter(self.nodes)
+            self.nodes = list(set(self.nodes))
         elif isinstance(users, str):
             usernames = VKCommunity._parse_usernames(users)
             VkMethods.resolve.sync_map(usernames)
@@ -104,7 +105,8 @@ class VKCommunity(ManyEntities):
 
     @property
     def name(self):
-
+        if not self.size:
+            return 'Empty community'
         if self.size == 1:
             return VKUser(self.data()[0]).name
 

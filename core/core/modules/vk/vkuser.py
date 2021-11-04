@@ -33,7 +33,6 @@ class VKUser(OneObjectRepresent):
                 self._status = AccountStatus.ABSENT
             else:
                 username = VKUser._extract_username(user)
-                print(username)
                 user_dict = VkMethods.resolve.sync(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
