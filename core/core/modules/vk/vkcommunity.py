@@ -1,8 +1,6 @@
 import random
 import re
-from functools import cache
 from collections import Counter
-from more_itertools import unique_everseen
 
 from core.module.many_entities import ManyEntities
 from worker import VkMethods
@@ -36,22 +34,10 @@ class VKCommunity(ManyEntities):
                     self.nodes = [user.id for user in users]
                 elif isinstance(users[0], int):
                     self.nodes = users
-                elif isinstance(users[0], str):
-                    usernames = [VKUser._extract_username(url) for url in users]
-                    usernames = clear_list(usernames)
-                    VkMethods.resolve.sync(usernames)
-                    self.nodes = [VKUser(username).id for username in usernames]
-                    self.nodes = clear_list(self.nodes)
                 else:
                     raise TypeError('user instance must be int or string, but' + str(type(users[0])))
             self._counter = Counter(self.nodes)
             self.nodes = list(set(self.nodes))
-        elif isinstance(users, str):
-            usernames = VKCommunity._parse_usernames(users)
-            VkMethods.resolve.sync_map(usernames)
-            self.nodes = [VKUser(username).id for username in usernames]
-            self.nodes = clear_list(self.nodes)
-            self._counter = Counter(self.nodes)
         elif not (users is None):
             raise TypeError('Wrong users type: {}'.format(type(users)))
 
@@ -63,24 +49,23 @@ class VKCommunity(ManyEntities):
     def deactivated(self):
         return VKCommunity([user for user in self.objects() if not user.valid], clear=False)
 
-    def groups(self):
+    async def groups(self):
         all_groups_ids = sum(
             filter(
-                lambda x: isinstance(x, list), VkMethods.groups.sync_map(self.nodes)),
+                lambda x: isinstance(x, list), await VkMethods.groups.map(self.nodes)),
             [])
         return VKGroups(all_groups_ids)
 
-    @cache
-    def data(self, force=False, full=True):
-        return VkMethods.users.sync(self.nodes, full=full)
+    async def data(self, force=False, full=True):
+        return await VkMethods.users(self.nodes, full=full)
 
-    def friends(self):
-        users_friends = VkMethods.friends.sync_map(self.nodes)
+    async def friends(self):
+        users_friends = await VkMethods.friends(self.nodes)
         users_friends += [self.nodes]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
-    def connections(self):
-        connections = VkMethods.friends.sync_map(self.nodes)
+    async def connections(self):
+        connections = await VkMethods.friends.map(self.nodes)
         return {
             first_id: [second_id for second_id in connected_list if second_id in self.nodes]
             for (first_id, connected_list) in zip(self.nodes, connections)
@@ -107,8 +92,6 @@ class VKCommunity(ManyEntities):
     def name(self):
         if not self.size:
             return 'Empty community'
-        if self.size == 1:
-            return VKUser(self.data()[0]).name
 
         if self.target == 'friends':
             return 'Друзья ' + name_to_gent(self.main.data()['first_name'])

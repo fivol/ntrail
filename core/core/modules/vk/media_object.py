@@ -9,7 +9,7 @@ class MediaObject(SingleEntity, metaclass=ABCMeta):
         self.id = None
         self.type = None
 
-    def likes(self):
+    async def likes(self):
         from core.modules.vk.vkcommunity import VKCommunity
         owner_id, item_id = self.id.split('_')
-        return VKCommunity(VkMethods.likes.sync(type_='post', item_id=item_id, owner_id=owner_id))
+        return VKCommunity(await VkMethods.likes(type_='post', item_id=item_id, owner_id=owner_id))

@@ -20,16 +20,16 @@ class VKPost(MediaObject):
             raise TypeError('Wrong post type', type(post))
 
     @cache_method_ignore_args
-    def data(self, force=False, full=True) -> dict:
-        return VkMethods.posts_ids.sync([self.id])[0]
+    async def data(self, force=False, full=True) -> dict:
+        return await VkMethods.posts_ids([self.id])[0]
 
     def summary(self) -> dict:
         # TODO
         return {}
 
     @property
-    def text(self):
-        return self.data().get('text', '')
+    async def text(self):
+        return (await self.data()).get('text', '')
 
     @property
     def photos(self):

@@ -18,42 +18,31 @@ logger = logging.getLogger('vk-user')
 
 class VKUser(OneObjectRepresent):
 
-    def __init__(self, user, **kwargs):
-        super().__init__()
-        self.id = None
-        self._status = None
-
-        if isinstance(user, list):
-            if len(user) > 1:
-                raise ValueError(f'User list length = {len(user)}. Must be 1')
-            user = user[0]
-
+    @classmethod
+    async def create(cls, user):
+        status = None
+        user_id = None
         if isinstance(user, str):
             if not user:
-                self._status = AccountStatus.ABSENT
+                status = AccountStatus.ABSENT
             else:
                 username = VKUser._extract_username(user)
-                user_dict = VkMethods.resolve.sync(username)
+                user_dict = await VkMethods.resolve(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
-                    self._status = AccountStatus.ABSENT
+                    status = AccountStatus.ABSENT
                 elif user_dict.get('type') == 'user':
-                    self.id = user_dict.get('object_id')
+                    user_id = user_dict.get('object_id')
                 else:
                     logger.info('VKUser username type is "%s"', user_dict.get('type'))
-                    self._status = AccountStatus.ABSENT
-        elif isinstance(user, int):
-            if user < 0:
-                raise ValueError('User id < 0', user)
-            self.id = user
+                    status = AccountStatus.ABSENT
+        return cls(user_id=user_id, status=status)
 
-        elif isinstance(user, dict):
-            if 'id' not in user:
-                raise ValueError('Wrong user dict')
-            self.id = user['id']
-            self.full_data_ = user
-        else:
-            raise TypeError(f'VKUser {user} type is {type(user)}')
+    def __init__(self, user_id: int, status=None, **kwargs):
+        super().__init__()
+        self.id = user_id
+        self._status = status
+        assert isinstance(user_id, int)
 
     @staticmethod
     def _extract_username(url):
@@ -69,10 +58,10 @@ class VKUser(OneObjectRepresent):
     def photos(self):
         return VKPhotos(VkMethods.photos.sync(owner_id=self.id))
 
-    def status(self):
+    async def status(self):
         if self._status:
             return self._status
-        data = self.data(full=False)
+        data = await self.data()
         # TODO Error handling
         if isinstance(data, VKError):
             if data.type == VKErrorType.UNKNOWN_USER:
@@ -95,9 +84,8 @@ class VKUser(OneObjectRepresent):
             raise TypeError('VKUser short data wrong type:', type(data), data)
         return self._status
 
-    @property
-    def valid(self):
-        status = self.status()
+    async def valid(self):
+        status = await self.status()
         return status == AccountStatus.VALID or \
             status == AccountStatus.PUBLIC or \
             status == AccountStatus.PRIVATE
@@ -121,17 +109,15 @@ class VKUser(OneObjectRepresent):
         from .vkcommunity import VKCommunity
         return VKCommunity.random(1).objects[0]
 
-    @cache
-    def data(self, force=False, full=True) -> dict:
-        return VkMethods.users.sync([self.id], full=full)[0]
+    async def data(self, force=False, full=True) -> dict:
+        return (await VkMethods.users([self.id], full=full))[0]
 
     @public_object_method
-    def posts(self) -> VKPosts:
-        return VKPosts(VkMethods.posts.sync(self.id))
+    async def posts(self) -> VKPosts:
+        return VKPosts(await VkMethods.posts(self.id))
 
-    @property
-    def name(self):
-        return f"{self.data(full=False)['first_name']} {self.data(full=False)['last_name']}"
+    async def name(self):
+        return f"{(await self.data(full=False))['first_name']} {(await self.data(full=False))['last_name']}"
 
     @property
     def url(self):
@@ -145,23 +131,24 @@ class VKUser(OneObjectRepresent):
         friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
 
-    def summary(self):
+    async def summary(self):
         result = {
             'valid': self.valid,
-            'status': self.status().name,
+            'status': (await self.status()).name,
             'img': 'https://vk.com/images/deactivated_100.png?ava=1',
             'name': 'Пользователь не валиден',
         }
         if not self.valid:
             return result
+        data = await self.data()
         return {
             **result,
             'id': self.id,
             'url': self.url,
-            'name': self.name,
-            'img': self.data().get('photo_200', NO_AVA_IMG),
-            'username': self.data().get("screen_name", 'id' + str(self.id)),
-            'verified': self.data().get('verified', False),
+            'name': await self.name(),
+            'img': data.get('photo_200', NO_AVA_IMG),
+            'username': data.get("screen_name", 'id' + str(self.id)),
+            'verified': data.get('verified', False),
             'private': self.status() == AccountStatus.PRIVATE,
         }
 
