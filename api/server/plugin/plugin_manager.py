@@ -67,7 +67,19 @@ class PluginManager:
 
     @staticmethod
     def _add_result(response: dict, option: str, result: dict):
-        response[option] = result
+        items = option.split('.')
+        if len(items) == 1:
+            items.append('main')
+        if len(items) == 2:
+            plugin, attr = items
+            if plugin in response:
+                response[plugin][attr] = result
+            else:
+                response[plugin] = {
+                    attr: result
+                }
+        else:
+            raise WrongInputError('Incorrect option format')
         return response
 
     def execute(self) -> dict:
