@@ -7,7 +7,7 @@ services:
       - "8000:8000"
 
   redis:
-    image: redis
+    build: redis
     restart: always
     ports:
       - "6379:6379"
