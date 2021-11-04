@@ -4,7 +4,7 @@ RUN pip install "poetry"
 WORKDIR /app
 COPY . .
 
-RUN ./run.sh
+RUN ./prepare.sh
 
 RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
