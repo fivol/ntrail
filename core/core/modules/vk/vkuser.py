@@ -122,8 +122,8 @@ class VKUser(OneObjectRepresent):
         return (await VkMethods.users([self.id]))[0]
 
     @public_object_method
-    async def posts(self) -> VKPosts:
-        return VKPosts(await VkMethods.posts(self.id, all_=True))
+    async def posts(self, all_=False) -> VKPosts:
+        return VKPosts(await VkMethods.posts(self.id, all_=all_))
 
     async def name(self):
         return f"{(await self.data())['first_name']} {(await self.data())['last_name']}"

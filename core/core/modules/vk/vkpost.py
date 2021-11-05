@@ -20,12 +20,8 @@ class VKPost(MediaObject):
             raise TypeError('Wrong post type', type(post))
 
     @cache_method_ignore_args
-    async def data(self, force=False, full=True) -> dict:
+    async def data(self) -> dict:
         return (await VkMethods.posts_ids([self.id]))[0]
-
-    def summary(self) -> dict:
-        # TODO
-        return {}
 
     @property
     async def text(self):
@@ -63,17 +59,6 @@ class VKPost(MediaObject):
     @property
     def url(self):
         return f'https://vk.com/wall{self.id}'
-
-    @property
-    def name(self):
-        info = 'POST: '
-        if 'copy_history' in self.data():
-            info += 'REPOST '
-        if self.attachments():
-            info += ', '.join(self.attachments().keys()) + ' '
-        if self.text:
-            info += 'text: ' + self.text[:30] + ('...' if len(self.text) > 30 else '')
-        return info
 
 
 class VKPosts(ManyEntities):
