@@ -57,9 +57,8 @@ async def version():
     return config.get('VERSION')
 
 
-@app.get('/config/', response_model=str)
-async def version():
-    """Текущая версия API"""
+@app.get('/config/', response_model=dict)
+async def get_config():
     return {
         'DEBUG': config.get('DEBUG'),
         'CACHING': config.get('CACHING'),

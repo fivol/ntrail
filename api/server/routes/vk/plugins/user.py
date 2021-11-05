@@ -1,4 +1,5 @@
 from core import VKUser
+from core.constants import AccountStatus, NO_AVA_IMG
 from server.plugin.plugin import InputPlugin, BasePlugin
 
 
@@ -40,7 +41,26 @@ class VKUserData(BasePlugin):
         self._user = user
 
     async def response(self) -> dict:
-        return await self._user.summary()
+        user = self._user
+        result = {
+            'valid': await user.valid(),
+            'status': (await user.status()).name,
+            'img': 'https://vk.com/images/deactivated_100.png?ava=1',
+            'name': 'Пользователь не валиден',
+        }
+        if not await self._user.valid():
+            return result
+        data = await self.data()
+        return {
+            **result,
+            'id': user.id,
+            'url': user.url,
+            'name': await user.name(),
+            'img': data.get('photo_200', NO_AVA_IMG),
+            'username': data.get("screen_name", 'id' + str(user.id)),
+            'verified': data.get('verified', False),
+            'private': await user.status() == AccountStatus.PRIVATE,
+        }
 
     def data(self):
         return self._user.data()

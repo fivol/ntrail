@@ -1,6 +1,17 @@
+import datetime
 import re
+from itertools import groupby
+from time import time
 
-from server.helpers.tied_value import TiedValue
+from core.helpers.utils import clear_list
+from server.helpers.utils import get_value_by_path
+from server.routes.vk.data import vk_connections_names, life_main_dict, people_main_dict, political_dict, \
+    occupation_type_dict, relatives_dict, smoking_dict, alcohol_dict, relation_dict, account_status_dict, \
+    last_seen_platform_dict
+from server.helpers.content_utils import get_field_values, list_from_dicts, concatenate_lists, is_good_username, \
+    prepare_list, get_random_color, bool_filter
+from server.helpers.tied_counter import TiedCounter
+from server.helpers.tied_value import TiedValue, get_tied_array_size
 from pycommon.decors import cache_method_ignore_args
 from server.helpers.types import PlotType
 from server.plugin.plugin import BasePlugin
@@ -18,14 +29,8 @@ class VKCommunityPlugin(BasePlugin):
     def size(self):
         return self._community.size
 
-    def summery(self):
-        return {
-            'name': self._community.name,
-            'size': self._community.size
-        }
-
-    def response(self) -> dict:
-        return self._community.data()
+    async def response(self) -> list:
+        return await self._community.data()
 
 
 class VKCommunityPropsPlugin(BasePlugin):
@@ -35,44 +40,45 @@ class VKCommunityPropsPlugin(BasePlugin):
         super().__init__(**kwargs)
         self._community = community
 
+    @classmethod
+    def _prepare_username_list(cls, username_list, service_name):
+        usernames = []
+        if service_name in ['vk', 'instagram', 'facebook', 'twitter']:
+            for url in username_list:
+                url = url.strip('/ ')
+                site_items = url.split('/')
+                if len(site_items) > 1 and is_good_username(site_items[-1]):
+                    usernames.append(site_items[-1])
+                elif len(site_items) == 1 and is_good_username(site_items[0]):
+                    usernames.append(site_items[0])
+        elif service_name in ['livejournal']:
+            for url in username_list:
+                url = url.strip('/ ')
+                url = url.split('//')[-1]
+                site_items = url.split('.')
+                if len(site_items) == 3 and is_good_username(site_items[0]):
+                    usernames.append(site_items[0])
+                elif len(site_items) == 1 and is_good_username(site_items[0]):
+                    usernames.append(site_items[0])
+
+        elif service_name in ['skype']:
+            for username in username_list:
+                if is_good_username(username):
+                    usernames.append(username)
+        return clear_list(usernames)
+
     @cache_method_ignore_args
-    def process_data(self):
-        props = self.properties()
+    async def process_data(self):
+        props = await self.properties()
         data = {
-            'size': self.size
+            'size': self._community.size
         }
 
         def time_delta(timestamp_list, dev=1):
             delta = [-(item - time()) / dev for item in timestamp_list]
             return delta
 
-        def prepare_username_list(username_list, service_name):
-            usernames = []
-            if service_name in ['vk', 'instagram', 'facebook', 'twitter']:
-                for url in username_list:
-                    url = url.strip('/ ')
-                    site_items = url.split('/')
-                    if len(site_items) > 1 and is_good_username(site_items[-1]):
-                        usernames.append(site_items[-1])
-                    elif len(site_items) == 1 and is_good_username(site_items[0]):
-                        usernames.append(site_items[0])
-            elif service_name in ['livejournal']:
-                for url in username_list:
-                    url = url.strip('/ ')
-                    url = url.split('//')[-1]
-                    site_items = url.split('.')
-                    if len(site_items) == 3 and is_good_username(site_items[0]):
-                        usernames.append(site_items[0])
-                    elif len(site_items) == 1 and is_good_username(site_items[0]):
-                        usernames.append(site_items[0])
-
-            elif service_name in ['skype']:
-                for username in username_list:
-                    if is_good_username(username):
-                        usernames.append(username)
-            return clear_list(usernames)
-
-        all_ids_set = set(self._community.ids)
+        all_ids_set = set(self._community.nodes)
 
         # groups = self.groups()
         # data['group'] = {
@@ -211,32 +217,73 @@ class VKCommunityPropsPlugin(BasePlugin):
 
         return data
 
-    def important(self):
+    async def _gen_property_category(self, key, name, props,
+                                     plot_type=None, plot_data=None, common_count=0, name_func=None, names_dict=None):
+        if names_dict:
+            name_func = lambda x: names_dict.get(x, 'Идентификатор не найден')
+
+        data = await self.process_data()
+        if data[key].get('count', 1) == 0:
+            return None
+        base_id = f'{self.hash}.{key}'
+        sup_properties = []
+
+        if common_count:
+            source_list = data[key]['source_list']
+            for idx in range(common_count):
+                if len(source_list) > idx:
+                    sub_prop_name = source_list[idx][0].value
+                    if name_func:
+                        sub_prop_name = name_func(sub_prop_name)
+                    sup_properties.append(self.gen_prop(f'top_{idx}', sub_prop_name, source_list[idx][1],
+                                                        source_list[idx][0].get_ids(self.get_id_prefix())))
+        added_sub_keys = set()
+        props += self.__class__.default_props
+        for sub_property in props:
+            sub_key = sub_property[0]
+            if sub_key in data[key] and sub_key not in added_sub_keys:
+                added_sub_keys.add(sub_key)
+                sub_name = sub_property[1]
+                sub_value = data[key][sub_key]
+                sup_properties.append(self.gen_prop(sub_key, sub_name, sub_value))
+
+        values = bool_filter(sup_properties)
+        if not values:
+            return None
+        return {
+            'id': base_id,
+            'name': name,
+            'plot': self.gen_plot(plot_type, plot_data, key, name=name_func),
+            'values': values
+        }
+
+    @classmethod
+    def gen_circular_plot(cls, items, name=None, color=None):
+        if color is None:
+            color = lambda x: get_random_color()
+        if name is None:
+            name = lambda value: value.get_value()
         return [
             {
-                'id': 0,
-                'name': 'Количество',
-                'value': self.size
-            },
-            {
-                'id': 2,
-                'name': 'Тип кластера',
-                'value': 'Пользователи VK'
+                'value': count,
+                'name': name(value),
+                'color': color(value)
             }
+            for value, count in items if count > 0
         ]
 
-    def all(self):
-        data = self.process_data()
+    async def all(self):
+        data = await self.process_data()
 
         properties = [
-            self.gen_property_category(
+            self._gen_property_category(
                 'age', 'Возраст',
                 [
                     ('commonMean', 'Наисреднейший'),
                 ],
                 PlotType.LINE
             ),
-            self.gen_property_category(
+            self._gen_property_category(
                 'sex', 'Пол',
                 [
                     ('man', 'Мужской'),
@@ -247,52 +294,52 @@ class VKCommunityPropsPlugin(BasePlugin):
                                        name=lambda value: 'Мужской' if value.get_value() == 2 else 'Женский',
                                        color=lambda value: '#989FFF' if value.get_value() == 2 else '#FD8DA6')
             ),
-            self.gen_property_category('city', 'Город', [], PlotType.CIRCULAR, common_count=3),
-            # self.gen_property_category('group', 'Группы', [
+            self._gen_property_category('city', 'Город', [], PlotType.CIRCULAR, common_count=3),
+            # self._gen_property_category('group', 'Группы', [
             #     ('all_count', 'Уникальных групп'),
             #     ('mean_count', 'На человека')], None),
-            self.gen_property_category('school', 'Школа', [], PlotType.CIRCULAR, common_count=5),
-            self.gen_property_category('university', 'Университет (архив)', [], PlotType.CIRCULAR, common_count=5),
-            self.gen_property_category('verified', 'Верификация', [('count', 'Количество')], None),
-            self.gen_property_category('status', 'Статус', [], None),
-            self.gen_property_category('site', 'Сайт', [], None),
-            self.gen_property_category('phone', 'Телефон', [('mobile', 'Мобильный'), ('home', 'Домашний')], None),
-            self.gen_property_category('country', 'Страна', [], PlotType.CIRCULAR, common_count=3),
-            self.gen_property_category('relatives', 'Среди родственников есть', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: relatives_dict[x],
-                                       common_count=3),
-            self.gen_property_category('occupation_type', 'Род занятий', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: occupation_type_dict[x],
-                                       common_count=3),
-            self.gen_property_category('occupation_work', 'Работа', [], PlotType.CIRCULAR, common_count=3),
-            self.gen_property_category('occupation_school', 'Текущая школа', [], PlotType.CIRCULAR, common_count=3),
-            self.gen_property_category('occupation_university', 'Университет', [], PlotType.CIRCULAR, common_count=3),
-            self.gen_property_category('personal_political', 'Политические предпочтения', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: political_dict.get(x),
-                                       common_count=3),
-            self.gen_property_category('personal_people_main', 'Главное в людях', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: people_main_dict[x],
-                                       common_count=3),
-            self.gen_property_category('personal_life_main', 'Главное в жизни', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: life_main_dict[x],
-                                       common_count=3),
-            self.gen_property_category('personal_smoking', 'Отношение к курению', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: smoking_dict[x],
-                                       common_count=3),
-            self.gen_property_category('personal_alcohol', 'Отношение к алкоголю', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: alcohol_dict[x],
-                                       common_count=3),
-            self.gen_property_category('relation', 'Семейное положение', [], PlotType.CIRCULAR,
-                                       name_func=lambda x: relation_dict[x],
-                                       common_count=5),
-            self.gen_property_category('last_seen_time', 'Время последнего посещения (в днях)', [
+            self._gen_property_category('school', 'Школа', [], PlotType.CIRCULAR, common_count=5),
+            self._gen_property_category('university', 'Университет (архив)', [], PlotType.CIRCULAR, common_count=5),
+            self._gen_property_category('verified', 'Верификация', [('count', 'Количество')], None),
+            self._gen_property_category('status', 'Статус', [], None),
+            self._gen_property_category('site', 'Сайт', [], None),
+            self._gen_property_category('phone', 'Телефон', [('mobile', 'Мобильный'), ('home', 'Домашний')], None),
+            self._gen_property_category('country', 'Страна', [], PlotType.CIRCULAR, common_count=3),
+            self._gen_property_category('relatives', 'Среди родственников есть', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: relatives_dict[x],
+                                        common_count=3),
+            self._gen_property_category('occupation_type', 'Род занятий', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: occupation_type_dict[x],
+                                        common_count=3),
+            self._gen_property_category('occupation_work', 'Работа', [], PlotType.CIRCULAR, common_count=3),
+            self._gen_property_category('occupation_school', 'Текущая школа', [], PlotType.CIRCULAR, common_count=3),
+            self._gen_property_category('occupation_university', 'Университет', [], PlotType.CIRCULAR, common_count=3),
+            self._gen_property_category('personal_political', 'Политические предпочтения', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: political_dict.get(x),
+                                        common_count=3),
+            self._gen_property_category('personal_people_main', 'Главное в людях', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: people_main_dict[x],
+                                        common_count=3),
+            self._gen_property_category('personal_life_main', 'Главное в жизни', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: life_main_dict[x],
+                                        common_count=3),
+            self._gen_property_category('personal_smoking', 'Отношение к курению', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: smoking_dict[x],
+                                        common_count=3),
+            self._gen_property_category('personal_alcohol', 'Отношение к алкоголю', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: alcohol_dict[x],
+                                        common_count=3),
+            self._gen_property_category('relation', 'Семейное положение', [], PlotType.CIRCULAR,
+                                        name_func=lambda x: relation_dict[x],
+                                        common_count=5),
+            self._gen_property_category('last_seen_time', 'Время последнего посещения (в днях)', [
                 ('mean', 'Среднее'),
                 ('max', 'Максимальное'),
                 ('min', 'Минимальное'),
                 ('median', 'Медианное'),
             ], PlotType.LINE),
-            self.gen_property_category('home_town', 'Родной город', [], PlotType.CIRCULAR, common_count=3),
-            self.gen_property_category(
+            self._gen_property_category('home_town', 'Родной город', [], PlotType.CIRCULAR, common_count=3),
+            self._gen_property_category(
                 'is_closed', 'Статус аккаунта',
                 [
                     ('opened', 'Открытый'),
@@ -305,19 +352,19 @@ class VKCommunityPropsPlugin(BasePlugin):
                                        name=lambda
                                            x: account_status_dict.get(x, ['Неизвестный тип'])[0],
                                        color=lambda x: account_status_dict.get(x, ['#ffffff'])[1])),
-            self.gen_property_category('online', 'Онлайн', [], PlotType.CIRCULAR, common_count=5),
-            self.gen_property_category('personal_langs', 'Языки', [], PlotType.CIRCULAR, common_count=5),
-            self.gen_property_category('personal_religion', 'Мировоззрение', [], PlotType.CIRCULAR, common_count=5),
-            self.gen_property_category('last_seen_platform', 'Последнее посещение', [], PlotType.CIRCULAR,
-                                       common_count=5,
-                                       name_func=lambda x: last_seen_platform_dict[x]),
-            self.gen_property_category('followers_count', 'Количество подписчиков',
-                                       [
-                                           ('max', 'Максимальное'),
-                                           ('min', 'Минимальное'),
-                                           ('mean', 'Среднее'),
-                                           ('median', 'Медианное'),
-                                       ], PlotType.LINE),
+            self._gen_property_category('online', 'Онлайн', [], PlotType.CIRCULAR, common_count=5),
+            self._gen_property_category('personal_langs', 'Языки', [], PlotType.CIRCULAR, common_count=5),
+            self._gen_property_category('personal_religion', 'Мировоззрение', [], PlotType.CIRCULAR, common_count=5),
+            self._gen_property_category('last_seen_platform', 'Последнее посещение', [], PlotType.CIRCULAR,
+                                        common_count=5,
+                                        name_func=lambda x: last_seen_platform_dict[x]),
+            self._gen_property_category('followers_count', 'Количество подписчиков',
+                                        [
+                                            ('max', 'Максимальное'),
+                                            ('min', 'Минимальное'),
+                                            ('mean', 'Среднее'),
+                                            ('median', 'Медианное'),
+                                        ], PlotType.LINE),
         ]
         return bool_filter(properties)
 
@@ -376,10 +423,11 @@ class VKCommunityPropsPlugin(BasePlugin):
             for prop in all_props
         ]), key=lambda prop: importance_metrics(prop), reverse=True)
 
-    def properties(self):
+    async def properties(self):
+        community = self._community
         params = {}
 
-        data = self.data()
+        data = await community.data()
 
         for item_name in vk_connections_names:
             params['connection_' + item_name] = get_field_values(data, item_name)
@@ -434,10 +482,11 @@ class VKCommunityPropsPlugin(BasePlugin):
         return params
 
     def features(self):
-        if not self.ids:
+        community = self._community
+        if not community.nodes:
             return {}
 
-        data = self.process_data()
+        data = await self.process_data()
         assert isinstance(data, dict)
 
         features = self.get_common_features(
@@ -458,7 +507,7 @@ class VKCommunityPropsPlugin(BasePlugin):
         )
         assert isinstance(features, dict)
 
-        size = self.size
+        size = self._community.size
 
         for feature in ['personal.smoking', 'personal.alcohol']:
             feature_common_list = self.get_value_by_path(data, feature)
@@ -557,12 +606,12 @@ class VKCommunityPropsPlugin(BasePlugin):
                             features[name] = attr_value[0][1] / size
 
         for feature in plain_features:
-            features[feature] = cls.get_value_by_path(data, feature)
+            features[feature] = get_value_by_path(data, feature)
         for feature in frequency_features:
-            features[feature] = cls.get_value_by_path(data, feature) / size
+            features[feature] = get_value_by_path(data, feature) / size
 
         for feature in category_frequency_features:
-            for key, value in cls.get_value_by_path(data, feature):
+            for key, value in get_value_by_path(data, feature):
                 if isinstance(key, str):
                     key = re.sub('[^а-яa-z0-9]', ' ', key.lower())
                     key = '_'.join(key.split())
@@ -573,44 +622,5 @@ class VKCommunityPropsPlugin(BasePlugin):
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
 
-    def response(self) -> dict:
-        return self.all()
-
-
-class ExpandCommunityPlugin(BasePlugin):
-    def __init__(self, community: VKCommunity):
-        self._community = community
-
-    @classmethod
-    def expand(cls, nodes_part, weight_reduction_ratio=0.95, break_point=10, max_nodes=300):
-        community = set(nodes_part)
-        VkMethods.friends.sync_map(community)
-        friends_counter = collections.Counter(
-            sum([list(set(VkMethods.friends.sync(user)) - set(community)) for user in community], []))
-        community_friends_amount_changes = []
-        max_iterations = max_nodes
-        count = 0
-        curr_weight = 1
-        while friends_counter.most_common(1)[0][1] > break_point and max_iterations > 0:
-            count += 1
-            curr_weight *= weight_reduction_ratio
-            max_iterations -= 1
-            new_participant, community_friends_amount = friends_counter.most_common(1)[0]
-            community_friends_amount_changes.append(community_friends_amount)
-            community.add(new_participant)
-            del friends_counter[new_participant]
-            unique_friends = set(VkMethods.friends.sync(new_participant)) - set(community)
-            new_participant_unique_friends = collections.Counter(
-                dict(
-                    zip(
-                        unique_friends,
-                        [curr_weight] * len(unique_friends)
-                    )
-
-                )
-            )
-            friends_counter += new_participant_unique_friends
-        return cls(community)
-
-    def response(self) -> dict:
-        return {}
+    async def response(self) -> dict:
+        return await self.all()

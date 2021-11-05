@@ -7,3 +7,4 @@ venv/
 *.cache
 *.db-*
 .git/
+.data/
