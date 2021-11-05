@@ -1,20 +1,19 @@
-import asyncio
 import logging
 import aioredis
 import json
 
+from worker.config import config
 from worker.ctx import get_context
 
 
-logger = logging.getLogger('cache')
+logger = logging.getLogger()
 
 ctx = get_context()
 
 
 def get_redis():
-    ctx.set_default('redis_url', 'redis://localhost')
     return aioredis.from_url(
-        ctx.redis_url, encoding="utf-8", decode_responses=True
+        config.redis_url, encoding="utf-8", decode_responses=True
     )
 
 
@@ -35,7 +34,7 @@ def redis_cache(method):
         try:
             call_encoded = f'{method.__name__}-{args}-{kwargs}'
             cached_result = await ctx.redis.get(call_encoded)
-            _caching_available = True
+            ctx.caching_available = True
 
             if cached_result is None:
                 result = await method(*args, **kwargs)
@@ -48,7 +47,7 @@ def redis_cache(method):
         except ConnectionError:
             if ctx.caching_available is None:
                 logger.warning('Redis ConnectionError')
-            _caching_available = False
+            ctx.caching_available = False
 
         return await method(*args, **kwargs)
     return _wrapper

@@ -5,7 +5,7 @@ from worker.parsers.vk.vk import VkMethods
 from worker.ctx import get_context
 from worker.helpers import caching
 
-logger = logging.getLogger('engine')
+logger = logging.getLogger()
 
 parsers = [VkMethods]
 

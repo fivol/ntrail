@@ -14,5 +14,3 @@ os.environ['LOGGING_CONFIGURED'] = 'true'
 
 if not config.bool('DEBUG'):
     logging.disable(logging.WARNING)
-
-logger = logging.getLogger('debugger')
