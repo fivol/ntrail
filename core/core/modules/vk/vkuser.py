@@ -132,9 +132,9 @@ class VKUser(OneObjectRepresent):
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    def friends(self):
+    async def friends(self):
         from .vkcommunity import VKCommunity
-        friend_ids = VkMethods.friends.sync(self.id)
+        friend_ids = await VkMethods.friends(self.id)
         if isinstance(friend_ids, ParserRealError):
             return VKCommunity()
         friend_ids.append(self.id)

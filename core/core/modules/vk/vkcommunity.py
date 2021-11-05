@@ -91,18 +91,3 @@ class VKCommunity(ConnectedEntities):
             ids_list = random.sample(range(min_vkid, max_vkid), size * 2)
             comm = VKCommunity(list(ids_list)).only_valid().select(size)
         return comm
-
-    @property
-    def name(self):
-        if not self.size:
-            return 'Empty community'
-
-        if self.target == 'friends':
-            return 'Друзья ' + name_to_gent(self.main.data()['first_name'])
-        if self.target == 'loners':
-            return 'Без кластера'
-        if self.target == 'members':
-            return f'Подписчики {self.main.name}'
-        if self.target == 'search':
-            return f'Поиск по: "{self.target_value}"'
-        return 'Community'
