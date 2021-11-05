@@ -49,6 +49,9 @@ def count_offset_iterator(max_count):
         async def wrapper(*args, **kwargs):
             count = kwargs.pop('count', max_count)
             percent_ = kwargs.pop('percent_', None)
+            all_ = kwargs.pop('all_', None)
+            if all_:
+                percent_ = 1
 
             if not percent_ and count <= max_count:
                 return await method(*args, count=count, **kwargs)

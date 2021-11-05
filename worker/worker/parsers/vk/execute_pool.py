@@ -42,9 +42,9 @@ class ExecuteRequestPool:
 
         self._execute_results[self._execute_epoch] = execute_task
         self._execute_epoch += 1
-        await self._reset_pool()
+        self._reset_pool()
 
-    async def _reset_pool(self):
+    def _reset_pool(self):
         self._executable_pool = []
         self._execute_length = 0
 
@@ -56,7 +56,8 @@ class ExecuteRequestPool:
 
         if cmd_length > config.vk.EXECUTE_MAX_LENGTH:
             logger.warning('Too long command to use execute command: %s', cmd_length)
-            await self._reset_pool()
+            # TODO Test removing this line
+            # self._reset_pool()
             return None
 
         self._executable_pool.append((method, kwargs))
@@ -68,14 +69,15 @@ class ExecuteRequestPool:
 
         # Very important. We should return control to collect many queries in pool in async
         await asyncio.sleep(0)
-        if len(self._executable_pool) < 15:
-            await asyncio.sleep(0.001)
+        # TODO Test effect of removing this lines
+        # if len(self._executable_pool) < 15:
+        #     await asyncio.sleep(0.001)
         if self._execute_epoch == curr_epoch and len(self._executable_pool) >= 3:
             await self._run_execute_pool(only_user_access)
         results = self._execute_results.get(curr_epoch, None)
 
         if results is None:
-            await self._reset_pool()
+            self._reset_pool()
             return None
 
         if isinstance(results, asyncio.Task):

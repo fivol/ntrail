@@ -123,7 +123,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, partition_split(1000))
-    async def users(cls, user_ids: list, full=True, **kwargs) -> dict:
+    async def users(cls, user_ids: list, full=True, **kwargs) -> list:
         fields = []
         if full:
             fields = users_full_fields
@@ -206,8 +206,8 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, items_getter, count_offset_iterator(500))
-    async def photos(cls, owner_id=None, album_id='profile', **kwargs) -> ListWithCount:
+    @decorate(reliable_call, items_getter, count_offset_iterator(1000))
+    async def photos(cls, owner_id, album_id: str, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'photos.get',
             {'owner_id': owner_id, 'album_id': album_id},
@@ -216,8 +216,18 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @decorate(reliable_call, items_getter, count_offset_iterator(200))
+    async def photos_all(cls, owner_id, **kwargs) -> ListWithCount:
+        return await cls._run_query(
+            'photos.getAll',
+            {'owner_id': owner_id, 'extended': True},
+            [cls._user_api],
+            executable=True, only_user_access=True, **kwargs
+        )
+
+    @classmethod
     @decorate(reliable_call, partition_split(500))
-    async def photos_ids(cls, photos: list[int] = None, **kwargs) -> list:
+    async def photos_ids(cls, photos: list[str], **kwargs) -> list:
         return await cls._run_query(
             'photos.getById',
             {'photos': photos},
@@ -227,7 +237,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, partition_split(100))
-    async def posts_ids(cls, posts: list[int], **kwargs) -> list:
+    async def posts_ids(cls, posts: list[str], **kwargs) -> list:
         return await cls._run_query(
             'wall.getById',
             {'posts': posts},
