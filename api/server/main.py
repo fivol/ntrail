@@ -1,7 +1,10 @@
+import asyncio
 import logging
+import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse
+from starlette.responses import JSONResponse
 
 from server.config import config
 from server.models import db, db_url
@@ -21,6 +24,20 @@ app = FastAPI(
 )
 
 engine: Engine
+
+
+# https://github.com/tiangolo/fastapi/issues/1752
+@app.middleware("http")
+async def timeout_middleware(request: Request, call_next):
+    """If query is too long, stop it with 504"""
+    start_time = time.time()
+    try:
+        return await asyncio.wait_for(call_next(request), timeout=config.int('REQUESTS_TIMEOUT'))
+    except asyncio.TimeoutError:
+        process_time = time.time() - start_time
+        return JSONResponse({'detail': 'Request processing time excedeed limit',
+                             'processing_time': process_time},
+                            status_code=status.HTTP_504_GATEWAY_TIMEOUT)
 
 
 @app.on_event('shutdown')
@@ -63,3 +80,4 @@ async def get_config():
         'DEBUG': config.get('DEBUG'),
         'CACHING': config.get('CACHING'),
     }
+

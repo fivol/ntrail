@@ -1,4 +1,4 @@
-VERSION: 1.1.0
+VERSION: 1.1.1
 BASE_URL: 'http://localhost:8000'
 VK_APP:
   CLIENT_ID: 7898476
@@ -9,6 +9,9 @@ CACHING: true
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file
 DEBUG: true
+
+# Stop any query after this amount of seconds
+REQUESTS_TIMEOUT: 10
 
 vk:
   # 25 request in execute query, do not change!
