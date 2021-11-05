@@ -9,7 +9,7 @@ from server.routes.vk.plugins.groups import *
 from worker import assert_imported_once
 
 _plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput,
-            VKFriendsInput, VKCommunityPropsPlugin,
+            VKFriendsInput,
             VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin]
 
 assert_imported_once()

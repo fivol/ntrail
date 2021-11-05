@@ -17,9 +17,9 @@ class VKFriendsInput(InputPlugin):
     name = 'friends'
 
     @classmethod
-    def read(cls, user: VKUser, **kwargs) -> dict:
+    async def read(cls, user: VKUser, **kwargs) -> dict:
         return {
-            'community': user.friends()
+            'community': await user.friends()
         }
 
 

@@ -101,7 +101,7 @@ class PluginManager:
         )
         for option, result in zip(self._options, results):
             if isinstance(result, Exception):
-                logger.error('Plugin ends with exception %s', result)
+                logger.exception('Plugin ends with exception: %s', result, exc_info=result)
                 result = None
             response = self._add_result(response, option, result)
 

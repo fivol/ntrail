@@ -46,3 +46,6 @@ class TiedCounter:
 
     def __getitem__(self, key):
         return TiedValue(len(self.counter[key]), self.counter[key])
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(<size: {self.size}>)'

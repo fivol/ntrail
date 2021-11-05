@@ -70,7 +70,11 @@ class TiedValue:
         return TiedValue(self.value[name], self.id)
 
     def __repr__(self):
+        return str(self)
         return f'TiedValue({self.value}, {self.id})'
+
+    def __str__(self):
+        return str(self.value)
 
     def __hash__(self):
         return hash(self.value)

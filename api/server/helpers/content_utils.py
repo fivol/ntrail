@@ -5,7 +5,7 @@ import logging
 import math
 import pickle
 import random
-# import numpy as np
+import numpy as np
 import re
 import string
 from collections import Counter
@@ -334,7 +334,7 @@ def prepare_list(list_object, mean=True, median=True, fourth=True,
             # 'fourth': None,
             # 'fourth2': None
         }
-    res['list'] = list(list_object)[::-1]
+    # res['list'] = list(list_object)[::-1]
     if mean: res['mean'] = sum(basic_list) / len(l)
     if max: res['max'] = l[-1]
     if min: res['min'] = l[0]
