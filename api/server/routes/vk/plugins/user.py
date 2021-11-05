@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from core import VKUser
 from core.constants import AccountStatus, NO_AVA_IMG
 from server.plugin.plugin import InputPlugin, BasePlugin
+from server.routes.vk.plugins.register_date import UserRegistrationDate
 
 
 class VKUserInput(InputPlugin):
@@ -39,6 +42,13 @@ class VKUserData(BasePlugin):
     def __init__(self, user: VKUser, **kwargs):
         super().__init__(**kwargs)
         self._user = user
+
+    def registration(self):
+        return UserRegistrationDate.date(self._user.id).isoformat()
+
+    def is_fake(self):
+        # TODO AAAAAAA
+        return (datetime.now() - UserRegistrationDate.date(self._user.id)).days < 365 * 2
 
     async def response(self) -> dict:
         user = self._user
