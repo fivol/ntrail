@@ -5,6 +5,7 @@ VK_APP:
   SECRET: VOlOMVKWwkCMxP6PrEBQ
 
 CACHING: true
+redis_url: "redis://0.0.0.0:6379"
 
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file

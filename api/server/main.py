@@ -11,7 +11,7 @@ from server.models import db, db_url
 from server.routes.vk import vk
 from server.routes import auth
 from server.plugin.register import register_plugins
-from worker import Engine
+from worker import Engine, get_context
 
 logger = logging.getLogger('main')
 
@@ -76,8 +76,10 @@ async def version():
 
 @app.get('/config/', response_model=dict)
 async def get_config():
+    ctx = get_context()
     return {
         'DEBUG': config.get('DEBUG'),
         'CACHING': config.get('CACHING'),
+        'context': repr(ctx)
     }
 
