@@ -23,9 +23,12 @@ class SingleEntity(AnyEntity):
         """
         pass
 
-    @property
     @abstractmethod
     def status(self):
+        pass
+
+    @abstractmethod
+    async def data(self) -> dict:
         pass
 
     @property
@@ -41,8 +44,3 @@ class SingleEntity(AnyEntity):
 
     def __hash__(self):
         return hash(self.id)
-
-    def __str__(self):
-        if not self.valid:
-            return f'Not valid: {self.status()}'
-        return self.name

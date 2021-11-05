@@ -2,6 +2,7 @@ import random
 import re
 from collections import Counter
 
+from core.module.connected_entities import ConnectedEntities
 from core.module.many_entities import ManyEntities
 from worker import VkMethods
 from core.modules.vk.vkgroup import VKGroup
@@ -10,7 +11,7 @@ from core.helpers.utils import *
 from core.modules.vk.vkuser import VKUser
 
 
-class VKCommunity(ManyEntities):
+class VKCommunity(ConnectedEntities):
     _single_media_cls = VKUser
 
     def __init__(self, users=None, main=None, target=None, target_value=None, **kwargs):
@@ -34,6 +35,9 @@ class VKCommunity(ManyEntities):
                     self.nodes = [user.id for user in users]
                 elif isinstance(users[0], int):
                     self.nodes = users
+                elif isinstance(users[0], dict):
+                    self._data = users
+                    self.nodes = [user['id'] for user in users]
                 else:
                     raise TypeError('user instance must be int or string, but' + str(type(users[0])))
             self._counter = Counter(self.nodes)
@@ -56,8 +60,8 @@ class VKCommunity(ManyEntities):
             [])
         return VKGroups(all_groups_ids)
 
-    async def data(self, force=False, full=True):
-        return await VkMethods.users(self.nodes, full=full)
+    async def data(self, force=False, full=True) -> list:
+        return await VkMethods.users(self.nodes)
 
     async def friends(self):
         users_friends = await VkMethods.friends(self.nodes)
@@ -102,8 +106,3 @@ class VKCommunity(ManyEntities):
         if self.target == 'search':
             return f'Поиск по: "{self.target_value}"'
         return 'Community'
-
-    def summary(self) -> dict:
-        return {
-            'name': self.name
-        }

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from functools import cache
 import re
@@ -20,7 +21,7 @@ logger = logging.getLogger('vk-user')
 class VKUser(OneObjectRepresent):
 
     @classmethod
-    async def create(cls, user):
+    async def create(cls, user) -> VKUser:
         status = None
         user_id = None
         if isinstance(user, str):
@@ -56,8 +57,14 @@ class VKUser(OneObjectRepresent):
             return None
         return usernames[0]
 
-    def photos(self):
-        return VKPhotos(VkMethods.photos.sync(owner_id=self.id))
+    async def photos(self):
+        return VKPhotos(await VkMethods.photos_all(owner_id=self.id, all=True))
+
+    async def profile_photos(self):
+        return VKPhotos(await VkMethods.photos(owner_id=self.id, album_id='profile', all_=True))
+
+    async def wall_photos(self):
+        return VKPhotos(await VkMethods.photos(owner_id=self.id, album_id='wall', all_=True))
 
     async def status(self):
         if self._status:
@@ -116,7 +123,7 @@ class VKUser(OneObjectRepresent):
 
     @public_object_method
     async def posts(self) -> VKPosts:
-        return VKPosts(await VkMethods.posts(self.id))
+        return VKPosts(await VkMethods.posts(self.id, all_=True))
 
     async def name(self):
         return f"{(await self.data())['first_name']} {(await self.data())['last_name']}"
@@ -132,27 +139,6 @@ class VKUser(OneObjectRepresent):
             return VKCommunity()
         friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
-
-    async def summary(self):
-        result = {
-            'valid': await self.valid(),
-            'status': (await self.status()).name,
-            'img': 'https://vk.com/images/deactivated_100.png?ava=1',
-            'name': 'Пользователь не валиден',
-        }
-        if not await self.valid():
-            return result
-        data = await self.data()
-        return {
-            **result,
-            'id': self.id,
-            'url': self.url,
-            'name': await self.name(),
-            'img': data.get('photo_200', NO_AVA_IMG),
-            'username': data.get("screen_name", 'id' + str(self.id)),
-            'verified': data.get('verified', False),
-            'private': self.status() == AccountStatus.PRIVATE,
-        }
 
 
 from .vkcommunity import VKCommunity

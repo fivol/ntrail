@@ -1,5 +1,7 @@
 import logging
+import typing
 
+from pycommon.decors import cache_method_ignore_args
 from worker import VkMethods
 from .media_object import MediaObject
 from core.module.many_entities import ManyEntities
@@ -72,34 +74,36 @@ class VKAlbums(ManyEntities):
 class VKPhoto(MediaObject):
     def __init__(self, photo):
         super().__init__()
-        self.id = None
+        self.id: typing.Optional[str] = None
         if isinstance(photo, dict):
-            self.full_data_ = photo
+            self._data = photo
             self.id = f'{photo["owner_id"]}_{photo["id"]}'
         elif isinstance(photo, str):
             self.id = photo
         else:
             raise TypeError('Wrong Photo type')
 
-    def data(self):
-        return self.get_photos_by_ids([self.id])[0]
+    @cache_method_ignore_args
+    async def data(self) -> dict:
+        return (await VkMethods.photos_ids([self.id]))[0]
 
-    @property
     def url(self):
         return 'https://vk.com/photo' + self.id
 
     @property
     @public_object_method
     def source(self):
-        return self.data()['sizes'][-1]['url']
+        return None
+        # return (await self.data())['sizes'][-1]['url']
 
-    @property
-    def valid(self):
+    def summary(self) -> dict:
+        return {}
+
+    async def valid(self):
         return isinstance(self.data(), dict) and self.data()
 
-    @property
-    def name(self):
-        return self.source
+    async def status(self):
+        return None
 
     def tags(self):
         return self.get_photo_tags(self.id)
@@ -126,7 +130,7 @@ class VKPhotos(ManyEntities):
         elif isinstance(photos[0], VKPhoto):
             self.nodes = [photo.id for photo in photos]
         elif isinstance(photos[0], dict):
-            self.full_data_ = photos
+            self._data = photos
             self.nodes = [f'{photo["owner_id"]}_{photo["id"]}' for photo in photos]
         else:
             raise TypeError('Wrong photos type')
@@ -134,6 +138,11 @@ class VKPhotos(ManyEntities):
         if len(self.nodes) != len(set(self.nodes)):
             logger.warning('Photos nodes repeats')
 
-    def data(self, force=False, full=True):
-        return VkMethods.photos_ids.sync(photo_ids=self.nodes)
+    @cache_method_ignore_args
+    async def data(self):
+        return await VkMethods.photos_ids(photo_ids=self.nodes)
 
+    def summary(self) -> dict:
+        return {
+            'size': self.size
+        }

@@ -14,14 +14,6 @@ class AnyEntity(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def name(self):
-        """
-        Human readable name of object
-        """
-        pass
-
-    @property
-    @abstractmethod
     def hash(self):
         """
         Each media must have own unique string hash
@@ -29,13 +21,6 @@ class AnyEntity(metaclass=ABCMeta):
         str_id = str(self.__hash__()).encode('UTF-8')
         obj_id = hashlib.sha1(str_id).hexdigest()[-16:]
         return obj_id
-
-    @abstractmethod
-    def summary(self) -> dict:
-        """
-        Little summery about object, most important info
-        """
-        pass
 
     @abstractmethod
     def data(self) -> typing.Union[list, dict, None]:
@@ -71,15 +56,12 @@ class AnyEntity(metaclass=ABCMeta):
 
         exporter(data=data).write(writers[format_](filename=filename))
 
-    def preload(self, force=False):
-        self.data(force=force)
+    def preload(self):
+        self.data()
 
     def __hash__(self):
         """
         All objects must implement hash method
         """
         return hash(self.hash)
-
-    def __str__(self):
-        return self.name
 

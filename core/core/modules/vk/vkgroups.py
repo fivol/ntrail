@@ -9,6 +9,7 @@ from collections import Counter
 import networkx as nx
 import math
 
+from ...module.connected_entities import ConnectedEntities
 from ...module.many_entities import ManyEntities
 
 logger = logging.getLogger('vk-groups')
@@ -26,7 +27,7 @@ groups_types_dict = {
 }
 
 
-class VKGroups(ManyEntities):
+class VKGroups(ConnectedEntities):
     _single_media_cls = VKGroup
     available_attributes = ['clusters', 'members']
 
@@ -118,7 +119,7 @@ class VKGroups(ManyEntities):
         self.graph_ = g
         return g
 
-    def get_connections(self):
+    def connections(self, **kwargs) -> dict[list]:
         graph = self.graph()
         return {
             node: list(graph.neighbors(node))

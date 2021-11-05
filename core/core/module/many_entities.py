@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 import hashlib
 
 from collections import Counter
@@ -8,7 +8,7 @@ from core.helpers.utils import counter_top
 from pycommon.decors import cache_method_ignore_args
 
 
-class ManyEntities(AnyEntity):
+class ManyEntities(AnyEntity, metaclass=ABCMeta):
     _single_media_cls = None
 
     def __init__(self, *args, **kwargs):
@@ -28,15 +28,10 @@ class ManyEntities(AnyEntity):
         return Counter(self.nodes)
 
     def objects(self):
-        return [self.__class__._single_media_cls(node) for node in self.nodes]
+        if hasattr(self, '_data'):
+            return [self.__class__._single_media_cls(data) for data in self._data]
 
-    @abstractmethod
-    def connections(self, **kwargs) -> dict[list]:
-        """
-        Connections between nodes dict.
-        List consists of ids
-        """
-        pass
+        return [self.__class__._single_media_cls(node) for node in self.nodes]
 
     def select(self, k=-1, break_point=1, rand=False):
         if rand and k > 0:
@@ -49,9 +44,9 @@ class ManyEntities(AnyEntity):
             return self.__class__(Counter(dict(counter_top(self.counter.most_common(), break_point))))
         return self.__class__(Counter(dict(self.counter.most_common(k))))
 
-    def clusters(self):
-        from core.module.clusters import Clusters
-        return Clusters(self)
+    @abstractmethod
+    async def data(self) -> list:
+        pass
 
     def __len__(self):
         return self.size

@@ -21,7 +21,7 @@ class VKPost(MediaObject):
 
     @cache_method_ignore_args
     async def data(self, force=False, full=True) -> dict:
-        return await VkMethods.posts_ids([self.id])[0]
+        return (await VkMethods.posts_ids([self.id]))[0]
 
     def summary(self) -> dict:
         # TODO
