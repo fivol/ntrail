@@ -13,7 +13,7 @@ class UserFansPlugin(BasePlugin):
         self._user = user
 
     async def response(self) -> list:
-        posts = await self._user.posts()
+        posts = await self._user.posts(all_=False)
         likes = await asyncio.gather(*[post.likes() for post in posts])
         likes = sum(likes, start=VKCommunity())
         likes.counter().pop(self._user.id, None)
