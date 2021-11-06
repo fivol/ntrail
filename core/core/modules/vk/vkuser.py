@@ -7,18 +7,18 @@ from core.modules.vk.vkphoto import VKPhotos
 from core.constants import AccountStatus, NO_AVA_IMG
 from core.modules.vk.vkpost import VKPosts
 from core.modules.vk.vkgroups import VKGroups
-from core.module.one_object_represent import OneObjectRepresent
 from pycommon.decors import cache_method_ignore_args
 from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
 from worker import VkMethods, VKError
-from ...module.layers import public_object_method
+from core.module.layers import public_object_method
+from core.module.single_entity import SingleEntity
 
 logger = logging.getLogger('vk-user')
 
 
-class VKUser(OneObjectRepresent):
+class VKUser(SingleEntity):
 
     @classmethod
     async def create(cls, user) -> VKUser:
@@ -109,8 +109,8 @@ class VKUser(OneObjectRepresent):
         assert isinstance(subscriptions, list)
         return VKCommunity(subscriptions)
 
-    def groups(self):
-        return VKGroups(VkMethods.groups(self.id), source=self).order()
+    async def groups(self):
+        return VKGroups(await VkMethods.groups(self.id), source=self)
 
     @classmethod
     def random(cls):

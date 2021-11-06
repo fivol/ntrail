@@ -60,7 +60,7 @@ class CrossConnections(Represent):
         graph = self.many_objects.graph()
         connected_nodes = set()
         entities = []
-        main_obj = self.many_objects.main
+        main_obj = self.many_objects._main
         main = None
         if main_obj:
             main = main_obj.id
