@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import abstractmethod, ABCMeta
 import hashlib
 
@@ -13,7 +14,6 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
     def __init__(self, *args, **kwargs):
         self.nodes: list = []
-        self._counter = None
 
     @property
     def size(self):
@@ -33,16 +33,17 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
         return [self.__class__._single_media_cls(node) for node in self.nodes]
 
-    def select(self, k=-1, break_point=1, rand=False):
-        if rand and k > 0:
+    def select(self, count=None, break_point=None, shuffle=False):
+        assert count or break_point
+        if shuffle and count:
             nodes = self.nodes
             random.shuffle(nodes)
-            nodes = self.nodes[:k]
+            nodes = self.nodes[:count]
             return self.__class__(nodes)
 
-        if k == -1:
-            return self.__class__(Counter(dict(counter_top(self.counter.most_common(), break_point))))
-        return self.__class__(Counter(dict(self.counter.most_common(k))))
+        if not count:
+            return self.__class__(Counter(dict(counter_top(self.counter().most_common(), break_point))))
+        return self.__class__(Counter(dict(self.counter().most_common(count))))
 
     @abstractmethod
     async def data(self) -> list:

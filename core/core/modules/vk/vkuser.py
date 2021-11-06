@@ -1,10 +1,9 @@
 from __future__ import annotations
 import logging
-from functools import cache
 import re
 
 from core.modules.vk.vkphoto import VKPhotos
-from core.constants import AccountStatus, NO_AVA_IMG
+from core.constants import AccountStatus
 from core.modules.vk.vkpost import VKPosts
 from core.modules.vk.vkgroups import VKGroups
 from pycommon.decors import cache_method_ignore_args
@@ -38,13 +37,19 @@ class VKUser(SingleEntity):
                 else:
                     logger.info('VKUser username type is "%s"', user_dict.get('type'))
                     status = AccountStatus.ABSENT
-        return cls(user_id=user_id, status=status)
+        return cls(user=user_id, status=status)
 
-    def __init__(self, user_id: int, status=None, **kwargs):
+    def __init__(self, user, status=None, **kwargs):
         super().__init__()
-        self.id = user_id
         self._status = status
-        assert isinstance(user_id, int) or user_id is None
+        self.id = None
+        if isinstance(user, int):
+            self.id = user
+        elif isinstance(user, dict):
+            self.id = user['id']
+            self._data = user
+        elif user is not None:
+            raise TypeError('Unknown user type', type(user))
 
     @staticmethod
     def _extract_username(url):

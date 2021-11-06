@@ -21,14 +21,12 @@ class VKCommunity(ConnectedEntities):
             users = list(users)
         assert main is None or isinstance(main, VKUser) or isinstance(main, VKGroup), main
         self.main = main
-        self.nodes = []
-        self._counter = Counter()
         self.target = target
         if not users:
             return
         if isinstance(users, Counter):
             self._counter = users
-            self.nodes = [i[0] for i in self._counter.most_common()]
+            self.nodes = list(users)
         elif isinstance(users, list):
             if users:
                 if isinstance(users[0], VKUser):
@@ -75,11 +73,10 @@ class VKCommunity(ConnectedEntities):
             for (first_id, connected_list) in zip(self.nodes, connections)
         }
 
-    def only_valid(self):
-        self.preload()
+    async def only_valid(self):
+        await self.preload()
         return VKCommunity(
-            Counter({user.id: self.counter()[user.id] for user in self.objects() if user.valid}),
-            clear=False
+            Counter({user.id: self.counter()[user.id] for user in self.objects() if await user.valid()})
         )
 
     @classmethod

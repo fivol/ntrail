@@ -23,7 +23,7 @@ class AnyEntity(metaclass=ABCMeta):
         return obj_id
 
     @abstractmethod
-    def data(self) -> typing.Union[list, dict, None]:
+    async def data(self) -> typing.Union[list, dict, None]:
         """
         Data structure about object, list or dict
         """
@@ -56,8 +56,8 @@ class AnyEntity(metaclass=ABCMeta):
 
         exporter(data=data).write(writers[format_](filename=filename))
 
-    def preload(self):
-        self.data()
+    async def preload(self):
+        await self.data()
 
     def __hash__(self):
         """
