@@ -120,7 +120,11 @@ class UserInterestsPlugin(BasePlugin):
         data = await groups.data()
         tokens = self._groups_tokens(data)
         topics = self._extract_topics(tokens)
-        return topics.most_common(10)
+        best_topics = topics.most_common(10)
+        return [
+            (name.capitalize(), value)
+            for name, value in best_topics
+        ]
 
 
 with suppress(Exception):

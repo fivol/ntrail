@@ -22,8 +22,8 @@ logger = logging.getLogger()
 
 async def main():
     # niknepiaja
-    response = await PluginManager({'user': 'https://vk.com/drevnik'}, input_plugins=['user'],
-                                   options=['user-interests.relevant']).execute()
+    response = await PluginManager({'user': 'aido4kas'}, input_plugins=['user'],
+                                   options=['user-fans']).execute()
     pprint(response)
 
 

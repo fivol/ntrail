@@ -2,7 +2,6 @@ import asyncio
 
 from core import VKUser, VKCommunity
 from server.plugin.plugin import BasePlugin
-from collections import Counter
 
 
 class UserFansPlugin(BasePlugin):
@@ -13,18 +12,22 @@ class UserFansPlugin(BasePlugin):
         self._user = user
 
     async def response(self) -> list:
+        my_sex = (await self._user.data()).get('sex')
         posts = await self._user.posts(all_=False)
         likes = await asyncio.gather(*[post.likes() for post in posts])
         likes = sum(likes, start=VKCommunity())
-        likes.counter().pop(self._user.id, None)
-        users = likes.counter().most_common()[:3]
-        names = await asyncio.gather(*[VKUser(user[0]).name() for user in users])
+        top_likes = likes.select(count=10)
+        top_likes = await top_likes.only_valid()
+        counter = top_likes.counter()
+        users = await top_likes.data()
+        users = [{**user, 'weight': counter[user['id']]} for user in users]
+        other_sex = filter(lambda user: user['sex'] != my_sex, users)
         return [
             {
-                'id': user_id,
-                'url': VKUser(user_id).url,
-                'name': name,
-                'weight': count
+                'id': user['id'],
+                'url': VKUser(user['id']).url,
+                'name': await VKUser(user).name(),
+                'weight': user['weight']
             }
-            for (user_id, count), name in zip(users, names)
+            for user in other_sex
         ]
