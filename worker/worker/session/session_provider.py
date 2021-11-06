@@ -22,8 +22,9 @@ class SessionProvider:
             except SessionAction as action:
                 self._manager.return_session(self._session, action=action)
                 raise TokenAuthFailed()
-            except:
-                pass
+            except Exception:
+                self._manager.return_session(self._session)
+                raise
 
         self._manager.return_session(self._session)
         return False

@@ -5,7 +5,7 @@ from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
-from worker.parsers.vk.exceptions import VKError
+from worker.parsers.vk.exceptions import VKError, VKErrorType
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.session.exceptions import SessionManagerException, SessionRemove
@@ -47,6 +47,8 @@ class VkApiSession(SessionState):
         if exc_type == VkAPIError:
             error = VKError(error=exc_val)
             logger.warning('Catch vk api error: %s', error)
+            if error.type == VKErrorType.ACCESS_DENIED:
+                raise TokenAccessDenied()
             raise error
         if exc_type == VkAuthError:
             raise SessionRemove()
