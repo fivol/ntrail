@@ -1,4 +1,4 @@
-VERSION: 1.1.1
+VERSION: 1.1.2
 BASE_URL: 'http://localhost:8000'
 VK_APP:
   CLIENT_ID: 7898476

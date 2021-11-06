@@ -18,13 +18,9 @@ register_plugins()
 
 logger = logging.getLogger()
 
+
 async def main():
-    print(UserRegistrationDate.date(1))
-    pass
-    # res = await PluginManager(input_plugins=['user', 'friends'],
-    #                           options=['community.all'],
-    #                           kwargs={'user': 'ffboris'}).execute()
-    # pprint(res)
+    print(await VkMethods.posts(174537334))
 
 if __name__ == '__main__':
     with Engine(caching=False):
