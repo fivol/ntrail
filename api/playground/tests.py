@@ -7,6 +7,7 @@ from pprint import pprint
 from tqdm import tqdm, trange
 
 from core import VKUser, VKCommunity
+from core.modules.vk.vkgroups import VKGroups
 from server.helpers.tied_value import TiedValue
 from server.plugin.register import register_plugins
 from server.plugin.plugin_manager import PluginManager
@@ -20,7 +21,9 @@ logger = logging.getLogger()
 
 
 async def main():
-    print(await VkMethods.posts(174537334))
+    user = await VKUser.create('ffboris')
+    groups = await user.groups()
+    print(await groups.data())
 
 if __name__ == '__main__':
     with Engine(caching=False):

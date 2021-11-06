@@ -7,6 +7,6 @@ venv/
 *.cache
 *.db-*
 .git/
-.data/
+playground/.data/
 *.png
 .DS_Store
