@@ -1,3 +1,6 @@
+import os
+import pathlib
+
 from jsonpath_ng import jsonpath, parse
 
 
@@ -19,3 +22,6 @@ def get_value_by_path(data, full_path):
         obj = obj[key]
     return obj
 
+
+def absolute_path(py_file, relative_path):
+    return os.path.join(pathlib.Path(py_file).parent.resolve(), relative_path)

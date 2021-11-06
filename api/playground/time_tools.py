@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from timeit import timeit
 from time import time
 
 

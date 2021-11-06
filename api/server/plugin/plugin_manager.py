@@ -41,6 +41,8 @@ class PluginManager:
         if not path_items:
             raise WrongInputError('Empty option')
         result = self._create_plugin(path_items[0])
+        if result.broken:
+            return None
         for path in path_items[1:]:
             if path.startswith('_'):
                 raise WrongInputError("Can't access private method")
@@ -68,7 +70,7 @@ class PluginManager:
         if isinstance(result, BasePlugin):
             result = result.response()
             if inspect.isawaitable(result):
-                result = await result
+                result = await result  # noqa
         return result
 
     @staticmethod
@@ -107,7 +109,7 @@ class PluginManager:
 
         return response
 
-    def _create_plugin(self, name: str):
+    def _create_plugin(self, name: str) -> BasePlugin:
         plugin_cls = self.get_plugin(name, is_input=False)
         plugin = plugin_cls(manager=self, **self._kwargs)
         plugin.init()

@@ -10,6 +10,8 @@ class Plugin:
 
 
 class BasePlugin(Plugin):
+    broken: False
+
     def __init__(self, manager=None, verbose: ResponseVerbose = None, **kwargs):
         self.__manager = manager
         self._verbose = verbose

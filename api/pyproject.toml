@@ -20,6 +20,8 @@ networkx = "^2.6.3"
 peewee = "^3.14.8"
 more-itertools = "^8.10.0"
 numpy = "^1.21.3"
+nltk = "^3.6.5"
+pymystem3 = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 

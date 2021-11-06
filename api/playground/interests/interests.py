@@ -1,9 +1,15 @@
 import asyncio
+import concurrent
 import logging
+import re
+from collections import Counter
+from concurrent.futures.process import ProcessPoolExecutor
 from contextlib import suppress
 from datetime import datetime
 from pprint import pprint
+from time import time
 
+from pymystem3 import Mystem
 from tqdm import tqdm, trange
 
 from core import VKUser, VKCommunity
@@ -14,17 +20,17 @@ from server.plugin.plugin_manager import PluginManager
 from server.routes.vk.plugins.register_date import UserRegistrationDate
 from worker import Engine
 from worker import VkMethods
+import nltk
+import pymorphy2
 
+# http://nlpx.net/archives/57
 register_plugins()
 
 logger = logging.getLogger()
 
 
 async def main():
-    # niknepiaja
-    response = await PluginManager({'user': 'https://vk.com/drevnik'}, input_plugins=['user'],
-                                   options=['user-interests.relevant']).execute()
-    pprint(response)
+    pass
 
 
 if __name__ == '__main__':

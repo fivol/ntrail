@@ -6,7 +6,9 @@ import numpy as np
 import csv
 import os
 
-_map_file_name = 'id-date.csv'
+from server.helpers.utils import absolute_path
+
+_map_file_name = 'data/id-date.csv'
 
 
 class UserRegistrationDate:
@@ -28,7 +30,7 @@ class UserRegistrationDate:
 
     @classmethod
     def _read_map_file(cls):
-        filename = os.path.join(pathlib.Path(__file__).parent.resolve(), _map_file_name)
+        filename = absolute_path(__file__, _map_file_name)
         ids = []
         dates = []
         with open(filename, newline='') as f:

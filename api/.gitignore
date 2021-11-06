@@ -7,6 +7,6 @@ venv/
 *.cache
 *.db-*
 .git/
-playground/.data/
+playground/id_dates_parsing/.data/
 *.png
 .DS_Store
