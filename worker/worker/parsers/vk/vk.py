@@ -208,6 +208,16 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
+    @decorate(reliable_call, partition_split(500))
+    async def groups_ids(cls, groups: list[str], **kwargs) -> list:
+        return await cls._run_query(
+            'groups.getById',
+            {'group_ids': groups, 'fields': groups_full_fields},
+            [cls._app_api, cls._comm_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(1000))
     async def photos(cls, owner_id, album_id: str, **kwargs) -> ListWithCount:
         return await cls._run_query(
