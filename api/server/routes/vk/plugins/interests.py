@@ -8,6 +8,7 @@ import pymorphy2
 from core import VKUser
 from server.helpers.utils import absolute_path
 from server.plugin.plugin import BasePlugin
+from worker import get_context
 
 
 class Morphology:
@@ -127,7 +128,10 @@ class UserInterestsPlugin(BasePlugin):
         ]
 
 
+ctx = get_context()
+
 with suppress(Exception):
     UserInterestsPlugin.broken = True
     UserInterestsPlugin._read_data()  # noqa
+    ctx.interests_disabled = True
     UserInterestsPlugin.broken = False
