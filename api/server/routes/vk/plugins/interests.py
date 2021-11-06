@@ -129,9 +129,5 @@ class UserInterestsPlugin(BasePlugin):
 
 
 ctx = get_context()
-
-with suppress(Exception):
-    UserInterestsPlugin.broken = True
-    UserInterestsPlugin._read_data()  # noqa
-    ctx.interests_disabled = True
-    UserInterestsPlugin.broken = False
+nltk.download('punkt')
+UserInterestsPlugin._read_data()  # noqa
