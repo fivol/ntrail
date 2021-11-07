@@ -32,8 +32,7 @@ async def timeout_middleware(request: Request, call_next):
     """If query is too long, stop it with 504"""
     start_time = time.time()
     try:
-        # config.int('REQUESTS_TIMEOUT')
-        return await asyncio.wait_for(call_next(request), timeout=3)
+        return await asyncio.wait_for(call_next(request), timeout=config.int('REQUESTS_TIMEOUT'))
     except asyncio.TimeoutError:
         process_time = time.time() - start_time
         return JSONResponse({'detail': 'Request processing time exceeded limit',
