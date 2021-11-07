@@ -3,11 +3,9 @@ import re
 from collections import Counter
 
 from core.module.connected_entities import ConnectedEntities
-from core.module.many_entities import ManyEntities
 from worker import VkMethods
 from core.modules.vk.vkgroup import VKGroup
 from core.modules.vk.vkgroups import VKGroups
-from core.helpers.utils import *
 from core.modules.vk.vkuser import VKUser
 
 
@@ -66,7 +64,7 @@ class VKCommunity(ConnectedEntities):
         users_friends += [self.nodes]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
-    async def connections(self):
+    async def graph(self):
         connections = await VkMethods.friends.map(self.nodes)
         return {
             first_id: [second_id for second_id in connected_list if second_id in self.nodes]

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from pycommon.decors import cache_method_ignore_args
@@ -60,38 +61,30 @@ class VKGroups(ConnectedEntities):
     async def select_type(self, type_name):
         return VKGroups([group['id'] for group in await self.data() if group['type'] == type_name])
 
-    @classmethod
-    def compare_groups(cls, group1, group2, k=3000):
-        users1 = set(cls.get_random_group_members(group1, k=k))
-        users2 = set(cls.get_random_group_members(group2, k=k))
-        return len(users1.intersection(users2)) / k
-
-    def graph(self):
-        if hasattr(self, 'graph_'):
-            return self.graph_
-        k = 3000
-        g = nx.Graph()
-        g.add_nodes_from(self.nodes)
-        group_members = {
-            group_id: set(self.get_random_group_members(group_id, k=k))
-            for group_id in self.nodes
+    @cache_method_ignore_args
+    async def graph(self, members_count=1000, threshold=0.005) -> nx.Graph:
+        graph = nx.Graph()
+        graph.add_nodes_from(self.nodes)
+        groups = self.objects()
+        members = await asyncio.gather(*[
+            group.members(count=members_count) for group in groups
+        ], return_exceptions=True)
+        members = {
+            group.id: members_
+            for group, members_ in zip(groups, members) if not isinstance(members_, Exception)
         }
+
         for num, i in enumerate(self.nodes):
             for j in self.nodes[num + 1:]:
-                users1 = group_members[i]
-                users2 = group_members[j]
-                connection_weight = len(users1.intersection(users2)) / k
-                if connection_weight > 0.005:
-                    g.add_edge(i, j, weight=connection_weight)
-        self.graph_ = g
-        return g
+                if i in members and j in members:
+                    weight = self._groups_connectedness(members[i], members[j])
+                    if weight > threshold:
+                        graph.add_edge(i, j, weight=weight)
+        return graph
 
-    def connections(self, **kwargs) -> dict[list]:
-        graph = self.graph()
-        return {
-            node: list(graph.neighbors(node))
-            for node in self.nodes
-        }
+    @classmethod
+    def _groups_connectedness(cls, c1, c2):
+        return len(set(c1.nodes).intersection(set(c2.nodes))) / min(len(c1), len(c2))
 
     def links_graph(self):
         groups_data = self.full_data

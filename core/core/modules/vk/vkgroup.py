@@ -35,8 +35,8 @@ class VKGroup(SingleEntity):
 
         return VKGroup(group)
 
-    async def data(self, force=False):
-        return await VkMethods.groups(self.id)
+    async def data(self) -> dict:
+        return (await VkMethods.groups_ids([self.id]))[0]
 
     async def members(self, count=None):
         from core.modules.vk.vkcommunity import VKCommunity
@@ -57,6 +57,10 @@ class VKGroup(SingleEntity):
 
     async def valid(self):
         return await self.status() == GroupStatus.VALID
+
+    async def name(self):
+        data = await self.data()
+        return data['name']
 
     @property
     def url(self):
