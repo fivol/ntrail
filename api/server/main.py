@@ -31,12 +31,17 @@ async def timeout_middleware(request: Request, call_next):
     """If query is too long, stop it with 504"""
     start_time = time.time()
     try:
-        return await asyncio.wait_for(call_next(request), timeout=config.int('REQUESTS_TIMEOUT'))
+        # config.int('REQUESTS_TIMEOUT')
+        return await asyncio.wait_for(call_next(request), timeout=3)
     except asyncio.TimeoutError:
         process_time = time.time() - start_time
-        return JSONResponse({'detail': 'Request processing time excedeed limit',
+        return JSONResponse({'detail': 'Request processing time exceeded limit',
                              'processing_time': process_time},
                             status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+    except Exception:
+        logger.exception('SOME BIG PROBLEM')
+        return JSONResponse({'detail': 'Request exception'},
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @app.on_event('shutdown')
@@ -82,3 +87,9 @@ async def get_config():
         'context': repr(ctx)
     }
 
+
+@app.get('/long_query/', response_model=str)
+async def version():
+    await asyncio.sleep(11)
+    """Текущая версия API"""
+    return 'hello'
