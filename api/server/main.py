@@ -12,7 +12,7 @@ from server.routes import auth
 from server.plugin.register import register_plugins
 from worker import Engine, get_context
 
-logger = logging.getLogger('main')
+logger = logging.getLogger()
 
 app = FastAPI(
     debug=config.DEBUG,
