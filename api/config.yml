@@ -6,6 +6,8 @@ VK_APP:
 
 CACHING: true
 redis_url: "redis://0.0.0.0:6379"
+check_alive_interval: 60
+check_alive_limit_timeout: 4
 
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file

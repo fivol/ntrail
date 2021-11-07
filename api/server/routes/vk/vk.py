@@ -28,6 +28,7 @@ async def vk_user(token: str = Query(None, title='API токен'),
     - groups: группы и сообщества человека
     """
     # TODO Do not initialize all sessions for each request
+
     try:
         kwargs = {'user': user}
         manager = PluginManager(kwargs=kwargs, input_plugins=['user'], options=options)

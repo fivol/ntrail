@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 
+import aiohttp
 from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse
 from starlette.responses import JSONResponse
@@ -50,7 +51,7 @@ async def shutdown_event():
 
 
 @app.on_event('startup')
-def startup_event():
+async def startup_event():
     global engine
     engine = Engine(caching=config.bool('CACHING'))
 
@@ -63,6 +64,7 @@ register_plugins()
 
 @app.on_event("startup")
 async def startup_event():
+    asyncio.create_task(alive_check_daemon())
     pass
     # await db.set_bind(db_url)
 
@@ -93,3 +95,21 @@ async def version():
     await asyncio.sleep(11)
     """Текущая версия API"""
     return 'hello'
+
+
+async def alive_check_daemon():
+    while True:
+        await asyncio.sleep(config.check_alive_interval)
+        print('CHECK ALIVE')
+        timeout = aiohttp.ClientTimeout(total=config.check_alive_limit_timeout)
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f'{config.BASE_URL}/vk/user/?user=id245089915&options=user') as response:
+                    status_code = response.status
+                    if int(status_code / 100) != 2:
+                        logger.error('It seems server failed')
+                        exit(1)
+                    print('SERVER ALIVE')
+        except:
+            logger.exception('SERVER CHECK TIMEOUT EXCEEDED')
+            exit(2)
