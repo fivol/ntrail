@@ -94,7 +94,7 @@ class VkMethods(BaseParser):
                 return result
             except SessionManagerException as e:
                 if not isinstance(e, RpsLimitException):
-                    logger.exception('Try next token')
+                    logger.warning('Try next token: %s %s', type(e), e)
                 if i == len(apis) - 1:
                     raise
 

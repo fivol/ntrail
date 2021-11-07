@@ -47,7 +47,7 @@ def count_offset_iterator(max_count):
     def decorator(method):
         @wraps(method)
         async def wrapper(*args, **kwargs):
-            count = kwargs.pop('count', max_count)
+            count = kwargs.pop('count', max_count) or max_count
             percent_ = kwargs.pop('percent_', None)
             all_ = kwargs.pop('all_', None)
             if all_:
