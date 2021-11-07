@@ -8,10 +8,12 @@ from server.helpers.utils import absolute_path
 from server.routes.vk.plugins.tokenizer import ContextTiedValue
 
 words_filename = 'data/russian_words.txt'
+stop_words_filename = 'data/stop_words.txt'
 
 
 class IDFCalculator:
     _frequent_words = {}
+    _stop_words = set()
 
     @classmethod
     def _compute_idf(cls, word, corpus):
@@ -24,6 +26,13 @@ class IDFCalculator:
 
         for i, word in enumerate(lines[:2000]):
             cls._frequent_words[word.strip()] = i
+
+    @classmethod
+    def _read_stop_words(cls):
+        with open(absolute_path(__file__, stop_words_filename), 'r') as f:
+            lines = f.readlines()
+        for word in lines:
+            cls._stop_words.add(word.strip('\n').lower())
 
     @classmethod
     def _combine_tied(cls, left, right):
@@ -62,7 +71,7 @@ class IDFCalculator:
     def _repr_label(cls, label: tuple[int, str]):
         weight, name = label
         if name[0].isalpha() and not name[0].isupper():
-            name = name.capitalize()
+            name = name[0].upper() + name[1:]
         return name, weight
 
     @classmethod
@@ -70,6 +79,9 @@ class IDFCalculator:
         """TF-IDF
         http://nlpx.net/archives/57
         """
+        TOP_IDF_ITEMS_COUNT = 8
+        COUNTER_MIN_LIMIT = 1
+        OUTPUT_WEIGHT_LIMIT = 3
 
         from server.routes.vk.plugins.interests import Morphology
         words = [Morphology.tied_tokenize(text) for text in texts]
@@ -82,7 +94,7 @@ class IDFCalculator:
                 word = cls._combine_tied(old, word)
                 all_words[word] = word
         idf = Counter({word: cls._compute_idf(word, words) for word in all_words})
-        top_items = counter_top(idf.most_common(8))
+        top_items = counter_top(idf.most_common(TOP_IDF_ITEMS_COUNT), COUNTER_MIN_LIMIT)
         same_context = defaultdict(list)
         best_token = {}
         for item, count in top_items:
@@ -128,7 +140,10 @@ class IDFCalculator:
         labels = sorted(labels, reverse=True)
         labels = list(map(cls._repr_label, labels))
         labels = list(filter(lambda x: x[0].lower() not in cls._frequent_words, labels))
+        labels = list(filter(lambda x: x[0].lower() not in cls._stop_words, labels))
+        labels = list(filter(lambda x: x[1] >= OUTPUT_WEIGHT_LIMIT, labels))
         return labels
 
 
 IDFCalculator._read_frequent_words()  # noqa
+IDFCalculator._read_stop_words()  # noqa

@@ -31,7 +31,7 @@ logger = logging.getLogger()
 
 
 async def main():
-    user = await VKUser.create('https://vk.com/ffboris')
+    user = await VKUser.create('https://vk.com/azicrowleyprincess')
     groups = await user.groups()
     data = await groups.data()
     names = [group['name'] for group in data]
