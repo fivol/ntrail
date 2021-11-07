@@ -6,15 +6,15 @@ VK_APP:
 
 CACHING: true
 redis_url: "redis://0.0.0.0:6379"
-check_alive_interval: 60
-check_alive_limit_timeout: 4
+check_alive_interval: 120
+check_alive_limit_timeout: 5
 
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file
 DEBUG: true
 
 # Stop any query after this amount of seconds
-REQUESTS_TIMEOUT: 10
+REQUESTS_TIMEOUT: 15
 
 vk:
   # 25 request in execute query, do not change!
