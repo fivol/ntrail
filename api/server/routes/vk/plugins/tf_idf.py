@@ -4,13 +4,26 @@ from pprint import pprint
 
 from core.helpers.utils import counter_top
 from server.helpers.tied_value import TiedValue
+from server.helpers.utils import absolute_path
 from server.routes.vk.plugins.tokenizer import ContextTiedValue
+
+words_filename = 'data/russian_words.txt'
 
 
 class IDFCalculator:
+    _frequent_words = {}
+
     @classmethod
     def _compute_idf(cls, word, corpus):
         return sum([1 for text in corpus if word in text])
+
+    @classmethod
+    def _read_frequent_words(cls):
+        with open(absolute_path(__file__, words_filename), 'r') as f:
+            lines = f.readlines()
+
+        for i, word in enumerate(lines[:2000]):
+            cls._frequent_words[word.strip()] = i
 
     @classmethod
     def _combine_tied(cls, left, right):
@@ -39,6 +52,20 @@ class IDFCalculator:
         return variants[0]
 
     @classmethod
+    def _choose_best(cls, tokens: list[str]) -> str:
+        tokens = sorted(tokens, key=lambda x: len(x))
+        smallest = len(tokens[0])
+        tokens = filter(lambda x: len(x) == smallest, tokens)
+        return sorted(tokens)[-1]
+
+    @classmethod
+    def _repr_label(cls, label: tuple[int, str]):
+        weight, name = label
+        if name[0].isalpha() and not name[0].isupper():
+            name = name.capitalize()
+        return name, weight
+
+    @classmethod
     def calculate(cls, texts: list[str]):
         """TF-IDF
         http://nlpx.net/archives/57
@@ -63,24 +90,45 @@ class IDFCalculator:
             for word, text in item.context:
                 same_context[text].append((word, item))
 
-        # return None
-        for text, words in same_context.items():
+        for text, words in list(same_context.items()):
             tokens = list(map(lambda x: x[1], words))
-            weight = sum(map(lambda x: x[1].weight, words))
+            weight = sum(map(lambda x: x[1].weight, words)) #+ sum([1 for _, vals in same_context.items() if all([token in map(lambda x: x[1], vals) for token in tokens])])
             substr = cls._substr(text, list(map(lambda x: x[0], words)))
             # print(substr, weight, tokens)
             for token in tokens:
                 old = best_token.get(token)
                 if not old:
-                    best_token[token] = (substr, weight)
+                    best_token[token] = (substr, weight, tokens)
                 else:
-                    old_substr, old_weight = old
+                    old_substr, old_weight, _ = old
                     if weight > old_weight:
-                        best_token[token] = (substr, weight)
+                        best_token[token] = (substr, weight, tokens)
                     elif weight == old_weight and len(substr) < len(old_substr):
-                        best_token[token] = (substr, weight)
-        results = list(map(lambda x: x[0], set(best_token.values())))
-        pprint(results)
-        return [
-            (cls._repr_tied(item), count) for item, count in top_items if count != 1
-        ]
+                        best_token[token] = (substr, weight, tokens)
+
+        used_tokens = set()
+        labels = []
+        targets = sorted([(item[1], item[0], item[2]) for token, item in best_token.items()], reverse=True)
+        for weight, substr, tokens in targets:
+            remain_tokens = []
+            for token in tokens:
+                if token not in used_tokens:
+                    remain_tokens.append(token)
+            used_tokens.update(set(tokens))
+            if len(remain_tokens) == len(tokens):
+                used_tokens.update(set(tokens))
+                labels.append((weight, substr))
+            else:
+                for token in remain_tokens:
+                    labels.append(
+                        (idf[token], cls._choose_best(list(map(lambda x: x[0], token.context)))),
+                    )
+                    used_tokens.add(token)
+
+        labels = sorted(labels, reverse=True)
+        labels = list(map(cls._repr_label, labels))
+        labels = list(filter(lambda x: x[0].lower() not in cls._frequent_words, labels))
+        return labels
+
+
+IDFCalculator._read_frequent_words()  # noqa

@@ -7,7 +7,6 @@ from fastapi.responses import RedirectResponse
 from starlette.responses import JSONResponse
 
 from server.config import config
-from server.models import db, db_url
 from server.routes.vk import vk
 from server.routes import auth
 from server.plugin.register import register_plugins

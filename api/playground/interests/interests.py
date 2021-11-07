@@ -35,7 +35,7 @@ async def main():
     groups = await user.groups()
     data = await groups.data()
     names = [group['name'] for group in data]
-    IDFCalculator.calculate(names)
+    pprint(IDFCalculator.calculate(names))
     return
     # print(await groups[4].members())
     # return
