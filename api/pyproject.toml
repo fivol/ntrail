@@ -22,6 +22,7 @@ more-itertools = "^8.10.0"
 numpy = "^1.21.3"
 nltk = "^3.6.5"
 pymystem3 = "^0.2.0"
+python-louvain = "^0.15"
 
 [tool.poetry.dev-dependencies]
 

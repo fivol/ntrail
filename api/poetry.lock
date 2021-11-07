@@ -418,6 +418,18 @@ python-versions = "*"
 requests = "*"
 
 [[package]]
+name = "python-louvain"
+version = "0.15"
+description = "Louvain algorithm for community detection"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+networkx = "*"
+numpy = "*"
+
+[[package]]
 name = "python-socks"
 version = "1.2.4"
 description = "Core proxy (SOCKS4, SOCKS5, HTTP tunneling) functionality for Python"
@@ -596,7 +608,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.11"
-content-hash = "7f8ce44483a5882a485c3a75ea7e80bba791b01cb17f977198b39002b4fde2de"
+content-hash = "6470330269b099ca3f455ecd5c3e1321755dc1b414d947c25e9f116fc36eb6f8"
 
 [metadata.files]
 aiohttp = [
@@ -1013,6 +1025,9 @@ pymorphy2-dicts-ru = [
 pymystem3 = [
     {file = "pymystem3-0.2.0-py3-none-any.whl", hash = "sha256:0bfdb0c2c57157f413c85f3e5f54a41f294880c3d6e8028066e71598ee6b52aa"},
     {file = "pymystem3-0.2.0.tar.gz", hash = "sha256:1aaed6a15451cc73f5750bcda77559e681215e1e391b35dd4325bd132a3afb95"},
+]
+python-louvain = [
+    {file = "python-louvain-0.15.tar.gz", hash = "sha256:2a856edfbe29952a60a5538a84bb78cca18f6884a88b9325e85a11c8dd4917eb"},
 ]
 python-socks = [
     {file = "python-socks-1.2.4.tar.gz", hash = "sha256:7d0ef2578cead9f762b71317d25a6c118fabaf79535555e75b3e102f5158ddd8"},

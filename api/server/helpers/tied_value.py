@@ -71,7 +71,6 @@ class TiedValue:
 
     def __repr__(self):
         return str(self)
-        return f'TiedValue({self.value}, {self.id})'
 
     def __str__(self):
         return str(self.value)

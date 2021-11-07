@@ -1,49 +1,12 @@
-import re
 from collections import Counter
-from contextlib import suppress
-
 import nltk
-import pymorphy2
 
 from core import VKUser
 from server.helpers.utils import absolute_path
 from server.plugin.plugin import BasePlugin
+from server.routes.vk.plugins.tf_idf import IDFCalculator
+from server.routes.vk.plugins.tokenizer import Morphology
 from worker import get_context
-
-
-class Morphology:
-    _denied_tags = ['PREP', 'PNCT', 'CONJ', 'NUMB', 'UNKN', 'PRCL', 'NPRO', 'ADVB']
-    _denied_tags_reg = re.compile('|'.join(_denied_tags))
-    _morph = pymorphy2.MorphAnalyzer(lang='ru')
-    _stemmer = nltk.stem.snowball.RussianStemmer()
-
-    """
-    Stemmers:
-    m = Mystem()
-    # https://stackoverflow.com/questions/45696028/snowballstemmer-for-russian-words-list
-    
-    
-    https://pymorphy2.readthedocs.io/en/stable/user/guide.html
-    morph.parse(token)[0]
-    """
-
-    @classmethod
-    def tokenize(cls, text: str) -> list[str]:
-        """
-        Split text to form independent tokens
-        """
-        tokens = []
-        # m.lemmatize(text)
-        for token in nltk.word_tokenize(text, language='russian'):
-            if len(token) < 3:
-                continue
-            # tokens.append(stem)
-            lexem = cls._morph.parse(token)[0]
-            if cls._denied_tags_reg.search(str(lexem.tag)):
-                continue
-            tokens.append(cls._stemmer.stem(lexem.normal_form))
-
-        return tokens
 
 
 interests_filename = 'data/interests.txt'
@@ -115,6 +78,15 @@ class UserInterestsPlugin(BasePlugin):
             for name, count in top
             if count > best / 3 and count > 1
         ]
+
+    async def groups(self):
+        """TF-IDF
+        http://nlpx.net/archives/57
+        """
+        groups = await self._user.groups()
+        data = await groups.data()
+        names = [group.get('name') for group in data]
+        return IDFCalculator.calculate(names)
 
     async def response(self) -> list:
         groups = await self._user.groups()
