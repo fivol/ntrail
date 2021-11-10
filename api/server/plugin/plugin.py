@@ -21,7 +21,7 @@ class BasePlugin(Plugin):
         return self.response()
 
     @abstractmethod
-    def response(self) -> dict:
+    def response(self) -> typing.Union[dict, list]:
         """Return json dict to response, that will be shown to user"""
         pass
 
