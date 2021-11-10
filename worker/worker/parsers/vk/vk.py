@@ -162,7 +162,7 @@ class VkMethods(BaseParser):
             'friends.get',
             {'user_id': user_id},
             [cls._app_api, cls._user_api],
-            executable=False,
+            executable=True,
             **kwargs
         )
 
