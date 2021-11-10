@@ -14,9 +14,9 @@ class UserFansPlugin(BasePlugin):
     async def response(self) -> list:
         my_sex = (await self._user.data()).get('sex')
         posts = await self._user.posts(all_=False)
-        likes = await asyncio.gather(*[post.likes() for post in posts])
+        likes = await asyncio.gather(*[post.likes() for post in posts.objects()])
         likes = sum(likes, start=VKCommunity())
-        top_likes = likes.select(count=10)
+        top_likes = likes.select(count=10, break_point=1)
         top_likes = await top_likes.only_valid()
         counter = top_likes.counter()
         users = await top_likes.data()

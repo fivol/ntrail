@@ -22,7 +22,6 @@ class SpecialFriendsPlugin(BasePlugin):
         node_pool = {}
         pool_interaction_weight = defaultdict(dict)
         for i, pool in enumerate(pools):
-            # pprint(await UsersRepresentation.represent(pool))
             for node in pool:
                 node_pool[node] = i
         for i, pool in enumerate(pools):
@@ -31,8 +30,6 @@ class SpecialFriendsPlugin(BasePlugin):
                     mate_pool = node_pool[mate]
                     if mate_pool == i:
                         continue
-                    if i == 1 and mate_pool == 0:
-                        print(mate)
                     pool_interaction_weight[i][mate_pool] = pool_interaction_weight[i].get(mate_pool, 0) + 1
 
         node_cross_score = defaultdict(int)
