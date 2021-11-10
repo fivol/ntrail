@@ -43,7 +43,7 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
         if not count:
             return self.__class__(Counter(dict(counter_top(self.counter().most_common(), break_point))))
-        return self.__class__(Counter(dict(self.counter().most_common(count))))
+        return self.__class__(Counter(dict(counter_top(self.counter().most_common(count), break_point=break_point))))
 
     @abstractmethod
     async def data(self) -> list:
