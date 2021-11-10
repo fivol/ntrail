@@ -68,3 +68,9 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
     def __repr__(self):
         return f'{self.__class__.__name__}(<size: {self.size}>)'
+
+    def __contains__(self, item):
+        return item in self.nodes
+
+    def __iter__(self):
+        return iter(self.nodes)

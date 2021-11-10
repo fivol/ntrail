@@ -54,7 +54,7 @@ class VKUser(SingleEntity):
     @staticmethod
     def _extract_username(url):
         url = url.lower()
-        if re.fullmatch(r'[0-9a-z._]+', url):
+        if re.fullmatch(r'[0-9a-zA-Z._]+', url):
             return url
         from .vkcommunity import VKCommunity
         usernames = VKCommunity._parse_usernames(url)
@@ -137,12 +137,13 @@ class VKUser(SingleEntity):
     def url(self):
         return f'https://vk.com/id{self.id}'
 
-    async def friends(self):
+    async def friends(self, include_self=False):
         from .vkcommunity import VKCommunity
         friend_ids = await VkMethods.friends(self.id)
         if isinstance(friend_ids, ParserRealError):
             return VKCommunity()
-        friend_ids.append(self.id)
+        if include_self:
+            friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
 
 

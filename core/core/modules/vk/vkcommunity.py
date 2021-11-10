@@ -2,7 +2,10 @@ import random
 import re
 from collections import Counter
 
+import networkx as nx
+
 from core.module.connected_entities import ConnectedEntities
+from pycommon.decors import cache_method_ignore_args
 from worker import VkMethods
 from core.modules.vk.vkgroup import VKGroup
 from core.modules.vk.vkgroups import VKGroups
@@ -56,7 +59,7 @@ class VKCommunity(ConnectedEntities):
             [])
         return VKGroups(all_groups_ids)
 
-    async def data(self, force=False, full=True) -> list:
+    async def data(self) -> list:
         return await VkMethods.users(self.nodes)
 
     async def friends(self):
@@ -64,12 +67,20 @@ class VKCommunity(ConnectedEntities):
         users_friends += [self.nodes]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
+    @cache_method_ignore_args
     async def graph(self):
+        graph = nx.Graph()
         connections = await VkMethods.friends.map(self.nodes)
-        return {
-            first_id: [second_id for second_id in connected_list if second_id in self.nodes]
-            for (first_id, connected_list) in zip(self.nodes, connections)
+        friends = {
+            node: conn
+            for node, conn in zip(self.nodes, connections) if not isinstance(conn, Exception)
         }
+        for node, node_friends in friends.items():
+            for friend in node_friends:
+                if friend in friends:
+                    graph.add_edge(node, friend)
+
+        return graph
 
     async def only_valid(self):
         await self.preload()
