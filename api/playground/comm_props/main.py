@@ -24,9 +24,7 @@ logger = logging.getLogger()
 
 
 async def main():
-    res = await PluginManager({'user': 'ffboris'}, input_plugins=['user', 'friends'], options=['user-friends']).execute()
-    with open(absolute_path(__file__, '.data.json'), 'w') as f:
-        f.write(json.dumps(make_json_serializable(res), indent=4))
+    res = await PluginManager({'user': 'ffboris'}, input_plugins=['user'], options=['special-friends']).execute()
     pprint(res)
 
 if __name__ == '__main__':

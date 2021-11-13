@@ -1,3 +1,4 @@
+import typing
 from collections import defaultdict
 from pprint import pprint
 
@@ -5,6 +6,66 @@ from core import VKUser, VKCommunity
 from server.plugin.plugin import BasePlugin
 from worker import VkMethods
 from server.routes.vk.plugins.representer import UsersRepresentation
+
+
+class ValueScore:
+    def __init__(self, value):
+        object.__setattr__(self, 'value', value)
+        object.__setattr__(self, 'data', {})
+
+    def __getattr__(self, item):
+        return self.data.get(item, 0)
+
+    def __setattr__(self, key, value):
+        self.data[key] = value
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
+    def __iter__(self):
+        return self.data
+
+    def __repr__(self):
+        return repr(self.data)
+
+
+class ScoredValues:
+    def __init__(self, items: typing.Optional[list] = None):
+        self.items = {}
+        self.ordered_items = items or []
+
+    def __getitem__(self, item):
+        if item not in self.items:
+            self.items[item] = ValueScore(item)
+        return self.items[item]
+
+    def __iter__(self):
+        if self.items:
+            return iter(self.items.values())
+        return iter(self.ordered_items)
+
+    def sorted(self, key: str = None, func=None):
+        if key:
+            func = lambda item: item[key]
+        return ScoredValues(sorted(self.items.values(), key=func, reverse=True))
+
+    def add_key(self, name: str, func):
+        for score in self:
+            setattr(score, name, func(score))
+
+    def select(self, count):
+        return ScoredValues(self.ordered_items[:count])
+
+    def values(self):
+        return list(map(lambda item: item.value, iter(self)))
+
+    def __repr__(self):
+        if self.items:
+            return repr(self.items)
+        return repr(self.ordered_items)
 
 
 class SpecialFriendsPlugin(BasePlugin):
@@ -21,6 +82,7 @@ class SpecialFriendsPlugin(BasePlugin):
         pools = await friends.pools()
         node_pool = {}
         pool_interaction_weight = defaultdict(dict)
+        cluster_size = defaultdict(int)
         for i, pool in enumerate(pools):
             for node in pool:
                 node_pool[node] = i
@@ -32,21 +94,21 @@ class SpecialFriendsPlugin(BasePlugin):
                         continue
                     pool_interaction_weight[i][mate_pool] = pool_interaction_weight[i].get(mate_pool, 0) + 1
 
-        node_cross_score = defaultdict(int)
+        nodes_score = ScoredValues()
         for node in graph:
             for friend in graph[node]:
                 if node_pool[node] == node_pool[friend]:
                     continue
-                node_cross_score[node] += 1 / pool_interaction_weight[node_pool[node]][node_pool[friend]] ** 1.4
+                nodes_score[node].cluster_size = len(pools[node_pool[node]])
+                nodes_score[node].cross += 1 / pool_interaction_weight[node_pool[node]][node_pool[friend]] ** 1.4
 
-        common_friends = map(lambda item: (item[1], item[0]), node_cross_score.items())
-        common_friends = sorted(common_friends, reverse=True)[:result_count]
-        common_friends_comm = VKCommunity(list(map(lambda x: x[1], common_friends)))
-        representation = await UsersRepresentation.represent(common_friends_comm)
+        nodes_score.add_key('target', lambda item: item.cross + 0 * item.cluster_size)
+        scored = nodes_score.sorted('target').select(result_count)
+        representation = await UsersRepresentation.represent(VKCommunity(scored.values()))
         return [
             {
                 **item,
-                'weight': weight[0]
+                'weight': round(score['target'], 4)
             }
-            for weight, item in zip(common_friends, representation)
+            for score, item in zip(scored, representation)
         ]
