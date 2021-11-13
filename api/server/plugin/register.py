@@ -1,4 +1,5 @@
 from server.plugin.plugin_manager import PluginManager
+from server.routes.vk.plugins.friends import UserFriendsPlugin
 from server.routes.vk.plugins.interests import UserInterestsPlugin
 from server.routes.vk.plugins.special_friends import SpecialFriendsPlugin
 
@@ -12,7 +13,7 @@ from server.routes.vk.plugins.groups import *
 from worker import assert_imported_once
 
 _plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin,
-            VKFriendsInput, UserInterestsPlugin, VkFriendsLonersPlugin,
+            VKFriendsInput, UserInterestsPlugin, VkFriendsLonersPlugin, UserFriendsPlugin,
             VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin]
 
 assert_imported_once()

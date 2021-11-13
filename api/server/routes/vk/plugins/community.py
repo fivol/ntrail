@@ -2,9 +2,10 @@ import bisect
 import datetime
 import logging
 import re
+import typing
 from itertools import groupby
 from time import time
-
+from pydantic import BaseModel
 import numpy as np
 
 from core.helpers.utils import clear_list
@@ -24,10 +25,38 @@ from core import VKCommunity
 logger = logging.getLogger()
 
 
+class PropertyValue:
+    def __init__(self, value, count):
+        self.value = value
+        self.count = count
+
+
+class CommunityProperty:
+    def __init__(self, prop: TiedCounter, name: str, most_common: typing.Union[bool, dict] = False, **kwargs):
+        if most_common:
+            kwargs['source_list'] = prop.most_common(10, True)
+        elif isinstance(most_common, dict):
+            kwargs['source_list'] = prop.most_common(**most_common)
+
+        kwargs.update({
+
+        })
+        self.name = name
+        self.prop = prop
+        self.data = kwargs
+
+    def first(self) -> typing.Optional[PropertyValue]:
+        source_list = self.data.get('source_list')
+        if not source_list:
+            return None
+        return PropertyValue(value=source_list[0][0], count=source_list[0][1])
+
+
 class VKCommunityPlugin(BasePlugin):
     """
-        Первый уровень: community.data - возвращает просто список словарей, которые возвращает АПИ ВК
-        Второй уровень: community..
+        1 уровень: community.data - возвращает просто список словарей, которые возвращает АПИ ВК
+        2 уровень: community.properties
+        3 уровень: community.processed
     """
 
     name = 'community'
@@ -125,14 +154,6 @@ class VKCommunityPlugin(BasePlugin):
             delta = [-(item - time()) / dev for item in timestamp_list]
             return delta
 
-        all_ids_set = set(self._community.nodes)
-
-        # groups = self.groups()
-        # data['group'] = {
-        #     'all_count': groups.size,
-        #     'mean_count': groups.size / self.size,
-        # }
-
         age = sorted(time_delta(props['bdate'], dev=31536000))
 
         data['age'] = {
@@ -140,10 +161,9 @@ class VKCommunityPlugin(BasePlugin):
             **prepare_list([item for item in age if (item.value > 6) & (item.value < 80)], clean=True),
             'source_list': age
         }
-        data['followers_count'] = {
-            **prepare_list(props['followers_count'], clean=True, count=False),
-            'source_list': props['followers_count']
-        }
+        data['followers_count'] = CommunityProperty(props['followers_count'], name='followers_count',
+                                                    **prepare_list(props['followers_count'], clean=True, count=False),
+                                                    source_list=props['followers_count'])
         data['city'] = {
             'count': props['city'].size,
             'source_list': props['city'].most_common(10, True)
@@ -237,14 +257,8 @@ class VKCommunityPlugin(BasePlugin):
             'count': props['occupation'].get('university', TiedCounter([])).size
         }
 
-        data['school'] = {
-            'count': props['school'].size,
-            'source_list': props['school'].most_common(ignore_single=True)
-        }
-        data['university'] = {
-            'count': props['school'].size,
-            'source_list': props['university'].most_common(ignore_single=True)
-        }
+        data['school'] = CommunityProperty(props['school'], name='school', most_common={'ignore_single': True})
+        data['university'] = CommunityProperty(props['university'], name='university', most_common={'ignore_single': True})
 
         return data
 
@@ -615,3 +629,17 @@ class VKCommunityPlugin(BasePlugin):
 
         features = {key: value for key, value in features.items() if not np.isnan(value)}
         return features
+
+    def prop_importance(self, prop: CommunityProperty) -> float:
+        relevance = {
+            'school': (3, ),
+            'university': (3,)
+        }
+        if prop.name in relevance:
+            rel_params = relevance[prop.name]
+            first: PropertyValue = prop.first()
+            if first is None:
+                return 0
+            if first.count >= rel_params[0]:
+                return 0.8
+        return 0

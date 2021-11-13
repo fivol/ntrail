@@ -40,7 +40,7 @@ class PluginManager:
             raise WrongInputError(f'Incorrect option (too many dots): {option}')
         if not path_items:
             raise WrongInputError('Empty option')
-        result = self._create_plugin(path_items[0])
+        result = await self._create_plugin(path_items[0])
         if result.broken:
             return None
         for path in path_items[1:]:
@@ -109,10 +109,10 @@ class PluginManager:
 
         return response
 
-    def _create_plugin(self, name: str) -> BasePlugin:
+    async def _create_plugin(self, name: str) -> BasePlugin:
         plugin_cls = self.get_plugin(name, is_input=False)
         plugin = plugin_cls(manager=self, **self._kwargs)
-        plugin.init()
+        await plugin.init()
         return plugin
 
     def get_plugin(self, name, is_input=False):

@@ -16,16 +16,16 @@ class BasePlugin(Plugin):
         self.__manager = manager
         self._verbose = verbose
 
-    def result(self) -> typing.Any:
+    async def result(self) -> typing.Any:
         """Main method of plugin, should return result (some object or dict)"""
         return self.response()
 
     @abstractmethod
-    def response(self) -> typing.Union[dict, list]:
+    async def response(self) -> typing.Union[dict, list]:
         """Return json dict to response, that will be shown to user"""
         pass
 
-    def init(self):
+    async def init(self):
         """Called after constructor"""
         pass
 
