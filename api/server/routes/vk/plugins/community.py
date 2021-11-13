@@ -27,6 +27,8 @@ logger = logging.getLogger()
 
 class PropertyValue:
     def __init__(self, value, count):
+        if isinstance(value, TiedValue):
+            value = value.value
         self.value = value
         self.count = count
 
