@@ -12,6 +12,7 @@ ctx = get_context()
 
 
 def get_redis():
+    logger.info('Cache url: %s', config.redis_url)
     return aioredis.from_url(
         config.redis_url, encoding="utf-8", decode_responses=True
     )

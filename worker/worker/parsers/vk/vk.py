@@ -187,7 +187,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, method_logger(name='low'), items_getter, count_offset_iterator(1000))
+    @decorate(reliable_call, redis_cache, items_getter, count_offset_iterator(1000))
     async def members(cls, group_id, **kwargs) -> ListWithCount:
         return await cls._run_query(
             'groups.getMembers',
@@ -248,7 +248,7 @@ class VkMethods(BaseParser):
         )
 
     @classmethod
-    @decorate(reliable_call, partition_split(100))
+    @decorate(reliable_call, redis_cache, partition_split(100))
     async def posts_ids(cls, posts: list[str], **kwargs) -> list:
         return await cls._run_query(
             'wall.getById',
