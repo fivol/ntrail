@@ -53,6 +53,9 @@ class CommunityProperty:
             return None
         return PropertyValue(value=source_list[0][0], count=source_list[0][1])
 
+    def __repr__(self):
+        return repr(self.data)
+
 
 class VKCommunityPlugin(BasePlugin):
     """

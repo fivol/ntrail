@@ -12,9 +12,9 @@ from server.routes.vk.plugins.fans import *
 from server.routes.vk.plugins.groups import *
 from worker import assert_imported_once
 
-_plugins = [VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin,
+_plugins = {VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin,
             VKFriendsInput, UserInterestsPlugin, VkFriendsLonersPlugin, UserFriendsPlugin,
-            VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin]
+            VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin, UserDescribePlugin}
 
 assert_imported_once()
 

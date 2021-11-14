@@ -24,7 +24,8 @@ logger = logging.getLogger()
 
 
 async def main():
-    res = await PluginManager({'user': 'ffboris'}, input_plugins=['user'], options=['special-friends']).execute()
+    # https://vk.com/bigdantheone
+    res = await PluginManager({'user': 'https://vk.com/anandiv'}, input_plugins=['user', 'friends'], options=['community.processed']).execute()
     pprint(res)
 
 if __name__ == '__main__':

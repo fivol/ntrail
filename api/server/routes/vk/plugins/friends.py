@@ -11,27 +11,32 @@ class UserFriendsPlugin(BasePlugin):
         super(UserFriendsPlugin, self).__init__(**kwargs)
         self._user = user
         self._friends: typing.Optional[VKCommunityPlugin] = None
+        self._processed = None
 
     async def init(self):
         self._friends = VKCommunityPlugin(await self._user.friends())
+        self._processed = await self._friends.processed()
 
-    async def school(self) -> typing.Optional[str]:
-        processed = await self._friends.processed()
-        prop = processed['school']
+    def school(self) -> typing.Optional[str]:
+        prop = self._processed['school']
         if self._friends.prop_importance(prop) > 0.4:
             return prop.first().value
         return None
 
-    async def university(self) -> typing.Optional[str]:
+    def university(self) -> typing.Optional[str]:
         # TODO refactor this hell
-        processed = await self._friends.processed()
-        prop = processed['university']
+        prop = self._processed['university']
         if self._friends.prop_importance(prop) > 0.4:
             return prop.first().value
         return None
+
+    def age(self):
+        age = self._processed['age']
+        return age['commonMean']
 
     async def response(self) -> dict:
         return {
-            'school': await self.school(),
-            'university': await self.university(),
+            'school': self.school(),
+            'university': self.university(),
+            'age': self.age(),
         }
