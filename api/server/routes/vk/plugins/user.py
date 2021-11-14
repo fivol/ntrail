@@ -119,8 +119,15 @@ class UserDescribePlugin(BasePlugin):
             'age': age_years
         }
 
+    async def instagram(self):
+        data = await self._user.data()
+        username = data.get('instagram')
+        if username:
+            return f'https://instagram.com/{username}'
+
     async def response(self) -> typing.Union[dict, list]:
 
         return {
-            'age': await self.age()
+            'age': await self.age(),
+            'instagram': await self.instagram()
         }
