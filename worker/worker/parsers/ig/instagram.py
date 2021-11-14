@@ -2,7 +2,7 @@ import time
 from .instagramlib import Account, WebAgentAccount, HasMediaElement
 from .instagramlib.exceptions import InternetException, UnexpectedResponse
 from worker.config import logger
-from worker.helpers.tools import ThreadResult, sequential_start, MemoryCache
+from worker.helpers.tools import sequential_start
 import random
 
 REQUEST_ERROR_404 = 'REQUEST_ERROR_404'
@@ -16,8 +16,6 @@ REQUEST_STATUS_OK = 'REQUEST_STATUS_OK'
 REQUEST_STATUS_FAIL = 'REQUEST_STATUS_FAIL'
 
 dead_agents = set()
-
-get = MemoryCache.get
 
 try:
     with open('dead_agents', 'r') as f:
@@ -313,61 +311,9 @@ class IGAPI(InstRequest):
         return get('obj_media')[full_element]
 
     def get_followers(self, username, count=-1, **kwargs):
-        assert isinstance(username, str)
-        if username not in get('users_followers') or self.force_requests:
-            data = {
-                'account': Account(username),
-                **kwargs
-            }
-            nodes = self.repeat_load('get_followers', count, data=data)
-            if not nodes:
-                nodes = []
-            if nodes:
-                for node in nodes:
-                    get('obj_media')[(node.username, False)] = node
-            get('users_followers')[username] = [node.username for node in nodes]
-        return get('users_followers')[username]
-
-    def get_follows(self, username, count=-1, **kwargs):
-        assert isinstance(username, str)
-        if self.force_requests or username not in get('users_follows'):
-            data = {
-                'account': Account(username),
-                **kwargs
-            }
-            nodes = self.repeat_load('get_follows', count, data=data)
-            if nodes:
-                for node in nodes:
-                    get('obj_media')[(node.username, False)] = node
-            if not nodes:
-                nodes = []
-            get('users_follows')[username] = [node.username for node in nodes]
-        return get('users_follows')[username]
-
-    def get_objects_medias(self, objects, **kwargs):
-        threads = [
-            ThreadResult(target=self.get_media, args=(obj,), kwargs=kwargs)
-            for obj in objects
-        ]
-        return [thread.execute() for thread in threads]
-
-    def get_users_followers(self, users, count=300, **kwargs):
-        threads = [
-            ThreadResult(target=self.get_followers,
-                         args=(username,),
-                         kwargs={'count': count, **kwargs})
-            for username in users
-        ]
-        return [thread.execute() for thread in threads]
-
-    def get_users_follows(self, users, count=300, **kwargs):
-        threads = [
-            ThreadResult(target=self.get_follows,
-                         args=(username,),
-                         kwargs={'count': count, **kwargs})
-            for username in users
-        ]
-        return [thread.execute() for thread in threads]
-
-
-MemoryCache.load_memory()
+        data = {
+            'account': Account(username),
+            **kwargs
+        }
+        nodes = self.repeat_load('get_followers', count, data=data)
+        return [node.username for node in nodes]
