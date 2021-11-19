@@ -1,50 +1,49 @@
 import asyncio
-from timeit import default_timer as timer
+import logging
 
 from worker import Engine, VkMethods
+from worker.parsers.ig.instagramlib import Account, WebAgentAccount
 
+logger = logging.getLogger(__name__)
+logger.debug('123')
 
-async def calculate_rps(epochs=10, count=100):
-    rps_measures = []
-    for ep in range(epochs):
-        ids = set([i for i in range(count, 2*count)])
-        assert len(ids) == count
-        start = timer()
-        users = await asyncio.gather(
-            *[
-                VkMethods.users([i])
-                for i in ids
-            ]
-        )
-        users_ids = {user[0]['id'] for user in users}
-        assert ids == users_ids
-        elapsed = timer() - start
-        rps = count / elapsed
-        rps_measures.append(rps)
-        print(f'Epoch {ep}, rps: {rps}')
-
-    mean_rps = sum(rps_measures) / epochs
-    print('Mean rps:', mean_rps)
-    return mean_rps
+# exit(0)
+#
+# from igramscraper.instagram import Instagram
+#
+# instagram = Instagram()
+#
+# # authentication supported
+# instagram.with_credentials('fiobond', 'dlz08UtKFinst')
+# instagram.login()
+#
+# #Getting an account by id
+# account = instagram.get_account_by_id(3)
+#
+# # Available fields
+# print('Account info:')
+# print('Id: ', account.identifier)
+# print('Username: ', account.username)
+# print('Full name: ', account.full_name)
+# print('Biography: ', account.biography)
+# print('Profile pic url: ', account.get_profile_picture_url())
+# print('External Url: ', account.external_url)
+# print('Number of published posts: ', account.media_count)
+# print('Number of followers: ', account.followed_by_count)
+# print('Number of follows: ', account.follows_count)
+# print('Is private: ', account.is_private)
+# print('Is verified: ', account.is_verified)
+#
+# # or simply for printing use
+# print(account)
 
 
 async def main():
-    print(await VkMethods.resolve('sfsefse'))
-    pass
-    # begin = timer()
-    # await VkMethods.users([1])
-    # await VkMethods.users([2])
-    # await VkMethods.users([3])
-    # count = 25000
-
-    # print(await calculate_rps(epochs=10, count=1000))
-    # print(len(await VkMethods.members(78273068, percent_=0.3)))
-
+    async with Engine():
+        await VkMethods.friends(245089915)
 
 if __name__ == '__main__':
-    with Engine(caching=False):
-        asyncio.get_event_loop().run_until_complete(main())
-
+    asyncio.run(main())
 
 """
 400 queries with caching: 2140 rps

@@ -3,11 +3,9 @@ import logging
 from functools import wraps
 
 
-logger = logging.getLogger('debugger')
-
-
 def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors=False):
     """Decorator to method or function. Prints arguments and results"""
+    logger = logging.getLogger(name)
 
     def decorator(method):
         def repr_args(args, kwargs) -> str:
@@ -29,7 +27,9 @@ def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors
                     return text
                 return f'{text[:size]}...'
             s = str(result)
-            return f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}> {shorty(s, 50)}'
+            response_str = shorty(s, 50)
+            description = f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}>' if len(response_str) > 50 else ''
+            return f'{description} {response_str}'
 
         @wraps(method)
         async def wrapper(*args, **kwargs):
@@ -38,10 +38,10 @@ def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors
             try:
                 result = await method(*args, **kwargs)
                 if not only_errors:
-                    logger.log(level, '[%s] %s(%s) -> %s', name, method.__name__, repr_args(args, kwargs), repr_result(result))
+                    logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
                 return result
             except Exception as e:
-                logger.error('[%s] %s(%s)', name, method.__name__, repr_args(args, kwargs))
+                logger.error('%s(%s)', method.__name__, repr_args(args, kwargs))
                 raise
 
         return wrapper

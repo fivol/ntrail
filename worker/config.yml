@@ -1,6 +1,7 @@
 
 # If "true" all loggers level sets to ERROR
 DEBUG: true
+redis_url: "redis://0.0.0.0:6379"
 vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25
@@ -18,7 +19,7 @@ logging:
   version: 1
   formatters:
     default:
-      format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+      format: '%(asctime)s %(levelname)-8s %(name)-30s %(message)s'
   handlers:
     console:
       class: logging.StreamHandler
@@ -26,12 +27,6 @@ logging:
       formatter: default
       stream: ext://sys.stdout
   loggers:
-    vk:
+    root:
       level: DEBUG
-    cache:
-      level: DEBUG
-    session:
-      level: DEBUG
-  root:
-    level: DEBUG
-    handlers: [ console ]
+      handlers: [ console ]

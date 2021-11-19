@@ -2,6 +2,10 @@ import sys
 import os
 import worker.config
 
+import logging
+
+logging.getLogger(__name__).setLevel(logging.DEBUG)
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 

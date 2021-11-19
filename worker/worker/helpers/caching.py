@@ -6,7 +6,7 @@ from worker.config import config
 from worker.ctx import get_context
 
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 ctx = get_context()
 

@@ -5,7 +5,7 @@ from worker.parsers.vk.vk import VkMethods
 from worker.ctx import get_context
 from worker.helpers import caching
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 parsers = [VkMethods]
 
@@ -33,6 +33,9 @@ class Engine:
     def __enter__(self):
         return self
 
+    async def __aenter__(self):
+        return self
+
     @classmethod
     def _init_modules(cls):
         logger.info('Worker engine started')
@@ -58,6 +61,9 @@ class Engine:
             )
         else:
             raise EnvironmentError
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.stop()
 
     def __del__(self):
         assert self.__stopped

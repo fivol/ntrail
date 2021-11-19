@@ -16,7 +16,7 @@ from worker.ctx import get_context
 from worker.config import config
 from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 
-logger = logging.getLogger('vk')
+logger = logging.getLogger(__name__)
 
 VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
@@ -54,7 +54,7 @@ class VkApiSession(SessionState):
             raise SessionRemove()
 
 
-@inject_methods_wrappers(method_logger(only_errors=True, name='injected'), redis_cache, make_synced)
+@inject_methods_wrappers(method_logger(name=__name__), redis_cache, make_synced)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
