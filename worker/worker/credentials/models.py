@@ -1,9 +1,13 @@
 import asyncio
+import logging
 
 from gino import Gino
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy_mixins.timestamp import TimestampsMixin
+
+
+logger = logging.getLogger(__name__)
 
 db = Gino()
 
@@ -39,7 +43,9 @@ async def bind():
 
 async def main():
     await bind()
+    logger.warning('DROP ALL MODELS')
     await db.gino.drop_all()
+    logger.warning('CREATE ALL MODELS')
     await db.gino.create_all()
 
 if __name__ == '__main__':
