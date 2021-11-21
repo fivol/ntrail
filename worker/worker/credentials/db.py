@@ -18,6 +18,10 @@ class AccountsAccess:
         return await DBAccount.join(DBAccess).select(DBAccount.service == service).gino.all()
 
     @classmethod
+    async def create_access(cls, account, headers):
+        pass
+
+    @classmethod
     async def get_accounts(cls, service: str, count=1):
         return await db.all(db.select(DBAccount).where(DBAccount.service == service).limit(count))
 
