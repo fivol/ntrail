@@ -19,6 +19,7 @@ class DBAccount(db.Model, TimestampsMixin):
     service = db.Column(db.String, nullable=False)
     login = db.Column(db.String, nullable=False)
     password = db.Column(db.String, nullable=False)
+    status = db.Column(db.String, server_default='UNKNOWN')
     data = db.Column(JSONB, nullable=False, server_default="{}")
     access = relationship("DBAccess")
 
