@@ -2,11 +2,13 @@ import logging
 from random import randint
 from time import time
 
-from worker.session.credentials import CredentialsServerApi
+from worker.credentials.db import AccessStatus
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove, \
     TokenAuthFailed
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState
+
+from worker.credentials.credentials import Credentials
 
 logger = logging.getLogger()
 
@@ -29,8 +31,8 @@ class SessionManager:
         self._max_rps = max_rps
         self._stop_called = False
 
-    def get(self):
-        session = self._get_session()
+    async def get(self):
+        session = await self._get_session()
         return SessionProvider(session=session, manager=self)
 
     def _create_session(self, key) -> SessionState:
@@ -50,12 +52,6 @@ class SessionManager:
                 self._waiting_queue.add((revive_time, session))
                 break
 
-    def __filter_new_keys(self, keys):
-        new_keys = list(filter(lambda t: t not in self._all_keys, keys))
-        if len(new_keys) != len(keys):
-            raise RuntimeWarning('Credentials server do not work properly')
-        return new_keys
-
     def __add_new_keys(self, keys):
         for key in keys:
             session = self._create_session(key)
@@ -63,24 +59,24 @@ class SessionManager:
             self._add_active_session(session)
             # TODO tokens can be not plain string, for example can contain revive time
 
-    def _receive_keys(self) -> bool:
+    async def _receive_keys(self) -> bool:
         count = max(1, len(self._active_sessions))
-        tokens = self.__filter_new_keys(CredentialsServerApi.get_keys(self._key_type, count))
-        if len(tokens) < count:
-            logger.warning('Credentials Server give less keys then requested: %s < %s', len(tokens), count)
-        self.__add_new_keys(tokens)
-        return bool(tokens)
+        keys = await Credentials.get_access(self._key_type, count)
+        if len(keys) < count:
+            logger.warning('Credentials Server give less keys then requested: %s < %s', len(keys), count)
+        self.__add_new_keys(keys)
+        return bool(keys)
 
-    def _return_expired(self, receive=False):
+    async def _return_expired(self, receive=False):
         if receive:
-            self._receive_keys()
+            await self._receive_keys()
 
-    def _get_session(self) -> SessionState:
+    async def _get_session(self) -> SessionState:
         while True:
             if not len(self._active_sessions) or not randint(0, 10):
                 self._check_waiting_queue()
             if not self._active_sessions:
-                if self._receive_keys():
+                if await self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
             rps, session = self._active_sessions.pop()
@@ -94,11 +90,11 @@ class SessionManager:
 
     def return_session(self, session: SessionState, action: SessionAction = None):
         if isinstance(action, SessionRemove):
-            # TODO Return to credentials server
             if hash(session) in self._all_sessions:
                 self._active_sessions.remove(self._all_sessions[hash(session)])
                 del self._all_sessions[hash(session)]
                 self._all_keys.remove(session.key)
+                Credentials.return_access(session.key, error=AccessStatus.access_denied)
                 logger.error('SESSION REMOVING')
         else:
             self._active_sessions.remove(self._all_sessions[hash(session)])
@@ -113,7 +109,7 @@ class SessionManager:
             await session.single_close()
         self._all_keys.clear()
         self._active_sessions.clear()
-        CredentialsServerApi.return_keys(key_type=self._key_type, keys=keys)
+        await Credentials.return_access(keys)
 
     def __del__(self):
         # TODO make cool

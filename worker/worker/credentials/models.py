@@ -34,6 +34,8 @@ class DBAccess(db.Model, TimestampsMixin):
     account = relationship("DBAccount")
     type = db.Column(db.String, nullable=True)
     status = db.Column(db.String, server_default='UNKNOWN')
+    last_acquire = db.Column(db.DateTime, nullable=True)
+    free = db.Column(db.Boolean, server_default='true')
     token = db.Column(db.String, nullable=True, unique=True)
     data = db.Column(JSONB, server_default="{}")
 

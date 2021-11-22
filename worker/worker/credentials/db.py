@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from worker.credentials.models import *
 
 
@@ -23,10 +25,30 @@ class AccountStatus:
 class AccountsAccess:
     @classmethod
     async def get_access(cls, service: str, status: AccountStatus, type_=None, count=None):
-        where = (DBAccount.service == service) & (DBAccess.status == status)
-        if type_:
-            where = where & (DBAccess.type == type_)
-        return await DBAccount.join(DBAccess).select(where).gino.all()
+        async with db.transaction() as tx:
+            where = (DBAccount.service == service) & (DBAccess.status == status)
+            is_free = (DBAccess.free == True) | (
+                    DBAccess.last_acquire + timedelta(minutes=30) < datetime.now())
+            where = where & is_free
+            if type_:
+                where = where & (DBAccess.type == type_)
+            query = DBAccount.join(DBAccess).select(where)
+            if count:
+                query = query.limit(count)
+            models = await query.gino.all()
+            await DBAccess.update.values(last_acquire=datetime.now(), free=False).where(
+                DBAccess.id in [item.id for item in models]).gino.status()
+            return models
+
+    @classmethod
+    async def return_access(cls, models: list[DBAccess]):
+        await DBAccess.update.values(free=True).where(
+            DBAccess.id in [item.id for item in models]).gino.status()
+
+    @classmethod
+    async def update_access(cls, models: list[DBAccess]):
+        await DBAccess.update.values(last_acquire=datetime.now(), free=False).where(
+            DBAccess.id in [item.id for item in models]).gino.status()
 
     @classmethod
     async def create_access(cls, account: DBAccount, data: dict, token=None):
@@ -46,7 +68,7 @@ class AccountsAccess:
 
     @classmethod
     async def set_access_status(cls, access: DBAccess, status: AccessStatus):
-        await DBAccess.update.values(status=status).where(DBAccess.id == access.id).gino.status()
+        await DBAccess.update.values(status=status, free=True).where(DBAccess.id == access.id).gino.status()
 
 
 async def main():

@@ -87,7 +87,7 @@ class VkMethods(BaseParser):
     async def _call_api(cls, method, kwargs, apis, assert_response=False):
         for i, api in enumerate(apis):
             try:
-                with api.get() as session:
+                with await api.get() as session:
                     result = await session(method, **kwargs, lang='ru')
                 if not result and assert_response:
                     raise TokenAccessDenied()

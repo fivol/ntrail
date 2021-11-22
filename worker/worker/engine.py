@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from worker.credentials.models import bind
 from worker.parsers.vk.vk import VkMethods
 from worker.ctx import get_context
 from worker.helpers import caching
@@ -34,6 +35,7 @@ class Engine:
         return self
 
     async def __aenter__(self):
+        await bind()
         return self
 
     @classmethod
