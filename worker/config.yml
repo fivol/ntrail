@@ -29,5 +29,7 @@ logging:
       stream: ext://sys.stdout
   loggers:
     root:
-      level: DEBUG
+      level: WARNING
       handlers: [ console ]
+    worker:
+      level: WARNING

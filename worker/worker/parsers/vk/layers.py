@@ -3,8 +3,7 @@ import logging
 import time
 from functools import wraps
 
-from worker.parsers.utils import ListWithCount
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
+from worker.parsers.utils import RichList
 from worker.helpers.tools import split_list
 
 logger = logging.getLogger()
@@ -71,72 +70,8 @@ def count_offset_iterator(max_count):
                 curr_offset += curr_count
                 count -= curr_count
             result = await asyncio.gather(*tasks)
-            return first_call + sum(result, ListWithCount())
+            return first_call + sum(result, RichList())
 
         return wrapper
 
     return decorator
-
-
-class MakeSynced:
-    """
-    Wraps method and give .sync interface to call async functions
-
-    --------------------
-    Async variant:
-
-        async def abc(x):
-            return x
-        print(asyncio.run(abs()))
-    --------------------
-    Sync variant:
-
-        @MakeSynced
-        async def abc(x):
-            return x
-
-        print(abc.sync(3))
-    """
-
-    def __init__(self, _method):
-        self._method = _method
-
-    async def __call__(self, *args, **kwargs):
-        return await self._method(*args, **kwargs)
-
-    def sync(self, *args, **kwargs):
-        raise DeprecationWarning()
-        return loop.run_until_complete(self._method(*args, **kwargs))
-
-    async def map(self, items, **kwargs):
-        return await asyncio.gather(
-            *[self._method(item, **kwargs) for item in items],
-            return_exceptions=True
-        )
-
-    def sync_map(self, items, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.map(items, **kwargs))
-
-
-make_synced = MakeSynced
-
-
-def reliable_call(method):
-    """Reply request if rps limit exceeded or tokens ended"""
-
-    @wraps(method)
-    async def wrapper(*args, **kwargs):
-        while True:
-            try:
-                return await method(*args, **kwargs)
-            except RpsLimitException:
-                await asyncio.sleep(0.01)
-                continue
-            except TokenAuthFailed:
-                continue
-            except NoTokenAvailableException:
-                # TODO Think hard
-                raise
-
-    return wrapper

@@ -1,12 +1,12 @@
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
-from worker.parsers.layers import items_getter
+from worker.parsers.layers import items_getter, mapped_method, reliable_call
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.parsers.vk.session import VkApiSession
-from worker.session.exceptions import SessionManagerException
+from worker.session.exceptions import SessionManagerException, TokenAccessDenied, RpsLimitException
 from worker.session.session_manager import SessionManager
 
 from worker.helpers.tools import assert_imported_once, decorate
@@ -21,7 +21,7 @@ VK_API_TIMEOUT = 10
 assert_imported_once()
 
 
-@inject_methods_wrappers(method_logger(name=__name__), redis_cache, make_synced)
+@inject_methods_wrappers(method_logger(name=__name__), redis_cache, mapped_method)
 class VkMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
@@ -124,7 +124,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(5000))
-    async def friends(cls, user_id, **kwargs) -> ListWithCount:
+    async def friends(cls, user_id, **kwargs) -> RichList:
         return await cls._run_query(
             'friends.get',
             {'user_id': user_id},
@@ -155,7 +155,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, redis_cache, items_getter, count_offset_iterator(1000))
-    async def members(cls, group_id, **kwargs) -> ListWithCount:
+    async def members(cls, group_id, **kwargs) -> RichList:
         return await cls._run_query(
             'groups.getMembers',
             {'group_id': group_id},
@@ -166,7 +166,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(1000))
-    async def groups(cls, user_id, **kwargs) -> ListWithCount:
+    async def groups(cls, user_id, **kwargs) -> RichList:
         return await cls._run_query(
             'groups.get',
             {'user_id': user_id},
@@ -186,7 +186,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(1000))
-    async def photos(cls, owner_id, album_id: str, **kwargs) -> ListWithCount:
+    async def photos(cls, owner_id, album_id: str, **kwargs) -> RichList:
         return await cls._run_query(
             'photos.get',
             {'owner_id': owner_id, 'album_id': album_id},
@@ -196,7 +196,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(200))
-    async def photos_all(cls, owner_id, **kwargs) -> ListWithCount:
+    async def photos_all(cls, owner_id, **kwargs) -> RichList:
         return await cls._run_query(
             'photos.getAll',
             {'owner_id': owner_id, 'extended': True},
@@ -226,7 +226,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(100))
-    async def posts(cls, owner_id=None, **kwargs) -> ListWithCount:
+    async def posts(cls, owner_id=None, **kwargs) -> RichList:
         return await cls._run_query(
             'wall.get',
             {'owner_id': owner_id},
@@ -236,7 +236,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(100))
-    async def likes(cls, owner_id=None, type_=None, item_id=None, **kwargs) -> ListWithCount:
+    async def likes(cls, owner_id=None, type_=None, item_id=None, **kwargs) -> RichList:
         # https://vk.com/dev/likes.getList
         return await cls._run_query(
             'likes.getList',
@@ -247,7 +247,7 @@ class VkMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(100))
-    async def comments(cls, owner_id=None, post_id=None, **kwargs) -> ListWithCount:
+    async def comments(cls, owner_id=None, post_id=None, **kwargs) -> RichList:
         # https://vk.com/dev/wall.getComments
         return await cls._run_query(
             'wall.getComments',

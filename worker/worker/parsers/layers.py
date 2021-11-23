@@ -1,6 +1,12 @@
+import asyncio
+import logging
 from functools import wraps
 
-from worker.parsers.utils import ListWithCount
+from worker.parsers.utils import RichList
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
+
+
+logger = logging.getLogger(__name__)
 
 
 def items_getter(method):
@@ -9,9 +15,73 @@ def items_getter(method):
         result = await method(*args, **kwargs)
         if kwargs.get('raw_') and isinstance(result, dict):
             return result
-        items = ListWithCount(result.get('items'))
-        items.count_ = result.get('count')
+        items = RichList(result.pop('items'))
+        items.count_ = result.pop('count')
+        items.data = result
         return items
 
     return wrapper
 
+
+class MappedInterface:
+    """
+    Wraps method and give .sync interface to call async functions
+
+    --------------------
+    Async variant:
+
+        async def abc(x):
+            return x
+        print(asyncio.run(abs()))
+    --------------------
+    Sync variant:
+
+        @MakeSynced
+        async def abc(x):
+            return x
+
+        print(abc.sync(3))
+    """
+
+    def __init__(self, _method):
+        self._method = _method
+
+    async def __call__(self, *args, **kwargs):
+        return await self._method(*args, **kwargs)
+
+    def sync(self, *args, **kwargs):
+        return asyncio.get_event_loop().run_until_complete(self._method(*args, **kwargs))
+
+    async def map(self, items, **kwargs):
+        return await asyncio.gather(
+            *[self._method(item, **kwargs) for item in items],
+            return_exceptions=True
+        )
+
+    def sync_map(self, items, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(self.map(items, **kwargs))
+
+
+mapped_method = MappedInterface
+
+
+def reliable_call(method):
+    """Reply request if rps limit exceeded or tokens ended"""
+
+    @wraps(method)
+    async def wrapper(*args, **kwargs):
+        while True:
+            try:
+                return await method(*args, **kwargs)
+            except RpsLimitException:
+                logger.debug('RPS wait')
+                await asyncio.sleep(0.01)
+                continue
+            except TokenAuthFailed:
+                continue
+            except NoTokenAvailableException:
+                # TODO Think hard
+                raise
+
+    return wrapper
