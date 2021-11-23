@@ -34,7 +34,10 @@ class Credentials:
 
     @classmethod
     async def get_access(cls, key_type: str, count: int = None) -> list[AccessModel]:
-        service, type_ = key_type.split('.', 1)
+        if '.' in key_type:
+            service, type_ = key_type.split('.', 1)
+        else:
+            service, type_ = key_type, None
         models = await cls._get_adapter(service).get_access(type_=type_, max_count=count)
         logger.info('Acquire %s keys', len(models))
         return list(map(cls._create_model, models))

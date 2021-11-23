@@ -17,6 +17,7 @@ sqlalchemy-mixins = "^1.5"
 psycopg2 = "^2.9.2"
 requests-html = "^0.10.0"
 lxml = "^4.6.4"
+pydantic = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 

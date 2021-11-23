@@ -1,10 +1,6 @@
-import asyncio
-import logging
-from pprint import pprint
 from asyncpg.exceptions import UniqueViolationError
 
 from worker.credentials.adapter import AdapterBase
-from worker.credentials.models import bind, DBAccount, DBAccess
 from worker.credentials.db import *
 from igramscraper.instagram import Instagram, InstagramAuthException
 
@@ -21,7 +17,7 @@ class IGAdapter(AdapterBase):
             ig = Instagram()
             data = account.data
             await ig.auth(username=account.login, password=account.password, cookie=data.get('cookie'))
-            await AccountsAccess.create_access(account, ig.cookie, token=ig.cookie.get('sessionid'))
+            await AccountsAccess.create_access(account, {'cookie': ig.cookie}, token=ig.cookie.get('sessionid'))
         except InstagramAuthException:
             logger.exception('Failed to create access')
         except UniqueViolationError:
@@ -40,7 +36,7 @@ class IGAdapter(AdapterBase):
 # ME 12638820603
 async def main():
     await bind()
-    print(await IGAdapter.get_access(2))
+    print(await IGAdapter.get_access(max_count=2))
 
 
 if __name__ == '__main__':

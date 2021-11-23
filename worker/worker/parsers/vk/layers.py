@@ -3,6 +3,7 @@ import logging
 import time
 from functools import wraps
 
+from worker.parsers.utils import ListWithCount
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
 from worker.helpers.tools import split_list
 
@@ -75,28 +76,6 @@ def count_offset_iterator(max_count):
         return wrapper
 
     return decorator
-
-
-class ListWithCount(list):
-    count_ = None
-
-    def __add__(self, other):
-        result = ListWithCount(super().__add__(other))
-        result.count_ = self.count_ or getattr(other, 'count_')
-        return result
-
-
-def items_getter(method):
-    @wraps(method)
-    async def wrapper(*args, **kwargs):
-        result = await method(*args, **kwargs)
-        if kwargs.get('raw_') and isinstance(result, dict):
-            return result
-        items = ListWithCount(result.get('items'))
-        items.count_ = result.get('count')
-        return items
-
-    return wrapper
 
 
 class MakeSynced:

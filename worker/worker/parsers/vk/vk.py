@@ -1,5 +1,6 @@
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
+from worker.parsers.layers import items_getter
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
 from worker.parsers.vk.execute_pool import ExecuteRequestPool

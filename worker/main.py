@@ -1,15 +1,20 @@
 import asyncio
 import logging
+from pprint import pprint
 
-from worker import Engine, VkMethods
+from worker import Engine, IgMethods
 
 logger = logging.getLogger(__name__)
 
 
 async def main():
     async with Engine():
-        users = await VkMethods.friends((await VkMethods.resolve('aido4kas'))['object_id'])
-        print(await VkMethods.friends.map(users))
+        # 5749832861
+        # me 12638820603
+        data = await IgMethods.following(12638820603)
+        await asyncio.sleep(2)
+        data = await IgMethods.following(12638820603)
+        print(len(data))
 
 if __name__ == '__main__':
     asyncio.run(main())

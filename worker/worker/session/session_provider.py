@@ -13,6 +13,7 @@ class SessionProvider:
         return self._session.session
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self._session.notify_return()
         if exc_type == asyncio.CancelledError:
             await self._manager.return_session(self._session)
             return False

@@ -1,12 +1,13 @@
 import asyncio
 import logging
-from random import randint
+import random
+from random import randint, randrange
 from time import time
 
 from worker.credentials.db import AccessStatus
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove
 from worker.session.session_provider import SessionProvider
-from worker.session.session_state import SessionState
+from worker.session.session_state import SessionState, UsageStat
 
 from worker.credentials.credentials import Credentials
 from worker.credentials.access import AccessModel
@@ -20,7 +21,8 @@ class SessionManager:
     Возвращает алгоритмом round robin
     """
 
-    def __init__(self, key_type: str, controller: type(SessionState), max_rps=int(1e6)):
+    def __init__(self, key_type: str, controller: type(SessionState), max_rps=None,
+                 requests_delay_min: float = None, requests_delay_max: float = None):
         self._session_controller = controller
 
         self._all_keys = set()
@@ -30,6 +32,8 @@ class SessionManager:
 
         self._key_type = key_type
         self._max_rps = max_rps
+        self._requests_delay_min = requests_delay_min
+        self._requests_delay_max = requests_delay_max
         self._stop_called = False
         self._stop_access_acquiring = False
 
@@ -40,8 +44,8 @@ class SessionManager:
     def _create_session(self, key) -> SessionState:
         return self._session_controller(key=key, key_type=self._key_type)
 
-    def _add_active_session(self, session):
-        priority_session = (session.rps(), session)
+    def _add_active_session(self, session: SessionState):
+        priority_session = (session.usage_stat(), session)
         self._active_sessions.add(priority_session)
         self._all_sessions[hash(session)] = priority_session
 
@@ -62,7 +66,6 @@ class SessionManager:
             # TODO tokens can be not plain string, for example can contain revive time
 
     async def _receive_keys(self) -> bool:
-        await asyncio.sleep(0)
         count = max(1, len(self._all_keys))
         if self._stop_access_acquiring:
             return False
@@ -78,6 +81,18 @@ class SessionManager:
         if receive:
             await self._receive_keys()
 
+    def _can_use_session(self, stat: UsageStat):
+        if not stat.usage_count:
+            return True
+        if self._max_rps and stat.rps >= self._max_rps:
+            return False
+        delay_time = self._requests_delay_min
+        if self._requests_delay_min and self._requests_delay_max:
+            delay_time = random.uniform(self._requests_delay_min, self._requests_delay_max)
+        if delay_time and stat.delay < delay_time:
+            return False
+        return True
+
     async def _get_session(self) -> SessionState:
         while True:
             if not len(self._active_sessions) or not randint(0, 10):
@@ -86,9 +101,9 @@ class SessionManager:
                 if await self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
-            rps, session = self._active_sessions.pop()
+            stat, session = self._active_sessions.pop()
             self._add_active_session(session)
-            if session.rps() >= self._max_rps:
+            if not self._can_use_session(stat):
                 if await self._receive_keys():
                     continue
                 raise RpsLimitException()
