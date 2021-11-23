@@ -18,6 +18,7 @@ psycopg2 = "^2.9.2"
 requests-html = "^0.10.0"
 lxml = "^4.6.4"
 pydantic = "^1.8.2"
+sortedcontainers = "^2.4.0"
 
 [tool.poetry.dev-dependencies]
 

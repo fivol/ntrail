@@ -12,19 +12,22 @@ logger = logging.getLogger(__name__)
 
 class UsageStat(BaseModel):
     rps: int
-    delay: float
+    last_usage: float
     usage_count: int = 0
 
-    def __lt__(self, other: UsageStat):
-        if self.delay >= 1 or other.delay >= 1:
-            return self.delay > other.delay
-        return self.rps < other.rps
+    def delay(self):
+        return time() - self.last_usage
 
-    def __eq__(self, other):
-        return self.rps == other.rps and self.delay == other.delay
+    def __lt__(self, other: UsageStat):
+        if self.rps and other.rps:
+            return self.rps < other.rps
+        return self.last_usage < other.last_usage
+
+    def __eq__(self, other: UsageStat):
+        return self.rps == other.rps and self.last_usage == other.last_usage and self.usage_count == other.usage_count
 
     def __hash__(self):
-        return hash(self.rps) + hash(self.delay)
+        return hash(self.rps) + hash(self.last_usage) + hash(self.usage_count)
 
 
 class SessionState:
@@ -55,7 +58,7 @@ class SessionState:
             self._using_times.popleft()
 
         rps = len(self._using_times)
-        return UsageStat(rps=rps, delay=time() - self._last_using, usage_count=self._usage_count)
+        return UsageStat(rps=rps, last_usage=self._last_using, usage_count=self._usage_count)
 
     def notify_use(self):
         """Вызывается для поддержания rps при взятии из хранилища"""
@@ -73,6 +76,9 @@ class SessionState:
 
     def __hash__(self):
         return hash(self.key)
+
+    def __lt__(self, other):
+        return hash(self.key) < hash(other)
 
     @abstractmethod
     async def close(self):

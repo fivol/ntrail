@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from pprint import pprint
 
 from sqlalchemy import select
 
@@ -57,18 +58,22 @@ class AccountsAccess:
 
     @classmethod
     async def create_access(cls, account: DBAccount, data: dict, token=None):
-        await DBAccess.create(
-            account_id=account.id,
-            data=data,
-            status=AccessStatus.active,
-            token=token
-        )
-        logger.info('Create new access: %s', account)
+        async with db.transaction() as tx:
+            await DBAccess.create(
+                account_id=account.id,
+                data=data,
+                status=AccessStatus.active,
+                token=token
+            )
+            logger.info('Create new access: %s', account)
+            await DBAccount.update.values(status=AccountStatus.alive).where(DBAccount.id == account.id).gino.status()
 
     @classmethod
-    async def get_accounts(cls, service: str, status: AccountStatus, count=1) -> list:
-        return await db.all(db.select(DBAccount).
-                            where((DBAccount.service == service) & (DBAccount.status == status)).
+    async def get_not_banned_accounts_without_access(cls, service: str, count=1) -> list:
+        return await db.all(db.select(DBAccount).select_from(DBAccount.outerjoin(DBAccess)).
+                            where(
+            (DBAccount.service == service) & (DBAccount.status != AccountStatus.banned) & (
+                DBAccess.account_id.is_(None))).
                             limit(count))
 
     @classmethod

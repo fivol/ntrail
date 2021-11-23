@@ -25,7 +25,7 @@ class IGAdapter(AdapterBase):
 
     @classmethod
     async def create_accesses(cls, max_count=None):
-        accounts = await AccountsAccess.get_accounts(service=cls.service, count=max_count, status=AccountStatus.unknown)
+        accounts = await AccountsAccess.get_not_banned_accounts_without_access(service=cls.service, count=max_count)
         if not accounts:
             logger.warning('No free accounts to create access')
             return

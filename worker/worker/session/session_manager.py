@@ -3,6 +3,7 @@ import logging
 import random
 from random import randint, randrange
 from time import time
+from sortedcontainers import SortedSet, SortedDict
 
 from worker.credentials.db import AccessStatus
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove
@@ -27,7 +28,7 @@ class SessionManager:
 
         self._all_keys = set()
         self._all_sessions = {}
-        self._active_sessions = set()
+        self._active_sessions = SortedSet()
         self._waiting_queue = set()
 
         self._key_type = key_type
@@ -89,7 +90,7 @@ class SessionManager:
         delay_time = self._requests_delay_min
         if self._requests_delay_min and self._requests_delay_max:
             delay_time = random.uniform(self._requests_delay_min, self._requests_delay_max)
-        if delay_time and stat.delay < delay_time:
+        if delay_time and stat.delay() < delay_time:
             return False
         return True
 
@@ -101,7 +102,7 @@ class SessionManager:
                 if await self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
-            stat, session = self._active_sessions.pop()
+            stat, session = self._active_sessions.pop(0)
             self._add_active_session(session)
             if not self._can_use_session(stat):
                 if await self._receive_keys():
@@ -124,10 +125,11 @@ class SessionManager:
         # TODO handle session actions
 
     async def stop(self):
+        assert not self._stop_called
         self._stop_called = True
         keys = list(self._all_keys)
-        while self._active_sessions:
-            rps, session = self._active_sessions.pop()
+        while len(self._active_sessions):
+            rps, session = self._active_sessions.pop(0)
             await session.single_close()
         self._all_keys.clear()
         self._active_sessions.clear()
