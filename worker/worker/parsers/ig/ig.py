@@ -28,7 +28,7 @@ class IgApiSession(SessionState):
 
 
 @inject_methods_wrappers(method_logger(name=__name__), redis_cache, mapped_method)
-class IgMethods(BaseParser):
+class IGMethods(BaseParser):
     _api = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30)
 
     @classmethod

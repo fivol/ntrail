@@ -1,15 +1,15 @@
 import asyncio
 import logging
 
-from worker import IgMethods
+from worker import IGMethods
 from worker.credentials.models import bind
-from worker.parsers.vk.vk import VkMethods
+from worker.parsers.vk.vk import VKMethods
 from worker.ctx import get_context
 from worker.helpers import caching
 
 logger = logging.getLogger(__name__)
 
-parsers = [VkMethods, IgMethods]
+parsers = [VKMethods, IGMethods]
 
 ctx = get_context()
 

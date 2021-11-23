@@ -22,7 +22,7 @@ assert_imported_once()
 
 
 @inject_methods_wrappers(method_logger(name=__name__), redis_cache, mapped_method)
-class VkMethods(BaseParser):
+class VKMethods(BaseParser):
     """
         Производит запросы к ВК на основе готовых, чистых параметров запроса конкретного вида, переданных в аргументах.
         Класс содержит набор методов, каждый из которых соотносится одному или ряду (однородных) запросов.

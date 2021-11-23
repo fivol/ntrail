@@ -2,20 +2,19 @@ import logging
 import time
 
 import aiohttp
-import requests
 import re
 import json
 import hashlib
 from .exception.instagram_auth_exception import InstagramAuthException
 from .exception.instagram_exception import InstagramException
 from .exception.instagram_not_found_exception import InstagramNotFoundException
-from .model.account import Account
-from .model.comment import Comment
-from .model.location import Location
-from .model.media import Media
-from .model.story import Story
-from .model.user_stories import UserStories
-from .model.tag import Tag
+from core.modules.ig.account import Account
+from core.modules.ig.comment import Comment
+from core.modules.ig.location import Location
+from core.modules.ig.media import Media
+from core.modules.ig.story import Story
+from core.modules.ig.user_stories import UserStories
+from core.modules.ig.tag import Tag
 from . import endpoints
 from .two_step_verification.console_verification import ConsoleVerification
 
@@ -40,7 +39,6 @@ class Instagram:
     PAGING_DELAY_MAXIMUM_MICROSEC = 3000000  # 3 sec max delay to simulate browser
 
     def __init__(self, sleep_between_requests=0, cookie=None):
-        self.__req = requests.Session()
         self.__areq = aiohttp.ClientSession()
         self.cookie = cookie or {}
 
@@ -58,7 +56,7 @@ class Instagram:
         await self.check()
 
     async def check(self):
-        self.get_account('apple')
+        await self.get_account('apple')
 
     def login(self, username: str, password: str, two_step_verificator=None):
         """support_two_step_verification true works only in cli mode - just run login in cli mode - save cookie to file and use in any mode

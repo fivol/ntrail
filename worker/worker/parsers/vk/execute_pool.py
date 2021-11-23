@@ -30,14 +30,14 @@ class ExecuteRequestPool:
         return f'return [{",".join(commands)}];'
 
     async def _run_execute_pool(self, only_user_access=False):
-        from worker import VkMethods
+        from worker import VKMethods
 
         # Label results as waiting
         if not self._executable_pool:
             raise IndexError
         logger.debug('Run execute pool %s', len(self._executable_pool))
         code = self._gen_execute_code(self._executable_pool)
-        execute_coro = VkMethods.execute(code, only_user_access=only_user_access)
+        execute_coro = VKMethods.execute(code, only_user_access=only_user_access)
         execute_task = asyncio.create_task(execute_coro)
 
         self._execute_results[self._execute_epoch] = execute_task
