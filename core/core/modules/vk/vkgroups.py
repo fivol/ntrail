@@ -3,7 +3,7 @@ import logging
 
 from pycommon.decors import cache_method_ignore_args
 from server.helpers.types import PlotType
-from worker import VkMethods
+from worker import VKMethods
 from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
@@ -56,7 +56,7 @@ class VKGroups(ConnectedEntities):
         return VKCommunity(members_ids, target='members', main=self.objects()[0])
 
     async def data(self) -> list:
-        return await VkMethods.groups_ids(self.nodes)
+        return await VKMethods.groups_ids(self.nodes)
 
     async def select_type(self, type_name):
         return VKGroups([group['id'] for group in await self.data() if group['type'] == type_name])

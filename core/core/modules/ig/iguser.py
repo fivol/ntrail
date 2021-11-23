@@ -1,91 +1,78 @@
-from ntmodule.tools import once_property
-from instagram.entities import Account
-from ntmodule.one_object import OneObject
+from core.module.single_entity import SingleEntity
+from pycommon.decors import cache_method_ignore_args
+from worker import IGMethods
 
 
-class IGUser(OneObject):
-    def __init__(self, user):
+class IGUser(SingleEntity):
+    @classmethod
+    async def create(cls, user):
         if isinstance(user, str):
-            if user.endswith('/'):
-                user = user[:-1]
-            username = user.split('/')[-1]
-            self.username = username
-        elif isinstance(user, Account):
-            self.username = user.username
+            return cls(await IGMethods.resolve(user))
+        else:
+            return cls(user)
+
+    def __init__(self, user):
+        self.id = None
+        self.username = None
+        self.full_name = None
+        self.profile_pic_url = None
+        self.profile_pic_url_hd = None
+        self.biography = None
+        self.external_url = None
+        self.follows_count = 0
+        self.followed_by_count = 0
+        self.media_count = 0
+        self.is_private = False
+        self.is_verified = False
+        self.medias = []
+        self.blocked_by_viewer = False
+        self.country_block = False
+        self.followed_by_viewer = False
+        self.follows_viewer = False
+        self.has_channel = False
+        self.has_blocked_viewer = False
+        self.highlight_reel_count = 0
+        self.has_requested_viewer = False
+        self.is_business_account = False
+        self.is_joined_recently = False
+        self.business_category_name = None
+        self.business_email = None
+        self.business_phone_number = None
+        self.business_address_json = None
+        self.requested_by_viewer = False
+        self.connected_fb_page = None
+
+        if isinstance(user, int):
+            self.id = user
+        elif isinstance(user, dict):
+            # TODO short data and full data
+            self._data = user
+            self._init(user)
+            self.id = user['id']
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
 
         self.id = self.username
         super().__init__()
 
-    @once_property
     def url(self):
         return f'https://instagram.com/{self.username}/'
 
-    def get_account(self, full=False):
-        account = Account(self.username)
-        return self.get_media(account, full=full)
+    @cache_method_ignore_args
+    async def data(self) -> dict:
+        return await IGMethods.account(self.id)
 
-    @property
-    def name(self):
-        return self.short_data['full_name']
+    async def followers(self, count=300):
+        from core.modules.ig.igcommunity import IGCommunity
+        return IGCommunity(await IGMethods.following(self.id, count=count))
 
-    @once_property
-    def short_data(self):
-        ac = self.get_account(full=False)
-        return {
-            'full_name': ac.full_name,
-            'id': ac.id,
-            'is_verified': ac.is_verified,
-            'profile_pic_url': ac.profile_pic_url,
-            'username': ac.username
-        }
+    async def following(self, count=300):
+        from core.modules.ig.igcommunity import IGCommunity
+        return IGCommunity(await IGMethods.following(self.id, count=count))
 
-    @once_property
-    def full_data(self):
-        ac = self.get_account(full=True)
-        data = {
-            'biography': ac.biography,
-            'country_block': ac.country_block,
-            'fb_page': ac.fb_page,
-            'followers_count': ac.followers_count,
-            'follows_count': ac.follows_count,
-            'full_name': ac.full_name,
-            'id': ac.id,
-            'is_private': ac.is_private,
-            'is_verified': ac.is_verified,
-            'media_count': ac.media_count,
-            'profile_pic_url': ac.profile_pic_url,
-            'profile_pic_url_hd': ac.profile_pic_url_hd,
-            'username': ac.username,
-        }
-        return data
+    async def valid(self):
+        pass
 
-    def print(self, *args, **kwargs):
-        if not self.valid:
-            print(f'ACCOUNT DOES NOT EXIST: {self.username}')
-        else:
-            super().print(*args, **kwargs)
-
-    def followers(self, count=300):
-        from module_ig.igcommunity import IGCommunity
-        nodes = self.get_followers(self.username, count=count)
-        return IGCommunity(nodes)
-
-    def follows(self, count=300):
-        from module_ig.igcommunity import IGCommunity
-        nodes = self.get_follows(self.username, count=count)
-        return IGCommunity(nodes)
-
-    @property
-    def is_private(self):
-        return self.full_data['is_private']
-
-    def friends(self):
-        from module_ig.igcommunity import IGCommunity
-        return self.follows() + self.followers() + IGCommunity([self.username])
-
-    @once_property
-    def valid(self):
-        return not self.get_account() is None
+    def status(self):
+        pass
 

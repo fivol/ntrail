@@ -6,7 +6,7 @@ import networkx as nx
 
 from core.module.connected_entities import ConnectedEntities
 from pycommon.decors import cache_method_ignore_args
-from worker import VkMethods
+from worker import VKMethods
 from core.modules.vk.vkgroup import VKGroup
 from core.modules.vk.vkgroups import VKGroups
 from core.modules.vk.vkuser import VKUser
@@ -55,22 +55,22 @@ class VKCommunity(ConnectedEntities):
     async def groups(self):
         all_groups_ids = sum(
             filter(
-                lambda x: isinstance(x, list), await VkMethods.groups.map(self.nodes)),
+                lambda x: isinstance(x, list), await VKMethods.groups.map(self.nodes)),
             [])
         return VKGroups(all_groups_ids)
 
     async def data(self) -> list:
-        return await VkMethods.users(self.nodes)
+        return await VKMethods.users(self.nodes)
 
     async def friends(self):
-        users_friends = await VkMethods.friends(self.nodes)
+        users_friends = await VKMethods.friends(self.nodes)
         users_friends += [self.nodes]
         return VKCommunity(sum(filter(lambda x: isinstance(x, list), users_friends), []))
 
     @cache_method_ignore_args
     async def graph(self):
         graph = nx.Graph()
-        connections = await VkMethods.friends.map(self.nodes)
+        connections = await VKMethods.friends.map(self.nodes)
         friends = {
             node: conn
             for node, conn in zip(self.nodes, connections) if not isinstance(conn, Exception)

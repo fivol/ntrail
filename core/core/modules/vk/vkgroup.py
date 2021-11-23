@@ -5,7 +5,7 @@ import typing
 from core.constants import GroupStatus
 from core.module.layers import public_object_method
 from core.module.single_entity import SingleEntity
-from worker import VkMethods
+from worker import VKMethods
 
 logger = logging.getLogger()
 
@@ -29,22 +29,22 @@ class VKGroup(SingleEntity):
             username = re.search(r'vk\.com/([a-zA-Z0-9.]+)', group)
             if username:
                 username = username.group(1)
-            data = await VkMethods.resolve(username)
+            data = await VKMethods.resolve(username)
             group = VKGroup(data)
             return group
 
         return VKGroup(group)
 
     async def data(self) -> dict:
-        return (await VkMethods.groups_ids([self.id]))[0]
+        return (await VKMethods.groups_ids([self.id]))[0]
 
     async def members(self, count=None):
         from core.modules.vk.vkcommunity import VKCommunity
-        members = await VkMethods.members(self.id, count=count)
+        members = await VKMethods.members(self.id, count=count)
         return VKCommunity(members)
 
     async def posts(self):
-        return await VkMethods.posts(-self.id)
+        return await VKMethods.posts(-self.id)
 
     async def status(self) -> GroupStatus:
         data = await self.data()

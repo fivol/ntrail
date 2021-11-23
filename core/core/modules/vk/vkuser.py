@@ -10,7 +10,7 @@ from pycommon.decors import cache_method_ignore_args
 from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import ParserRealError
-from worker import VkMethods, VKError
+from worker import VKMethods, VKError
 from core.module.layers import public_object_method
 from core.module.single_entity import SingleEntity
 
@@ -28,7 +28,7 @@ class VKUser(SingleEntity):
                 status = AccountStatus.ABSENT
             else:
                 username = VKUser._extract_username(user)
-                user_dict = await VkMethods.resolve(username)
+                user_dict = await VKMethods.resolve(username)
                 if not isinstance(user_dict, dict):
                     logger.info('VKUser username does not exist "%s"', username)
                     status = AccountStatus.ABSENT
@@ -63,13 +63,13 @@ class VKUser(SingleEntity):
         return usernames[0]
 
     async def photos(self):
-        return VKPhotos(await VkMethods.photos_all(owner_id=self.id, all=True))
+        return VKPhotos(await VKMethods.photos_all(owner_id=self.id, all=True))
 
     async def profile_photos(self):
-        return VKPhotos(await VkMethods.photos(owner_id=self.id, album_id='profile', all_=True))
+        return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='profile', all_=True))
 
     async def wall_photos(self):
-        return VKPhotos(await VkMethods.photos(owner_id=self.id, album_id='wall', all_=True))
+        return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='wall', all_=True))
 
     async def status(self):
         if self._status:
@@ -105,17 +105,17 @@ class VKUser(SingleEntity):
 
     def followers(self):
         from .vkcommunity import VKCommunity
-        followers = VkMethods.followers.sync(self.id)
+        followers = VKMethods.followers.sync(self.id)
         return VKCommunity(followers)
 
     def subscriptions(self):
         from .vkcommunity import VKCommunity
-        subscriptions = VkMethods.subscriptions(self.id)
+        subscriptions = VKMethods.subscriptions(self.id)
         assert isinstance(subscriptions, list)
         return VKCommunity(subscriptions)
 
     async def groups(self):
-        return VKGroups(await VkMethods.groups(self.id), source=self)
+        return VKGroups(await VKMethods.groups(self.id), source=self)
 
     @classmethod
     def random(cls):
@@ -124,11 +124,11 @@ class VKUser(SingleEntity):
 
     @cache_method_ignore_args
     async def data(self) -> dict:
-        return (await VkMethods.users([self.id]))[0]
+        return (await VKMethods.users([self.id]))[0]
 
     @public_object_method
     async def posts(self, all_=False) -> VKPosts:
-        return VKPosts(await VkMethods.posts(self.id, all_=all_))
+        return VKPosts(await VKMethods.posts(self.id, all_=all_))
 
     async def name(self):
         return f"{(await self.data())['first_name']} {(await self.data())['last_name']}"
@@ -139,14 +139,9 @@ class VKUser(SingleEntity):
 
     async def friends(self, include_self=False):
         from .vkcommunity import VKCommunity
-        friend_ids = await VkMethods.friends(self.id)
+        friend_ids = await VKMethods.friends(self.id)
         if isinstance(friend_ids, ParserRealError):
             return VKCommunity()
         if include_self:
             friend_ids.append(self.id)
         return VKCommunity(friend_ids, main=self, target='friends')
-
-
-from .vkcommunity import VKCommunity
-
-VKUser._many_media_cls = VKCommunity

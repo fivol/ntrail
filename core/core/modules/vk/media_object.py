@@ -1,4 +1,4 @@
-from worker import VkMethods
+from worker import VKMethods
 from abc import ABCMeta
 from datetime import datetime
 
@@ -14,7 +14,7 @@ class MediaObject(SingleEntity, metaclass=ABCMeta):
     async def likes(self):
         from core.modules.vk.vkcommunity import VKCommunity
         owner_id, item_id = self.id.split('_')
-        return VKCommunity(await VkMethods.likes(type_='post', item_id=item_id, owner_id=owner_id))
+        return VKCommunity(await VKMethods.likes(type_='post', item_id=item_id, owner_id=owner_id))
 
     async def date(self):
         timestamp = (await self.data()).get('date')

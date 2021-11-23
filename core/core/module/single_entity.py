@@ -10,9 +10,8 @@ class SingleEntity(AnyEntity):
     Photo -> Photos and so on
     It must be real class to construct it
     """
-    _many_media_cls = None
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.id = None
 
     @property

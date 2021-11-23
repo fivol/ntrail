@@ -4,7 +4,7 @@ from pycommon.decors import cache_method_ignore_args
 from .media_object import MediaObject
 from collections import defaultdict
 from core.module.many_entities import ManyEntities
-from worker import VkMethods
+from worker import VKMethods
 
 
 class VKPost(MediaObject):
@@ -21,7 +21,7 @@ class VKPost(MediaObject):
 
     @cache_method_ignore_args
     async def data(self) -> dict:
-        return (await VkMethods.posts_ids([self.id]))[0]
+        return (await VKMethods.posts_ids([self.id]))[0]
 
     @property
     async def text(self):
@@ -86,7 +86,7 @@ class VKPosts(ManyEntities):
 
     @cache
     def data(self, force=False, full=True) -> list:
-        return VkMethods.posts_ids.sync_map(self.nodes)
+        return VKMethods.posts_ids.sync_map(self.nodes)
 
     def summary(self) -> dict:
         return {}

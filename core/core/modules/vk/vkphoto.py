@@ -2,7 +2,7 @@ import logging
 import typing
 
 from pycommon.decors import cache_method_ignore_args
-from worker import VkMethods
+from worker import VKMethods
 from .media_object import MediaObject
 from core.module.many_entities import ManyEntities
 from ...module.layers import public_object_method
@@ -85,7 +85,7 @@ class VKPhoto(MediaObject):
 
     @cache_method_ignore_args
     async def data(self) -> dict:
-        return (await VkMethods.photos_ids([self.id]))[0]
+        return (await VKMethods.photos_ids([self.id]))[0]
 
     def url(self):
         return 'https://vk.com/photo' + self.id
@@ -140,7 +140,7 @@ class VKPhotos(ManyEntities):
 
     @cache_method_ignore_args
     async def data(self):
-        return await VkMethods.photos_ids(photo_ids=self.nodes)
+        return await VKMethods.photos_ids(photo_ids=self.nodes)
 
     def summary(self) -> dict:
         return {
