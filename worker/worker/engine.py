@@ -32,9 +32,6 @@ class Engine:
 
         self._init_modules()
 
-    def __enter__(self):
-        return self
-
     async def __aenter__(self):
         await bind()
         return self
@@ -54,16 +51,6 @@ class Engine:
         await asyncio.gather(
             *[cls.stop() for cls in self._parsers]
         )
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            assert asyncio.get_running_loop()
-        except RuntimeError:
-            asyncio.get_event_loop().run_until_complete(
-                self.stop()
-            )
-        else:
-            raise EnvironmentError
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.stop()
