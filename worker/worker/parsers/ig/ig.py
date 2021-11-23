@@ -1,4 +1,4 @@
-from igramscraper.instagram import Instagram
+from worker.instagramscraper.instagram import Instagram
 from worker.credentials.access import AccessModel
 from worker.helpers.caching import redis_cache
 from worker.helpers.layers import method_logger

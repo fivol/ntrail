@@ -2,7 +2,7 @@ from asyncpg.exceptions import UniqueViolationError
 
 from worker.credentials.adapter import AdapterBase
 from worker.credentials.db import *
-from igramscraper.instagram import Instagram, InstagramAuthException
+from worker.instagramscraper.instagram import Instagram, InstagramAuthException
 
 
 logger = logging.getLogger(__name__)
