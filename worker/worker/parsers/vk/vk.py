@@ -1,57 +1,23 @@
-from aiovk import TokenSession, API
-from aiovk.exceptions import VkAPIError, VkAuthError
-
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
-from worker.parsers.vk.exceptions import VKError, VKErrorType
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
-from worker.session.exceptions import SessionManagerException, SessionRemove
+from worker.parsers.vk.session import VkApiSession
+from worker.session.exceptions import SessionManagerException
 from worker.session.session_manager import SessionManager
-from worker.session.session_state import SessionState
+
 from worker.helpers.tools import assert_imported_once, decorate
-from worker.ctx import get_context
 from worker.config import config
 from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 
 logger = logging.getLogger(__name__)
 
-VK_API_VERSION = '5.103'
-VK_API_LANG = 'ru'
-
 # 10 секунд - ограничение на время выполнения запроса к API
 VK_API_TIMEOUT = 10
 
 assert_imported_once()
-
-ctx = get_context()
-
-
-class VkApiSession(SessionState):
-    def __init__(self, *args, **kwargs):
-        self.__vk_session = None
-        super().__init__(*args, **kwargs)
-
-    def create(self, key: str):
-        session = TokenSession(access_token=key, timeout=ctx.timeout)
-        self.__vk_session = session
-        session.API_VERSION = VK_API_VERSION
-        return API(session)
-
-    async def close(self):
-        await self.__vk_session.close()
-
-    def handle_error(self, exc_type, exc_val, exc_tb):
-        if exc_type == VkAPIError:
-            error = VKError(error=exc_val)
-            logger.warning('Catch vk api error: %s', error)
-            if error.type == VKErrorType.ACCESS_DENIED:
-                raise TokenAccessDenied()
-            raise error
-        if exc_type == VkAuthError:
-            raise SessionRemove()
 
 
 @inject_methods_wrappers(method_logger(name=__name__), redis_cache, make_synced)
@@ -65,11 +31,11 @@ class VkMethods(BaseParser):
     """
     # Vk requests limits https://vk.com/dev/api_requests
     # 3 in docs
-    _user_api = SessionManager(key_type='vk.user.token', controller=VkApiSession, max_rps=config.vk.rps.user)
+    _user_api = SessionManager(key_type='vk.user', controller=VkApiSession, max_rps=config.vk.rps.user)
     # # 3 in docs
-    _comm_api = SessionManager(key_type='vk.community.token', controller=VkApiSession, max_rps=config.vk.rps.community)
+    _comm_api = SessionManager(key_type='vk.community', controller=VkApiSession, max_rps=config.vk.rps.community)
     # # 5 in docs
-    _app_api = SessionManager(key_type='vk.app.token', controller=VkApiSession, max_rps=config.vk.rps.app)
+    _app_api = SessionManager(key_type='vk.app', controller=VkApiSession, max_rps=config.vk.rps.app)
 
     _execute_pool = ExecuteRequestPool()
 
@@ -87,7 +53,7 @@ class VkMethods(BaseParser):
     async def _call_api(cls, method, kwargs, apis, assert_response=False):
         for i, api in enumerate(apis):
             try:
-                with await api.get() as session:
+                async with await api.get() as session:
                     result = await session(method, **kwargs, lang='ru')
                 if not result and assert_response:
                     raise TokenAccessDenied()

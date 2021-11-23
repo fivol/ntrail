@@ -1,10 +1,12 @@
+"""
+Uploads tokens in vk-app.txt, vk-user.txt and vk-community.txt to DB
+"""
+
 import asyncpg
 
 from worker.credentials.models import *
 import sqlalchemy
 from sqlalchemy.dialects.postgresql import insert
-
-FILENAME = 'vk-tokens-app.txt'
 
 
 async def check_default_account(service) -> int:
@@ -14,8 +16,9 @@ async def check_default_account(service) -> int:
     return await DBAccount.select('id').where((DBAccount.service == service) & (DBAccount.login == '')).gino.scalar()
 
 
-async def main():
-    with open(FILENAME, 'r') as f:
+async def upload(type_):
+    filename = f'vk-{type_}.txt'
+    with open(filename, 'r') as f:
         lines = f.read().split('\n')
 
     tokens = [
@@ -26,10 +29,15 @@ async def main():
     logger.info('default_account_id %s', default_account_id)
     for token in tokens:
         try:
-            await DBAccess.create(token=token, account_id=default_account_id)
+            await DBAccess.create(token=token, account_id=default_account_id, type=type_)
         except asyncpg.exceptions.UniqueViolationError:
             logger.debug('Token already exists')
 
+
+async def main():
+    await upload('app')
+    await upload('community')
+    await upload('user')
 
 if __name__ == '__main__':
     asyncio.run(main())

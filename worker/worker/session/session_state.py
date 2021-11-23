@@ -2,11 +2,8 @@ import logging
 from time import time
 from abc import abstractmethod
 from collections import deque
-from worker.ctx import get_context
 
-logger = logging.getLogger('session')
-
-ctx = get_context()
+logger = logging.getLogger(__name__)
 
 
 class SessionState:
@@ -25,7 +22,6 @@ class SessionState:
         self._expire_time = None
         self.__closed = False
         self.__using_times = deque()
-        assert ctx.get('initialized')
 
     def rps(self):
         """

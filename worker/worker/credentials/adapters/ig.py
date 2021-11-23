@@ -27,12 +27,20 @@ class IGAdapter(AdapterBase):
         except UniqueViolationError:
             logger.debug('Access already exist')
 
+    @classmethod
+    async def create_accesses(cls, max_count=None):
+        accounts = await AccountsAccess.get_accounts(service=cls.service, count=max_count, status=AccountStatus.unknown)
+        if not accounts:
+            logger.warning('No free accounts to create access')
+            return
+        for account in accounts:
+            await cls._create_access(account)
+
 
 # ME 12638820603
 async def main():
     await bind()
     print(await IGAdapter.get_access(2))
-    # print(ig.get_following(3))
 
 
 if __name__ == '__main__':

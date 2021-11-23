@@ -1,10 +1,12 @@
 import logging
 
+from worker.credentials.access import AccessModel
 from worker.credentials.adapter import AdapterBase
 from worker.credentials.adapters.ig import IGAdapter
 from worker.credentials.adapters.vk import VKAdapter
 from worker.credentials.db import AccessStatus, AccountsAccess
 from worker.credentials.models import DBAccess
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +29,15 @@ class Credentials:
         return adapters[name]
 
     @classmethod
-    async def get_access(cls, key_type: str, count: int = None) -> list[dict]:
+    def _create_model(cls, model: DBAccess):
+        return AccessModel(model)
+
+    @classmethod
+    async def get_access(cls, key_type: str, count: int = None) -> list[AccessModel]:
         service, type_ = key_type.split('.', 1)
         models = await cls._get_adapter(service).get_access(type_=type_, max_count=count)
         logger.info('Acquire %s keys', len(models))
-        return models
+        return list(map(cls._create_model, models))
 
     @classmethod
     async def update_access(cls, models: list[DBAccess]):
@@ -39,7 +45,8 @@ class Credentials:
         await AccountsAccess.update_access(models)
 
     @classmethod
-    async def return_access(cls, models: list[DBAccess], error: AccessStatus = None):
+    async def return_access(cls, models: list[AccessModel], error: AccessStatus = None):
+        models = list(map(lambda model: model.row(), models))
         if not models:
             return
         if error:

@@ -1,16 +1,17 @@
+import asyncio
 import logging
 from random import randint
 from time import time
 
 from worker.credentials.db import AccessStatus
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove, \
-    TokenAuthFailed
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState
 
 from worker.credentials.credentials import Credentials
+from worker.credentials.access import AccessModel
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class SessionManager:
@@ -30,6 +31,7 @@ class SessionManager:
         self._key_type = key_type
         self._max_rps = max_rps
         self._stop_called = False
+        self._stop_access_acquiring = False
 
     async def get(self):
         session = await self._get_session()
@@ -52,20 +54,25 @@ class SessionManager:
                 self._waiting_queue.add((revive_time, session))
                 break
 
-    def __add_new_keys(self, keys):
-        for key in keys:
-            session = self._create_session(key)
-            self._all_keys.add(key)
+    def __add_new_keys(self, models: list[AccessModel]):
+        for model in models:
+            session = self._create_session(model)
+            self._all_keys.add(model)
             self._add_active_session(session)
             # TODO tokens can be not plain string, for example can contain revive time
 
     async def _receive_keys(self) -> bool:
-        count = max(1, len(self._active_sessions))
-        keys = await Credentials.get_access(self._key_type, count)
-        if len(keys) < count:
-            logger.warning('Credentials Server give less keys then requested: %s < %s', len(keys), count)
-        self.__add_new_keys(keys)
-        return bool(keys)
+        await asyncio.sleep(0)
+        count = max(1, len(self._all_keys))
+        if self._stop_access_acquiring:
+            return False
+        models = await Credentials.get_access(self._key_type, count)
+        logger.info('New %s access tokens (count: %s)', len(models), count)
+        if len(models) < count:
+            self._stop_access_acquiring = True
+            logger.warning('Credentials Server give less keys then requested: %s < %s', len(models), count)
+        self.__add_new_keys(models)
+        return bool(models)
 
     async def _return_expired(self, receive=False):
         if receive:
@@ -82,19 +89,19 @@ class SessionManager:
             rps, session = self._active_sessions.pop()
             self._add_active_session(session)
             if session.rps() >= self._max_rps:
-                if self._receive_keys():
+                if await self._receive_keys():
                     continue
                 raise RpsLimitException()
 
             return session
 
-    def return_session(self, session: SessionState, action: SessionAction = None):
+    async def return_session(self, session: SessionState, action: SessionAction = None):
         if isinstance(action, SessionRemove):
             if hash(session) in self._all_sessions:
                 self._active_sessions.remove(self._all_sessions[hash(session)])
                 del self._all_sessions[hash(session)]
                 self._all_keys.remove(session.key)
-                Credentials.return_access(session.key, error=AccessStatus.access_denied)
+                await Credentials.return_access([session.key], error=AccessStatus.denied)
                 logger.error('SESSION REMOVING')
         else:
             self._active_sessions.remove(self._all_sessions[hash(session)])
