@@ -1,6 +1,7 @@
 
 # If "true" all loggers level sets to ERROR
 DEBUG: true
+redis_url: "redis://0.0.0.0:6379"
 vk:
   # 25 request in execute query, do not change!
   EXECUTE_QUERIES_BUNCH_COUNT: 25
@@ -26,12 +27,8 @@ logging:
       formatter: default
       stream: ext://sys.stdout
   loggers:
-    vk:
-      level: DEBUG
-    cache:
-      level: DEBUG
-    session:
-      level: DEBUG
-  root:
-    level: DEBUG
-    handlers: [ console ]
+    root:
+      level: WARNING
+      handlers: [ console ]
+    worker:
+      level: WARNING
