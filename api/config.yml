@@ -14,7 +14,7 @@ check_alive_limit_timeout: 5
 DEBUG: true
 PG_URL: "postgresql://postgres:REMOVED@194.169.160.225:5432/ntrail-credentials"
 # Stop any query after this amount of seconds
-REQUESTS_TIMEOUT: 15
+REQUESTS_TIMEOUT: 60
 
 vk:
   # 25 request in execute query, do not change!
