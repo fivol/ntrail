@@ -5,6 +5,7 @@ from gino import Gino
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy_mixins.timestamp import TimestampsMixin
+from worker.config import config
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class DBAccess(db.Model, TimestampsMixin):
 
 
 async def bind():
-    await db.set_bind('postgresql://postgres:password@localhost:5432/ntrail-credentials')
+    await db.set_bind(config.get('PG_URL', 'postgresql://postgres:password@localhost:5432/ntrail-credentials'))
 
 
 async def main():
