@@ -2,10 +2,11 @@ FROM python:3.9
 
 RUN pip install "poetry"
 WORKDIR /app
+COPY poetry.lock poetry.lock
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+
 COPY . .
 
 RUN ./prepare.sh
-
-RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
 CMD [ "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000" ]
