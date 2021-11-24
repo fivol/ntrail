@@ -24,13 +24,12 @@ class IGAdapter(AdapterBase):
             logger.debug('Access already exist')
 
     @classmethod
-    async def create_accesses(cls, max_count=None):
+    async def create_accesses(cls, max_count=1):
         accounts = await AccountsAccess.get_not_banned_accounts_without_access(service=cls.service, count=max_count)
         if not accounts:
             logger.warning('No free accounts to create access')
             return
-        for account in accounts:
-            await cls._create_access(account)
+        await asyncio.gather(*[cls._create_access(account) for account in accounts], return_exceptions=True)
 
 
 # ME 12638820603

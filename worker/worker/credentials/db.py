@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from worker.credentials.models import *
 
@@ -26,22 +26,28 @@ class AccountStatus:
 class AccountsAccess:
     @classmethod
     async def get_access(cls, service: str, status: AccountStatus, type_=None, count=None, acquire=False):
-        async with db.transaction() as tx:
-            where = (DBAccount.service == service) & (DBAccess.status == status)
-            is_free = (DBAccess.free.is_(True)) | (
-                    DBAccess.last_acquire + timedelta(minutes=30) < datetime.now())
-            where = where & is_free
-            if type_:
-                where = where & (DBAccess.type == type_)
-            query = select([DBAccess.id, DBAccess.type, DBAccess.data, DBAccess.token, DBAccount.service]).select_from(
-                DBAccess.join(DBAccount)).where(where)
-            if count:
-                query = query.limit(count)
-            models = await query.gino.all()
-            if acquire:
-                await DBAccess.update.values(last_acquire=datetime.now(), free=False).where(
-                    DBAccess.id.in_([item.id for item in models])).gino.status()
-            return models
+        async with db.acquire() as conn:
+            async with conn.transaction() as tx:
+                where = (DBAccount.service == service) & (DBAccess.status == status)
+                is_free = DBAccess.free == True
+                where = where & is_free
+                if type_:
+                    where = where & (DBAccess.type == type_)
+
+                query = select([DBAccess.id]).select_from(
+                    DBAccess.join(DBAccount)).where(where).order_by(db.text('random()'))
+
+                if count:
+                    query = query.limit(count)
+
+                if acquire:
+                    result = await update(DBAccess).values(last_acquire=datetime.now(), free=False). \
+                        where(DBAccess.id.in_(query)). \
+                        returning(
+                        db.text('*')).gino.all()
+                    return result
+                else:
+                    return await select(DBAccess).where(DBAccess.id.in_(query)).gino.all()
 
     @classmethod
     async def return_access(cls, models: list[DBAccess]):
@@ -55,6 +61,7 @@ class AccountsAccess:
 
     @classmethod
     async def create_access(cls, account: DBAccount, data: dict, token=None):
+        logger.info('CREATE ACCESS: %s', token)
         async with db.transaction() as tx:
             await DBAccess.create(
                 account_id=account.id,

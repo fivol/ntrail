@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from worker.credentials.db import AccountsAccess, AccessStatus, AccountStatus
@@ -14,6 +15,7 @@ class AdapterBase:
     async def get_access(cls, type_=None, max_count=100):
         access = await AccountsAccess.get_access(count=max_count, type_=type_, service=cls.service,
                                                  status=AccessStatus.active, acquire=True)
+        assert len(access) <= max_count
         if len(access) == max_count:
             return access
         await cls.create_accesses(max_count=max_count - len(access))

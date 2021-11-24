@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+from functools import total_ordering
 from time import time
 from abc import abstractmethod
 from collections import deque
@@ -10,6 +11,7 @@ from worker.credentials.access import AccessModel
 logger = logging.getLogger(__name__)
 
 
+@total_ordering
 class UsageStat(BaseModel):
     rps: int
     last_usage: float
@@ -19,17 +21,15 @@ class UsageStat(BaseModel):
         return time() - self.last_usage
 
     def __lt__(self, other: UsageStat):
-        if self.rps and other.rps:
+        if self.rps > 1 and other.rps > 1:
             return self.rps < other.rps
         return self.last_usage < other.last_usage
-
-    def __eq__(self, other: UsageStat):
-        return self.rps == other.rps and self.last_usage == other.last_usage and self.usage_count == other.usage_count
 
     def __hash__(self):
         return hash(self.rps) + hash(self.last_usage) + hash(self.usage_count)
 
 
+@total_ordering
 class SessionState:
     """
     Описывает вызов токена, время обращения к нему, состояние и прочее
@@ -77,11 +77,8 @@ class SessionState:
         return hash(self.key.token)
 
     def __lt__(self, other: SessionState):
-        if self._stat < other._stat:
-            return True
-        elif self._stat > other._stat:
-            return False
-        return hash(self) < hash(other)
+        # return hash(self) < hash(other)
+        return (self._stat, hash(self)) < (other._stat, hash(other))
 
     @abstractmethod
     async def close(self):
@@ -104,4 +101,7 @@ class SessionState:
 
     def is_expired(self):
         return self._expire_time and time() > self._expire_time
+
+    def __repr__(self):
+        return f'SessionState(hash: {hash(self)})'
 

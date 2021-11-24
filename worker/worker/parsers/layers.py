@@ -3,7 +3,7 @@ import logging
 from functools import wraps
 
 from worker.parsers.utils import RichList
-from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed, TokenAccessDenied
+from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed
 
 
 logger = logging.getLogger(__name__)
@@ -71,12 +71,15 @@ def reliable_call(method):
 
     @wraps(method)
     async def wrapper(*args, **kwargs):
+        wait_time = 0.01
         while True:
             try:
                 return await method(*args, **kwargs)
             except RpsLimitException:
-                logger.debug('RPS wait')
-                await asyncio.sleep(0.01)
+                if wait_time > 2:
+                    logger.debug('RPS wait: %s', wait_time)
+                wait_time *= 1.1
+                await asyncio.sleep(wait_time)
                 continue
             except TokenAuthFailed:
                 continue

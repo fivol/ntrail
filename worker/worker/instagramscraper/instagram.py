@@ -1,10 +1,14 @@
 import logging
 import time
+import typing
 
 import aiohttp
 import re
 import json
 import hashlib
+
+from aiohttp import ContentTypeError
+
 from .exception.instagram_auth_exception import InstagramAuthException
 from .exception.instagram_exception import InstagramException
 from .exception.instagram_not_found_exception import InstagramNotFoundException
@@ -15,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class LoginRedirectError(InstagramAuthException):
+    pass
+
+
+class NotJsonResponse(Exception):
     pass
 
 
@@ -119,8 +127,8 @@ class Instagram:
             try:
                 await self.connect(cookie)
                 return
-            except InstagramAuthException:
-                logger.exception('Fail to connect')
+            except (InstagramAuthException, InstagramException):
+                logger.exception('Failed to connect')
         if username is None or password is None:
             raise InstagramAuthException("User credentials not provided")
 
@@ -131,7 +139,7 @@ class Instagram:
             {key: value.value for key, value in cookie.items()}
         )
 
-    async def __request_get(self, *args, **kwargs) -> dict:
+    async def __request_get(self, *args, **kwargs) -> typing.Optional[dict]:
         logger.info('Instagram request: %s %s', args, kwargs)
         async with self.__areq.get(*args, **kwargs,
                                    headers=self.generate_headers(self.cookie),
@@ -142,7 +150,10 @@ class Instagram:
                 raise InstagramException.default(await response.text(),
                                                  response.status)
             self._update_cookie(response.cookies)
-            return await response.json()
+            try:
+                return await response.json()
+            except ContentTypeError:
+                raise NotJsonResponse()
 
     def set_proxies(self, proxy):
         if proxy and isinstance(proxy, dict):
@@ -943,13 +954,16 @@ class Instagram:
             'first': str(count),
             'after': end_cursor,
         }
-        response = await self.__request_get(endpoints.get_followers_json_link(variables))
-        edges = response['data']['user']['edge_followed_by']
-        return {
-            'items': list(map(lambda edge: edge['node'], edges['edges'])),
-            'count': edges['count'],
-            **edges['page_info']
-        }
+        try:
+            response = await self.__request_get(endpoints.get_followers_json_link(variables))
+            edges = response['data']['user']['edge_followed_by']
+            return {
+                'items': list(map(lambda edge: edge['node'], edges['edges'])),
+                'count': edges['count'],
+                **edges['page_info']
+            }
+        except NotJsonResponse:
+            raise InstagramException()
 
     async def get_following(self, account_id, count=20, end_cursor=''):
         # count <= 50
@@ -1151,6 +1165,8 @@ class Instagram:
                 raise InstagramNotFoundException(
                     'Account with given username does not exist.')
             raise
+        except NotJsonResponse:
+            raise InstagramException()
 
         try:
             return response['graphql']['user']

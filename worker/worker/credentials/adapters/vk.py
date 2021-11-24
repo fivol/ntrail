@@ -6,7 +6,6 @@ from worker.credentials.adapter import AdapterBase
 from worker.credentials.models import bind
 from worker.credentials.db import AccountsAccess, AccessStatus
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +23,8 @@ class VKAdapter(AdapterBase):
 
     @classmethod
     async def create_accesses(cls, max_count=None):
-        access = await AccountsAccess.get_access(service=cls.service, status=AccessStatus.unknown, count=max_count, acquire=False)
+        access = await AccountsAccess.get_access(service=cls.service, status=AccessStatus.unknown, count=max_count,
+                                                 acquire=False)
         for single_access in access:
             if await cls.check(single_access, f'vk.{single_access.type}'):
                 await AccountsAccess.set_access_status(single_access, AccessStatus.active)
@@ -35,6 +35,7 @@ class VKAdapter(AdapterBase):
 async def main():
     await bind()
     await VKAdapter.create_accesses()
+
 
 if __name__ == '__main__':
     asyncio.run(main())

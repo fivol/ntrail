@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 from sortedcontainers import SortedSet
@@ -24,8 +25,8 @@ class SessionManager:
         logger.info('INIT session manager')
         self._session_controller = controller
 
-        self._active_sessions = SortedSet()
-        self._waiting_queue = set()
+        self._active_sessions = set()
+        self._lock = asyncio.Lock()
 
         self._key_type = key_type
         self._max_rps = max_rps
@@ -52,19 +53,6 @@ class SessionManager:
     def _create_session(self, key) -> SessionState:
         return self._session_controller(key=key, key_type=self._key_type)
 
-    # def _update_active_session(self, session: SessionState):
-    #     self._active_sessions.remove(session)
-    #     self._active_sessions.add(session)
-
-    # def _check_waiting_queue(self):
-    #     while self._waiting_queue:
-    #         revive_time, session = self._waiting_queue.pop()
-    #         if revive_time < time():
-    #             self._add_active_session(session)
-    #         else:
-    #             self._waiting_queue.add((revive_time, session))
-    #             break
-
     def _add_new_keys(self, models: list[AccessModel]):
         for model in models:
             session: SessionState = self._create_session(model)
@@ -72,20 +60,18 @@ class SessionManager:
             # TODO tokens can be not plain string, for example can contain revive time
 
     async def _receive_keys(self, count=None) -> bool:
-        count = count or max(1, len(self._active_sessions))
-        if self._stop_access_acquiring:
-            return False
-        models = await Credentials.get_access(self._key_type, count)
-        logger.info('New %s access tokens (count: %s)', len(models), count)
-        if len(models) < count:
-            self._stop_access_acquiring = True
-            logger.warning('Credentials Server give less keys then requested: %s < %s', len(models), count)
-        self._add_new_keys(models)
-        return bool(models)
-
-    # async def _return_expired(self, receive=False):
-    #     if receive:
-    #         await self._receive_keys()
+        self._lock._loop = asyncio.get_event_loop()
+        async with self._lock:
+            count = count or max(1, len(self._active_sessions))
+            if self._stop_access_acquiring:
+                return False
+            models = await Credentials.get_access(self._key_type, count)
+            logger.info('New %s access tokens (count: %s), now have %s', len(models), count, len(self._active_sessions))
+            if len(models) < count:
+                self._stop_access_acquiring = True
+                logger.warning('Credentials Server give less keys then requested: %s < %s', len(models), count)
+            self._add_new_keys(models)
+            return bool(models)
 
     def _can_use_session(self, stat: UsageStat):
         if not stat.usage_count:
@@ -101,13 +87,13 @@ class SessionManager:
 
     async def _get_session(self) -> SessionState:
         while True:
-            # if not len(self._active_sessions) or not randint(0, 10):
-            #     self._check_waiting_queue()
             if not self._active_sessions:
                 if await self._receive_keys():
                     continue
-                raise NoTokenAvailableException()
-            session: SessionState = self._active_sessions[0]
+                if not self._active_sessions:
+                    raise NoTokenAvailableException()
+            session: SessionState = self._active_sessions.pop()
+            self._active_sessions.add(session)
             if not self._can_use_session(session.usage_stat()):
                 if await self._receive_keys():
                     continue
@@ -127,7 +113,7 @@ class SessionManager:
         self._stop_called = True
         accesses = [state.key for state in self._active_sessions]
         while len(self._active_sessions):
-            session = self._active_sessions.pop(0)
+            session = self._active_sessions.pop()
             await session.single_close()
         await Credentials.return_access(accesses)
 
