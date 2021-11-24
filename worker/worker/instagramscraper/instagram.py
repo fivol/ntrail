@@ -98,7 +98,6 @@ class Instagram:
                     and two_step_verificator is not None):
                 response = self.__verify_two_step(response, cookies,
                                                   two_step_verificator)
-                print('checkpoint required')
 
             elif response.status_code is not None and response.text is not None:
                 raise InstagramAuthException(
@@ -951,7 +950,6 @@ class Instagram:
         }
         response = await self.__request_get(endpoints.get_followers_json_link(variables))
         edges = response['data']['user']['edge_followed_by']
-        print(account_id, count, edges['page_info']['end_cursor'])
         return {
             'items': list(map(lambda edge: edge['node'], edges['edges'])),
             'count': edges['count'],
