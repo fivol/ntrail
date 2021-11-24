@@ -145,7 +145,7 @@ class UserDescribePlugin(BasePlugin):
             if username:
                 break
             for reg in inst_reg:
-                if not username:
+                if username:
                     username = self._try_parse_instagram_str(text, reg)
 
         if username:
