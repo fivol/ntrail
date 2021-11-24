@@ -8,13 +8,6 @@ import hashlib
 from .exception.instagram_auth_exception import InstagramAuthException
 from .exception.instagram_exception import InstagramException
 from .exception.instagram_not_found_exception import InstagramNotFoundException
-from core.modules.ig.account import Account
-from core.modules.ig.comment import Comment
-from core.modules.ig.location import Location
-from core.modules.ig.media import Media
-from core.modules.ig.story import Story
-from core.modules.ig.user_stories import UserStories
-from core.modules.ig.tag import Tag
 from . import endpoints
 from .two_step_verification.console_verification import ConsoleVerification
 

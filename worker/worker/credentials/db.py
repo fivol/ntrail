@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta
-from pprint import pprint
-
 from sqlalchemy import select
 
-from worker.credentials.access import AccessModel
 from worker.credentials.models import *
 
 
