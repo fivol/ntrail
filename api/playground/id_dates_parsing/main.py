@@ -10,7 +10,7 @@ from core import VKUser, VKCommunity
 from server.plugin.register import register_plugins
 from server.plugin.plugin_manager import PluginManager
 from worker import Engine
-from worker import VkMethods
+from worker import VKMethods
 
 register_plugins()
 

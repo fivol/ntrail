@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import Counter
 from contextlib import suppress
 from datetime import datetime
 from pprint import pprint
@@ -8,25 +9,26 @@ from tqdm import tqdm, trange
 
 from core import VKUser, VKCommunity
 from core.modules.vk.vkgroups import VKGroups
+from core import IGUser
 from server.helpers.tied_value import TiedValue
 from server.plugin.register import register_plugins
 from server.plugin.plugin_manager import PluginManager
-from server.routes.vk.plugins.register_date import UserRegistrationDate
+from server.routes.vk.plugins.user import UserDescribePlugin
 from worker import Engine
-from worker import VkMethods
+from worker.instagramscraper.exception.instagram_not_found_exception import InstagramNotFoundException
 
 register_plugins()
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 async def main():
-    # niknepiaja
-    response = await PluginManager({'user': 'aido4kas'}, input_plugins=['user'],
-                                   options=['user-fans']).execute()
-    pprint(response)
+    async with Engine(caching=True):
+        response = await PluginManager({'user': 'aido4kas'}, input_plugins=['user'],
+                                       options=['find-instagram']).execute()
+        pprint(response)
 
 
 if __name__ == '__main__':
-    with Engine(caching=False):
-        asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
+

@@ -20,7 +20,7 @@ from server.plugin.plugin_manager import PluginManager
 from server.routes.vk.plugins.register_date import UserRegistrationDate
 from server.routes.vk.plugins.tf_idf import IDFCalculator
 from worker import Engine
-from worker import VkMethods
+from worker import VKMethods
 import nltk
 import pymorphy2
 

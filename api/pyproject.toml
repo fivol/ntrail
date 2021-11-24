@@ -23,6 +23,9 @@ numpy = "^1.21.3"
 nltk = "^3.6.5"
 pymystem3 = "^0.2.0"
 python-louvain = "^0.15"
+sortedcontainers = "^2.4.0"
+sqlalchemy-mixins = "^1.5"
+asyncpg = "^0.25.0"
 
 [tool.poetry.dev-dependencies]
 

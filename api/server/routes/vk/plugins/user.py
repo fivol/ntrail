@@ -1,3 +1,4 @@
+import re
 import typing
 from datetime import datetime
 
@@ -121,7 +122,11 @@ class UserDescribePlugin(BasePlugin):
 
     async def instagram(self):
         data = await self._user.data()
-        username = data.get('instagram')
+        username = data.get('instagram', '')
+        site = data.get('site', '')
+        match = re.search(r'instagram.com/([a-z_.-]+)', site, re.IGNORECASE)
+        if match:
+            username = match.group(1)
         if username:
             return f'https://instagram.com/{username}'
 

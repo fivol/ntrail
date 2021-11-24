@@ -14,7 +14,7 @@ from server.plugin.plugin_manager import PluginManager
 from server.routes.vk.plugins.register_date import UserRegistrationDate
 from server.routes.vk.plugins.representer import UsersRepresentation
 from worker import Engine
-from worker import VkMethods
+from worker import VKMethods
 
 register_plugins()
 

@@ -10,9 +10,9 @@ class ExpandCommunityPlugin(BasePlugin):
     @classmethod
     def expand(cls, nodes_part, weight_reduction_ratio=0.95, break_point=10, max_nodes=300):
         community = set(nodes_part)
-        VkMethods.friends.sync_map(community)
+        VKMethods.friends.sync_map(community)
         friends_counter = collections.Counter(
-            sum([list(set(VkMethods.friends.sync(user)) - set(community)) for user in community], []))
+            sum([list(set(VKMethods.friends.sync(user)) - set(community)) for user in community], []))
         community_friends_amount_changes = []
         max_iterations = max_nodes
         count = 0
@@ -25,7 +25,7 @@ class ExpandCommunityPlugin(BasePlugin):
             community_friends_amount_changes.append(community_friends_amount)
             community.add(new_participant)
             del friends_counter[new_participant]
-            unique_friends = set(VkMethods.friends.sync(new_participant)) - set(community)
+            unique_friends = set(VKMethods.friends.sync(new_participant)) - set(community)
             new_participant_unique_friends = collections.Counter(
                 dict(
                     zip(
