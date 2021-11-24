@@ -84,7 +84,10 @@ class ConnectedEntities(ManyEntities, metaclass=ABCMeta):
         else:
             raise ValueError(f'Algorithm "{algorithm}" does not available')
 
-        pools = map(self.__class__, pools)
-        result = sorted(pools, key=lambda x: -len(x))
+        not_used = set(self.nodes).difference(set(sum(pools, [])))
+        pools = list(map(self.__class__, pools))
+        pools += list(map(self.__class__, map(lambda x: [x], not_used)))
+
+        result = sorted(pools, key=lambda x: len(x), reverse=True)
 
         return result
