@@ -1,4 +1,6 @@
 version: "3.3"
+volumes:
+    postgres:
 services:
   api:
     build: .
@@ -15,3 +17,15 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+
+    volumes:
+      - postgres:/data/postgres
