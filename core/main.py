@@ -8,10 +8,9 @@ warnings.simplefilter('ignore')
 
 
 async def main():
-    async with Engine(caching=False):
+    async with Engine(caching=True):
         user = await IGUser.create('fiobond')
-        print(user.id)
-
+        print(await user.followers())
 
 if __name__ == '__main__':
     asyncio.run(main())

@@ -42,7 +42,7 @@ class IGUser(SingleEntity):
         self.business_address_json = None
         self.requested_by_viewer = False
         self.connected_fb_page = None
-        print(user)
+
         if isinstance(user, int):
             self.id = user
         elif isinstance(user, dict):
@@ -61,7 +61,7 @@ class IGUser(SingleEntity):
 
     async def followers(self, count=300):
         from core.modules.ig.igcommunity import IGCommunity
-        return IGCommunity(await IGMethods.following(self.id, count=count))
+        return IGCommunity(await IGMethods.followers(self.id, count=count))
 
     async def following(self, count=300):
         from core.modules.ig.igcommunity import IGCommunity
