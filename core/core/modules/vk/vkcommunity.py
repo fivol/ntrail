@@ -71,6 +71,7 @@ class VKCommunity(ConnectedEntities):
     @cache_method_ignore_args
     async def graph(self):
         graph = nx.Graph()
+        graph.add_nodes_from(self.nodes)
         connections = await VKMethods.friends.map(self.nodes)
         friends = {
             node: conn
