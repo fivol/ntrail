@@ -54,6 +54,7 @@ async def shutdown_event():
 async def startup_event():
     global engine
     engine = Engine(caching=config.bool('CACHING'))
+    await engine.start()
 
 
 app.include_router(vk.router)
