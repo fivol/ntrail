@@ -38,7 +38,7 @@ class SessionState:
     def __init__(self, key, key_type):
         self._key_type = key_type
         self.session = self.create(key)
-        self.key = key
+        self.key: AccessModel = key
         self.last_used_time = None
         # Если словил limit, это значение указывает, когда снова будет в строю (если известно)
         self.will_ready_time = None
@@ -75,10 +75,10 @@ class SessionState:
         pass
 
     def __hash__(self):
-        return hash(self.key)
+        return hash(self.key.token)
 
     def __lt__(self, other):
-        return hash(self.key) < hash(other)
+        return hash(self) < hash(other)
 
     @abstractmethod
     async def close(self):

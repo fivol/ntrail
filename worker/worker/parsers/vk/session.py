@@ -40,6 +40,8 @@ class VkApiSession(SessionState):
             logger.warning('Catch vk api error: %s', error)
             if error.type == VKErrorType.ACCESS_DENIED:
                 raise TokenAccessDenied()
+            if error.type == VKErrorType.GROUP_AUTHORIZATION_FAILED:
+                raise SessionRemove()
             raise error
         if exc_type == VkAuthError:
             raise SessionRemove()

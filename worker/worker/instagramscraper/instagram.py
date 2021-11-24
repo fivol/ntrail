@@ -49,85 +49,82 @@ class Instagram:
         await self.check()
 
     async def check(self):
-        await self.get_account('apple')
+        await self.get_account('5821462185')
 
-    def login(self, username: str, password: str, two_step_verificator=None):
+    async def login(self, username: str, password: str, two_step_verificator=None):
         """support_two_step_verification true works only in cli mode - just run login in cli mode - save cookie to file and use in any mode
         :param two_step_verificator: true will need to do verification when an account goes wrong
         :param username:
         :param password:
         :return: headers dict
         """
+        # TODO
         logger.info('TRY LOGIN INTO ACCOUNT: %s', username)
         if two_step_verificator:
             two_step_verificator = ConsoleVerification()
 
-        time.sleep(self.sleep_between_requests)
-        response = self.__req.get(endpoints.BASE_URL)
-        if not response.status_code == Instagram.HTTP_OK:
-            raise InstagramException.default(response.text,
-                                             response.status_code)
+        async with self.__areq.get(endpoints.BASE_URL) as response:
+            if not response.status == Instagram.HTTP_OK:
+                raise InstagramException.default(await response.text(),
+                                                 response.status)
 
-        match = re.findall(r'"csrf_token":"(.*?)"', response.text)
+            match = re.findall(r'"csrf_token":"(.*?)"', await response.text())
 
-        if len(match) > 0:
-            csrfToken = match[0]
+            if len(match) > 0:
+                csrfToken = match[0]
 
-        cookies = response.cookies.get_dict()
+            self._update_cookie(response.cookies)
 
-        # cookies['mid'] doesnt work at the moment so fetch it with function
-        mid = self.__get_mid()
+            # cookies['mid'] doesnt work at the moment so fetch it with function
+            mid = await self.__get_mid()
 
-        headers = {
-            'cookie': f"ig_cb=1; csrftoken={csrfToken}; mid={mid};",
-            'referer': endpoints.BASE_URL + '/',
-            'x-csrftoken': csrfToken,
-            'X-CSRFToken': csrfToken,
-            'user-agent': self.user_agent,
-        }
-        payload = {'username': username,
-                   'enc_password': f"#PWD_INSTAGRAM_BROWSER:0:{int(time.time())}:{password}"}
-        response = self.__req.post(endpoints.LOGIN_URL, data=payload,
-                                   headers=headers)
+            headers = {
+                'cookie': f"ig_cb=1; csrftoken={csrfToken}; mid={mid};",
+                'referer': endpoints.BASE_URL + '/',
+                'x-csrftoken': csrfToken,
+                'X-CSRFToken': csrfToken,
+                'user-agent': self.user_agent,
+            }
+            payload = {'username': username,
+                       'enc_password': f"#PWD_INSTAGRAM_BROWSER:0:{int(time.time())}:{password}"}
 
-        if not response.status_code == Instagram.HTTP_OK:
-            if (
-                    response.status_code == Instagram.HTTP_BAD_REQUEST
-                    and response.text is not None
-                    and response.json()['message'] == 'checkpoint_required'
-                    and two_step_verificator is not None):
-                response = self.__verify_two_step(response, cookies,
-                                                  two_step_verificator)
+        async with self.__areq.post(endpoints.LOGIN_URL, data=payload, headers=headers) as response:
+            if not response.status == Instagram.HTTP_OK:
+                if (
+                        response.status == Instagram.HTTP_BAD_REQUEST
+                        and await response.text() is not None
+                        and (await response.json())['message'] == 'checkpoint_required'
+                        and two_step_verificator is not None):
+                    response = self.__verify_two_step(response, response.cookies,
+                                                      two_step_verificator)
 
-            elif response.status_code is not None and response.text is not None:
-                raise InstagramAuthException(
-                    f'Response code is {response.status_code}. Body: {response.text} Something went wrong. Please report issue.',
-                    response.status_code)
-            else:
-                raise InstagramAuthException(
-                    'Something went wrong. Please report issue.',
-                    response.status_code)
-        elif not response.json()['authenticated']:
-            raise InstagramAuthException('User credentials are wrong.')
+                elif response.status is not None and await response.text() is not None:
+                    raise InstagramAuthException(
+                        f'Response code is {response.status}. Body: {await response.text()} Something went wrong. Please report issue.',
+                        response.status)
+                else:
+                    raise InstagramAuthException(
+                        'Something went wrong. Please report issue.',
+                        response.status)
+            elif not (await response.json())['authenticated']:
+                raise InstagramAuthException('User credentials are wrong.')
 
-        cookies = response.cookies.get_dict()
-
-        cookies['mid'] = mid
-
-        self.cookie = cookies
+            self.cookie['mid'] = mid
+            self._update_cookie(response.cookies)
 
     async def auth(self, username=None, password=None, cookie=None):
         logger.info('TRY AUTH ACCOUNT: %s', username)
+        self.cookie = cookie
         if self.cookie:
             try:
                 await self.connect(cookie)
                 return
             except InstagramAuthException:
-                pass
+                logger.exception('Fail to connect')
         if username is None or password is None:
             raise InstagramAuthException("User credentials not provided")
 
-        self.login(username, password)
+        await self.login(username, password)
 
     def _update_cookie(self, cookie):
         self.cookie.update(
@@ -262,16 +259,14 @@ class Instagram:
 
         return self.rhx_gis
 
-    def __get_mid(self):
+    async def __get_mid(self):
         """manually fetches the machine id from graphQL"""
-        time.sleep(self.sleep_between_requests)
-        response = self.__req.get('https://www.instagram.com/web/__mid/')
+        async with self.__areq.get('https://www.instagram.com/web/__mid/') as response:
+            if response.status != Instagram.HTTP_OK:
+                raise InstagramException.default(await response.text(),
+                                                 response.status)
 
-        if response.status_code != Instagram.HTTP_OK:
-            raise InstagramException.default(response.text,
-                                             response.status_code)
-
-        return response.text
+            return await response.text()
 
     def __get_shared_data_from_page(self, url=endpoints.BASE_URL):
         """

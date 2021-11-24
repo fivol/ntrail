@@ -92,10 +92,8 @@ class VKMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, partition_split(1000))
-    async def users(cls, user_ids: list, full=True, **kwargs) -> list:
-        fields = []
-        if full:
-            fields = users_full_fields
+    async def users(cls, user_ids: list, **kwargs) -> list:
+        fields = users_full_fields
         return await cls._run_query(
             'users.get',
             {'user_ids': ','.join([str(id) for id in user_ids]), 'fields': fields},

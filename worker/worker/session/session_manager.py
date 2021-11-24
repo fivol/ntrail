@@ -24,6 +24,7 @@ class SessionManager:
 
     def __init__(self, key_type: str, controller: type(SessionState), max_rps=None,
                  requests_delay_min: float = None, requests_delay_max: float = None):
+        logger.info('INIT session manager')
         self._session_controller = controller
 
         self._all_keys = set()
@@ -120,17 +121,27 @@ class SessionManager:
                 await Credentials.return_access([session.key], error=AccessStatus.denied)
                 logger.error('SESSION REMOVING')
         else:
-            self._active_sessions.remove(self._all_sessions[hash(session)])
+            # TODO something went wrong
+            if self._all_sessions[hash(session)] in self._active_sessions:
+                try:
+                    self._active_sessions.remove(self._all_sessions[hash(session)])
+                except ValueError:
+                    pass
             self._add_active_session(session)
         # TODO handle session actions
 
     async def stop(self):
+        logger.info('STOP session manager')
         assert not self._stop_called
         self._stop_called = True
         keys = list(self._all_keys)
         while len(self._active_sessions):
-            rps, session = self._active_sessions.pop(0)
-            await session.single_close()
+            try:
+                rps, session = self._active_sessions.pop(0)
+                await session.single_close()
+            except (KeyError, ValueError):
+                # TODO WHYYYYYY Try-except (why pop failed)
+                pass
         self._all_keys.clear()
         self._active_sessions.clear()
         await Credentials.return_access(keys)

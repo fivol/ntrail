@@ -43,9 +43,6 @@ class Engine:
         ctx.initialized = True
         ctx.set_default('timeout', 3)
 
-        if ctx.get('logging_disabled'):
-            logger.disabled = True
-
     async def stop(self):
         self.__stopped = True
         await asyncio.gather(

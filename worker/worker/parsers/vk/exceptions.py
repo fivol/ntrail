@@ -14,6 +14,7 @@ class VKErrorType(Enum):
     UNKNOWN_USER = 39
     UNKNOWN_GROUP = 40
     INVALID_USER_ID = 113
+    GROUP_AUTHORIZATION_FAILED = 27
 
 
 class VKError(ParserRealError):
