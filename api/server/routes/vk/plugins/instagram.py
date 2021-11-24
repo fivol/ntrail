@@ -37,7 +37,7 @@ class FindInstagramPlugin(BasePlugin):
     async def response(self) -> list[str]:
         own_instagram = await UserDescribePlugin(self._user).instagram()
         if own_instagram:
-            return own_instagram
+            return [own_instagram]
         friends = await self._user.friends()
         await friends.data()
         users = friends.objects()
