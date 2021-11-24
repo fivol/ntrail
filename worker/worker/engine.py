@@ -32,8 +32,11 @@ class Engine:
 
         self._init_modules()
 
-    async def __aenter__(self):
+    async def start(self):
         await bind()
+
+    async def __aenter__(self):
+        await self.start()
         return self
 
     @classmethod
