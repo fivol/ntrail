@@ -120,15 +120,37 @@ class UserDescribePlugin(BasePlugin):
             'age': age_years
         }
 
+    @classmethod
+    def _try_parse_instagram_str(cls, text, reg):
+        match = re.search(reg, text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return None
+
     async def instagram(self):
         data = await self._user.data()
         username = data.get('instagram', '')
         site = data.get('site', '')
-        match = re.search(r'instagram.com/([a-z_.-]+)', site, re.IGNORECASE)
-        if match:
-            username = match.group(1)
+        status = data.get('status', '')
+
+        username_reg = r'([a-z_.-]+)'
+        inst_reg = [
+            fr'instagram.com/{username_reg}',
+            fr'inst:\s*{username_reg}',
+            fr'inst\s+{username_reg}',
+            fr'inst\s*-\s*{username_reg}',
+        ]
+        texts = [site, status]
+        for text in texts:
+            if username:
+                break
+            for reg in inst_reg:
+                if not username:
+                    username = self._try_parse_instagram_str(text, reg)
+
         if username:
             return f'https://instagram.com/{username}'
+        return None
 
     async def response(self) -> typing.Union[dict, list]:
 
