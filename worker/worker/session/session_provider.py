@@ -1,19 +1,19 @@
 import asyncio
 
 from worker.session.exceptions import SessionAction, SessionRemove, TokenAuthFailed
+from worker.session.session_state import SessionState
 
 
 class SessionProvider:
-    def __init__(self, session, manager=None):
+    def __init__(self, session: SessionState, manager=None):
         self._session = session
         self._manager = manager
 
     async def __aenter__(self):
-        self._session.notify_use()
         return self._session.session
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self._session.notify_return()
+        self._manager.notify_return(self._session)
         if exc_type == asyncio.CancelledError:
             await self._manager.return_session(self._session)
             return False

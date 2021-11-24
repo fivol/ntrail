@@ -46,8 +46,7 @@ class SessionState:
         self._expire_time = None
         self.__closed = False
         self._using_times = deque()
-        self._last_using = 0
-        self._usage_count = 0
+        self._stat = UsageStat(rps=0, last_usage=0, usage_count=0)
 
     def usage_stat(self) -> UsageStat:
         """
@@ -58,16 +57,17 @@ class SessionState:
             self._using_times.popleft()
 
         rps = len(self._using_times)
-        return UsageStat(rps=rps, last_usage=self._last_using, usage_count=self._usage_count)
+        self._stat.rps = rps
+        return self._stat
 
     def notify_use(self):
         """Вызывается для поддержания rps при взятии из хранилища"""
         self._using_times.append(time())
-        self._usage_count += 1
+        self._stat.usage_count += 1
 
     def notify_return(self):
-        """Выхывается по возвращении в хранлище (SessionManager)"""
-        self._last_using = time()
+        """Вызывается по возвращении в хранлище (SessionManager)"""
+        self._stat._last_using = time()
 
     @classmethod
     @abstractmethod
@@ -77,8 +77,11 @@ class SessionState:
     def __hash__(self):
         return hash(self.key.token)
 
-    def __lt__(self, other):
-        return hash(self) < hash(other)
+    def __lt__(self, other: SessionState):
+        if self._stat < other._stat:
+            return True
+        if self._stat == other._stat:
+            return hash(self) < hash(other)
 
     @abstractmethod
     async def close(self):
