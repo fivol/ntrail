@@ -1,7 +1,10 @@
 import asyncio
+import logging
 
 from worker.session.exceptions import SessionAction, SessionRemove, TokenAuthFailed
 from worker.session.session_state import SessionState
+
+logger = logging.getLogger(__name__)
 
 
 class SessionProvider:
@@ -21,6 +24,7 @@ class SessionProvider:
             try:
                 self._session.handle_error(exc_type, exc_val, exc_tb)
             except SessionAction as action:
+                logger.exception('Receive SessionAction: %s', action)
                 await self._manager.return_session(self._session, action=action)
                 raise TokenAuthFailed()
             except Exception:

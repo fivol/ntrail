@@ -52,13 +52,13 @@ class IGMethods(BaseParser):
             return await api.resolve_username(username)
 
     @classmethod
-    @decorate(reliable_call, items_getter, paging_iterator(50))
+    @decorate(reliable_call, items_getter, paging_iterator(49))
     async def followers(cls, account_id, count, end_cursor=''):
         async with await cls._api.get() as api:
             return await api.get_followers(account_id, count=count, end_cursor=end_cursor)
 
     @classmethod
-    @decorate(reliable_call, items_getter, paging_iterator(49))
+    @decorate(reliable_call, items_getter, paging_iterator(48))
     async def following(cls, account_id, count, end_cursor=''):
         async with await cls._api.get() as api:
             return await api.get_following(account_id, count=count, end_cursor=end_cursor)

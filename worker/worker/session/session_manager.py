@@ -76,8 +76,9 @@ class SessionManager:
     def _can_use_session(self, stat: UsageStat):
         if not stat.usage_count:
             return True
-        if self._max_rps and stat.rps >= self._max_rps:
-            return False
+        if self._max_rps:
+            return stat.rps < self._max_rps
+
         delay_time = self._requests_delay_min
         if self._requests_delay_min and self._requests_delay_max:
             delay_time = random.uniform(self._requests_delay_min, self._requests_delay_max)
@@ -91,8 +92,10 @@ class SessionManager:
                 if await self._receive_keys():
                     continue
                 if not self._active_sessions:
+                    logger.error('THROW NoTokenAvailableException, type: %s', self._key_type)
                     raise NoTokenAvailableException()
             session: SessionState = self._active_sessions.pop()
+            session.update_rps()
             self._active_sessions.add(session)
             if not self._can_use_session(session.usage_stat()):
                 if await self._receive_keys():

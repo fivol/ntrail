@@ -57,8 +57,11 @@ class VKMethods(BaseParser):
                 async with await api.get() as session:
                     result = await session(method, **kwargs, lang='ru')
                 if not result and assert_response:
+                    logger.error('Empty result: %s, method', result)
                     raise TokenAccessDenied()
                 return result
+            except TokenAccessDenied:
+                raise
             except SessionManagerException as e:
                 if not isinstance(e, RpsLimitException):
                     logger.warning('Try next token: %s %s', type(e), e)

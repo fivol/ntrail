@@ -19,7 +19,7 @@ class AdapterBase:
         if len(access) == max_count:
             return access
         await cls.create_accesses(max_count=max_count - len(access))
-        remain = await AccountsAccess.get_access(count=max_count - len(access), service=cls.service,
+        remain = await AccountsAccess.get_access(count=max_count - len(access), service=cls.service, type_=type_,
                                                  status=AccessStatus.active, acquire=True)
         return access + remain
 

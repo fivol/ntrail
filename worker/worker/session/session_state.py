@@ -54,14 +54,17 @@ class SessionState:
         """
         return self._stat
 
-    def notify_use(self):
-        """Вызывается для поддержания rps при взятии из хранилища"""
-        self._using_times.append(time())
+    def update_rps(self):
         t = time()
         while self._using_times and self._using_times[0] + 1 < t:
             self._using_times.popleft()
 
         self._stat.rps = len(self._using_times)
+
+    def notify_use(self):
+        """Вызывается для поддержания rps при взятии из хранилища"""
+        self._using_times.append(time())
+        self.update_rps()
         self._stat.usage_count += 1
 
     def notify_return(self):
