@@ -22,11 +22,15 @@ def api():
 async def test_add_session(count, postgres):
     manager = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30)
     assert await manager._receive_keys(count)
-    assert len(manager._all_sessions) == count
     assert len(manager._active_sessions) == count
-    for session in manager._all_sessions:
-        assert session in manager._active_sessions
-
     await manager.stop()
 
+
+@pytest.mark.asyncio
+async def test_using_count_sessions(postgres):
+    manager = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30)
+    async with await manager.get() as api:
+        await api.get_following(8368846410, count=10, end_cursor='')
+    assert len(manager._active_sessions) == 1
+    await manager.stop()
 
