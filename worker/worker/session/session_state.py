@@ -52,22 +52,21 @@ class SessionState:
         """
         Сколько запросов максимум могли сделть за предыдущую секунду
         """
-        t = time()
-        while self._using_times and self._using_times[0] + 1 < t:
-            self._using_times.popleft()
-
-        rps = len(self._using_times)
-        self._stat.rps = rps
         return self._stat
 
     def notify_use(self):
         """Вызывается для поддержания rps при взятии из хранилища"""
         self._using_times.append(time())
+        t = time()
+        while self._using_times and self._using_times[0] + 1 < t:
+            self._using_times.popleft()
+
+        self._stat.rps = len(self._using_times)
         self._stat.usage_count += 1
 
     def notify_return(self):
         """Вызывается по возвращении в хранлище (SessionManager)"""
-        self._stat._last_using = time()
+        self._stat.last_usage = time()
 
     @classmethod
     @abstractmethod
@@ -80,8 +79,9 @@ class SessionState:
     def __lt__(self, other: SessionState):
         if self._stat < other._stat:
             return True
-        if self._stat == other._stat:
-            return hash(self) < hash(other)
+        elif self._stat > other._stat:
+            return False
+        return hash(self) < hash(other)
 
     @abstractmethod
     async def close(self):

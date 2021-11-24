@@ -24,7 +24,6 @@ class SessionManager:
         logger.info('INIT session manager')
         self._session_controller = controller
 
-        self._all_sessions = set()
         self._active_sessions = SortedSet()
         self._waiting_queue = set()
 
@@ -70,11 +69,10 @@ class SessionManager:
         for model in models:
             session: SessionState = self._create_session(model)
             self._active_sessions.add(session)
-            self._all_sessions.add(session)
             # TODO tokens can be not plain string, for example can contain revive time
 
     async def _receive_keys(self, count=None) -> bool:
-        count = count or max(1, len(self._all_sessions))
+        count = count or max(1, len(self._active_sessions))
         if self._stop_access_acquiring:
             return False
         models = await Credentials.get_access(self._key_type, count)
@@ -109,8 +107,8 @@ class SessionManager:
                 if await self._receive_keys():
                     continue
                 raise NoTokenAvailableException()
-            stat, session = self._active_sessions[0]
-            if not self._can_use_session(stat):
+            session: SessionState = self._active_sessions[0]
+            if not self._can_use_session(session.usage_stat()):
                 if await self._receive_keys():
                     continue
                 raise RpsLimitException()
@@ -120,7 +118,6 @@ class SessionManager:
     async def return_session(self, session: SessionState, action: SessionAction = None):
         if isinstance(action, SessionRemove):
             self._active_sessions.remove(session)
-            self._all_sessions.remove(session)
             await Credentials.return_access([session.key], error=AccessStatus.denied)
             logger.error('SESSION REMOVING')
 
@@ -128,14 +125,13 @@ class SessionManager:
         logger.info('STOP session manager')
         assert not self._stop_called
         self._stop_called = True
+        accesses = [state.key for state in self._active_sessions]
         while len(self._active_sessions):
             session = self._active_sessions.pop(0)
             await session.single_close()
-        accesses = [state.key for state in self._all_sessions]
-        self._all_sessions.clear()
         await Credentials.return_access(accesses)
 
     def __del__(self):
         # TODO make cool
-        if self._all_sessions:
+        if self._active_sessions:
             assert self._stop_called, 'Must close session, may be you forgot "with Engine()" statement'

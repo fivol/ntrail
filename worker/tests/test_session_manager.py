@@ -18,7 +18,7 @@ def api():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('count', range(1, 3))
+@pytest.mark.parametrize('count', range(1, 10))
 async def test_add_session(count, postgres):
     manager = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30)
     assert await manager._receive_keys(count)
