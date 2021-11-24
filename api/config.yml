@@ -21,6 +21,7 @@ vk:
   EXECUTE_QUERIES_BUNCH_COUNT: 25
   # TODO This is random value, must be specified
   EXECUTE_MAX_LENGTH: 30000
+  timeout: 5
 
   rps:
     # RPS limit to each of token types
