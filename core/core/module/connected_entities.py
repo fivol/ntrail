@@ -1,9 +1,7 @@
 import random
 from abc import ABCMeta, abstractmethod
 from collections import Counter
-
 import networkx as nx
-import numpy as np
 
 from core.module.many_entities import ManyEntities
 
@@ -12,6 +10,8 @@ class GraphSplitter:
 
     @classmethod
     def algorithm_local_moving(cls, graph):
+        import numpy as np
+
         # TODO Проблема с импортом модуля, разобраться
         edges = np.array(graph.edges)
         mo = ModularityOptimzer(edges)

@@ -12,6 +12,7 @@ class IGUser(SingleEntity):
             return cls(user)
 
     def __init__(self, user):
+        super().__init__()
         self.id = None
         self.username = None
         self.full_name = None
@@ -41,19 +42,15 @@ class IGUser(SingleEntity):
         self.business_address_json = None
         self.requested_by_viewer = False
         self.connected_fb_page = None
-
+        print(user)
         if isinstance(user, int):
             self.id = user
         elif isinstance(user, dict):
             # TODO short data and full data
             self._data = user
             self._init(user)
-            self.id = user['id']
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
-
-        self.id = self.username
-        super().__init__()
 
     def url(self):
         return f'https://instagram.com/{self.username}/'

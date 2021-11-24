@@ -16,6 +16,9 @@ pymorphy2 = "^0.9.1"
 peewee = "^3.14.8"
 more-itertools = "^8.10.0"
 aioredis = "^2.0.0"
+pydantic = "^1.8.2"
+gino = "^1.0.1"
+sqlalchemy-mixins = "^1.5"
 
 [tool.poetry.dev-dependencies]
 

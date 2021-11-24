@@ -1,10 +1,9 @@
 import asyncio
 import logging
 
+from core.modules.vk.vkgroup import VKGroup
 from pycommon.decors import cache_method_ignore_args
-from server.helpers.types import PlotType
 from worker import VKMethods
-from .vkgroup import VKGroup
 from more_itertools import unique_everseen
 
 from collections import Counter
