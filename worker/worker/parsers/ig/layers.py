@@ -29,7 +29,7 @@ def paging_iterator(max_count: int):
                 logger.info('New items part (%s)', len(items))
                 end_cursor = items.data['end_cursor']
                 has_next_page = items.data['has_next_page']
-                if not has_next_page:
+                if not has_next_page or not items:
                     break
                 if percent_:
                     count = int(all_items.count_ * percent_)
