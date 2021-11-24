@@ -3,9 +3,9 @@ import typing
 
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
-from .media_object import MediaObject
 from core.module.many_entities import ManyEntities
-from ...module.layers import public_object_method
+from core.modules.vk.media_object import MediaObject
+from core.module.layers import public_object_method
 
 logger = logging.getLogger('vk-photo')
 

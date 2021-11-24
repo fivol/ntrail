@@ -59,6 +59,7 @@ class VKCommunity(ConnectedEntities):
             [])
         return VKGroups(all_groups_ids)
 
+    @cache_method_ignore_args
     async def data(self) -> list:
         return await VKMethods.users(self.nodes)
 

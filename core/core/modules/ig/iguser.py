@@ -1,3 +1,5 @@
+import re
+
 from core.module.single_entity import SingleEntity
 from pycommon.decors import cache_method_ignore_args
 from worker import IGMethods
@@ -7,6 +9,9 @@ class IGUser(SingleEntity):
     @classmethod
     async def create(cls, user):
         if isinstance(user, str):
+            match = re.search(r'instagram.com/([a-zA-Z_.]+)', user)
+            if match:
+                user = match.group(1)
             return cls(await IGMethods.resolve(user))
         else:
             return cls(user)
@@ -43,7 +48,7 @@ class IGUser(SingleEntity):
         self.requested_by_viewer = False
         self.connected_fb_page = None
 
-        if isinstance(user, int):
+        if isinstance(user, int) or isinstance(user, str) and user.isnumeric():
             self.id = user
         elif isinstance(user, dict):
             # TODO short data and full data
@@ -52,12 +57,15 @@ class IGUser(SingleEntity):
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
 
+    @property
     def url(self):
         return f'https://instagram.com/{self.username}/'
 
     @cache_method_ignore_args
     async def data(self) -> dict:
-        return await IGMethods.account(self.id)
+        data = await IGMethods.account(self.id)
+        self._init(data)
+        return data
 
     async def followers(self, count=300):
         from core.modules.ig.igcommunity import IGCommunity
