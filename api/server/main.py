@@ -11,7 +11,8 @@ from server.config import config
 from server.routes.vk import vk
 from server.routes import auth
 from server.plugin.register import register_plugins
-from worker import Engine, get_context
+from worker import Engine
+from worker.ctx import get_context
 
 logger = logging.getLogger()
 
