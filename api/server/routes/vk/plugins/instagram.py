@@ -6,6 +6,7 @@ from collections import Counter
 from core import VKUser, IGUser, IGCommunity
 from server.plugin.plugin import BasePlugin
 from server.routes.vk.plugins.user import UserDescribePlugin
+from worker.instagramscraper.exception.instagram_exception import InstagramException
 from worker.instagramscraper.exception.instagram_not_found_exception import InstagramNotFoundException
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,8 @@ class FindInstagramPlugin(BasePlugin):
         try:
             ig = await IGUser.create(ig_username)
             return await ig.followers()
-        except InstagramNotFoundException:
+        except InstagramException:
+            # TODO Process inst exception
             return None
 
     async def response(self) -> typing.Optional[str]:

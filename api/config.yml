@@ -1,4 +1,4 @@
-VERSION: 1.3.1
+VERSION: 1.4.0
 BASE_URL: 'http://localhost:8000'
 VK_APP:
   CLIENT_ID: 7898476
@@ -45,6 +45,6 @@ logging:
     pymorphy2.opencorpora_dict:
       level: WARNING
   root:
-    level: INFO
+    level: DEBUG
     handlers: [default]
 

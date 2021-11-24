@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    async with Engine(caching=True):
-        response = await PluginManager({'user': 'aido4kas'}, input_plugins=['user'],
+    async with Engine(caching=False):
+        response = await PluginManager({'user': 'https://vk.com/katya11111'}, input_plugins=['user'],
                                        options=['find-instagram']).execute()
         pprint(response)
 
