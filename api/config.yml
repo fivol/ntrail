@@ -12,7 +12,7 @@ check_alive_limit_timeout: 5
 # If "true" all loggers level sets to ERROR
 # Rewrite in env_file
 DEBUG: true
-
+PG_URL: "postgresql://postgres:REMOVED@194.169.160.225:5432/ntrail-credentials"
 # Stop any query after this amount of seconds
 REQUESTS_TIMEOUT: 15
 

@@ -1,2 +1,3 @@
 DEBUG=false
 redis_url=redis://redis
+PG_URL=postgresql://postgres:postgres@localhost:5432/ntrail-credentials
