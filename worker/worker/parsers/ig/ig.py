@@ -1,30 +1,12 @@
-from worker.instagramscraper.instagram import Instagram
-from worker.credentials.access import AccessModel
 from worker.helpers.caching import redis_cache
 from worker.helpers.layers import method_logger
 from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 from worker.helpers.tools import decorate, assert_imported_once
 from worker.parsers.ig.layers import paging_iterator
+from worker.parsers.ig.session import IgApiSession
 from worker.parsers.layers import items_getter, mapped_method, reliable_call
 from worker.parsers.parser import BaseParser
 from worker.session.session_manager import SessionManager
-from worker.session.session_state import SessionState
-
-
-class IgApiSession(SessionState):
-    def __init__(self, *args, **kwargs):
-        self.__ig_session = None
-        super().__init__(*args, **kwargs)
-
-    def create(self, access: AccessModel):
-        self.__ig_session = Instagram(cookie=access.data['cookie'])
-        return self.__ig_session
-
-    async def close(self):
-        pass
-
-    def handle_error(self, exc_type, exc_val, exc_tb):
-        pass
 
 
 assert_imported_once()

@@ -1,3 +1,6 @@
+from worker.credentials.db import AccessStatus
+
+
 class SessionManagerException(Exception):
     """Can not perform query because of some troubles with session manager/provider/server etc"""
     pass
@@ -12,15 +15,11 @@ class RpsLimitException(SessionManagerException):
 
 
 class TokenAuthFailed(SessionManagerException):
+    """Troubles with request execution related to token itself"""
     pass
 
 
-class TokenAccessDenied(SessionManagerException):
-    pass
-
-
-class SessionException(Exception):
-    """Trouble with API itself"""
+# -----------------------------------------------------------------------------------
 
 
 class SessionAction(Exception):
@@ -30,12 +29,13 @@ class SessionAction(Exception):
 
 class SessionWait(SessionAction):
     """Need to wait (seconds) seconds before use this session next time"""
-    def __init__(self, seconds: int):
+
+    def __init__(self, seconds: int = 10):
         self.seconds = seconds
 
 
 class SessionRemove(SessionAction):
     """Can't use this session anymore, should be removed from storage. It is just rubbish"""
-    def __init__(self, reason: str = None):
-        self.reason = reason
 
+    def __init__(self, access_status: AccessStatus):
+        self.access_status = access_status

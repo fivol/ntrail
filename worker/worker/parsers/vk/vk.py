@@ -6,7 +6,7 @@ from worker.parsers.vk.data import *
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.parsers.vk.session import VkApiSession
-from worker.session.exceptions import SessionManagerException, TokenAccessDenied, RpsLimitException
+from worker.session.exceptions import SessionManagerException, RpsLimitException
 from worker.session.session_manager import SessionManager
 
 from worker.helpers.tools import assert_imported_once, decorate
@@ -51,25 +51,19 @@ class VKMethods(BaseParser):
     # To call any available api for example
 
     @classmethod
-    async def _call_api(cls, method, kwargs, apis, assert_response=False):
+    async def _call_api(cls, method, kwargs, apis):
         for i, api in enumerate(apis):
             try:
                 async with await api.get() as session:
                     result = await session(method, **kwargs, lang='ru')
-                if not result and assert_response:
-                    logger.error('Empty result: %s, method', result)
-                    raise TokenAccessDenied()
                 return result
-            except TokenAccessDenied:
-                raise
-            except SessionManagerException as e:
-                if not isinstance(e, RpsLimitException):
-                    logger.warning('Try next token: %s %s', type(e), e)
+            except RpsLimitException:
                 if i == len(apis) - 1:
                     raise
+                continue
 
     @classmethod
-    async def _run_query(cls, method, kwargs, apis, executable=False, assert_response=False,
+    async def _run_query(cls, method, kwargs, apis, executable=False,
                          only_user_access=False, **other):
         """
         Runs vk query.
@@ -85,11 +79,11 @@ class VKMethods(BaseParser):
         kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
 
         if not executable or True:
-            response = await cls._call_api(method, kwargs, apis, assert_response=assert_response)
+            response = await cls._call_api(method, kwargs, apis)
         else:
             response = await cls._execute_pool.try_use_execute(method, kwargs, only_user_access)
             if response is None:
-                response = await cls._call_api(method, kwargs, apis, assert_response=assert_response)
+                response = await cls._call_api(method, kwargs, apis)
 
         return response
 

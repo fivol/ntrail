@@ -1,8 +1,7 @@
 import logging
-from functools import wraps
 
+from worker.parsers.exceptions import AccessUnknownBehaviorExceptions
 from worker.parsers.utils import RichList
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,10 @@ def paging_iterator(max_count: int):
                 logger.info('New items part (%s)', len(items))
                 end_cursor = items.data['end_cursor']
                 has_next_page = items.data['has_next_page']
-                if not has_next_page or not items:
+                if not has_next_page:
                     break
+                if items.count_ and not len(items):
+                    raise AccessUnknownBehaviorExceptions()
                 if percent_:
                     count = int(all_items.count_ * percent_)
             return all_items

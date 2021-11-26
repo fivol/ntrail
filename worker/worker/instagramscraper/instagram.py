@@ -1,3 +1,4 @@
+import datetime
 import logging
 import time
 import typing
@@ -9,21 +10,11 @@ import hashlib
 
 from aiohttp import ContentTypeError
 
-from .exception.instagram_auth_exception import InstagramAuthException
-from .exception.instagram_exception import InstagramException
-from .exception.instagram_not_found_exception import InstagramNotFoundException
+from .exceptions import *
 from . import endpoints
 from .two_step_verification.console_verification import ConsoleVerification
 
 logger = logging.getLogger(__name__)
-
-
-class LoginRedirectError(InstagramAuthException):
-    pass
-
-
-class NotJsonResponse(Exception):
-    pass
 
 
 class Instagram:
@@ -139,21 +130,23 @@ class Instagram:
             {key: value.value for key, value in cookie.items()}
         )
 
-    async def __request_get(self, *args, **kwargs) -> typing.Optional[dict]:
+    async def _get_json(self, *args, **kwargs) -> typing.Optional[dict]:
         logger.info('Instagram request: %s %s', args, kwargs)
         async with self.__areq.get(*args, **kwargs,
                                    headers=self.generate_headers(self.cookie),
                                    cookies=self.cookie) as response:
             if 'accounts/login' in response.url.path:
-                raise LoginRedirectError()
+                raise InstagramLoginRedirectException()
+            if 'confirm' in response.url.path:
+                raise InstagramSuspiciousActivity()
             if response.status != 200:
-                raise InstagramException.default(await response.text(),
-                                                 response.status)
+                raise InstagramException(response.status)
+
             self._update_cookie(response.cookies)
             try:
                 return await response.json()
             except ContentTypeError:
-                raise NotJsonResponse()
+                raise InstagramException()
 
     def set_proxies(self, proxy):
         if proxy and isinstance(proxy, dict):
@@ -954,16 +947,13 @@ class Instagram:
             'first': str(count),
             'after': end_cursor,
         }
-        try:
-            response = await self.__request_get(endpoints.get_followers_json_link(variables))
-            edges = response['data']['user']['edge_followed_by']
-            return {
-                'items': list(map(lambda edge: edge['node'], edges['edges'])),
-                'count': edges['count'],
-                **edges['page_info']
-            }
-        except NotJsonResponse:
-            raise InstagramException()
+        response = await self._get_json(endpoints.get_followers_json_link(variables))
+        edges = response['data']['user']['edge_followed_by']
+        return {
+            'items': list(map(lambda edge: edge['node'], edges['edges'])),
+            'count': edges['count'],
+            **edges['page_info']
+        }
 
     async def get_following(self, account_id, count=20, end_cursor=''):
         # count <= 50
@@ -972,7 +962,7 @@ class Instagram:
             'first': str(count),
             'after': end_cursor
         }
-        response = await self.__request_get(endpoints.get_following_json_link(variables))
+        response = await self._get_json(endpoints.get_following_json_link(variables))
         edges = response['data']['user']['edge_follow']
         return {
             'items': list(map(lambda edge: edge['node'], edges['edges'])),
@@ -1140,32 +1130,25 @@ class Instagram:
         return number_of_comments
 
     async def test(self, arg):
-        return await self.__request_get(endpoints.get_account_json_private_info_link_by_account_id(arg))
+        return await self._get_json(endpoints.get_account_json_private_info_link_by_account_id(arg))
 
     async def get_account(self, account_id) -> dict:
-        try:
-            response = await self.__request_get(endpoints.get_account_json_private_info_link_by_account_id(account_id))
-        except InstagramException as e:
-            if e.code == Instagram.HTTP_NOT_FOUND:
-                raise InstagramNotFoundException(
-                    'Account with given username does not exist.')
-            raise
+        response = await self._get_json(endpoints.get_account_json_private_info_link_by_account_id(account_id))
 
         try:
             return response['user']
         except KeyError:
-            raise InstagramNotFoundException(
-                'Account with this username does not exist')
+            raise InstagramNotFoundException()
 
     async def resolve_username(self, username) -> dict:
         try:
-            response = await self.__request_get(endpoints.get_account_json_link(username))
+            response = await self._get_json(endpoints.get_account_json_link(username))
         except InstagramException as e:
             if e.code == Instagram.HTTP_NOT_FOUND:
                 raise InstagramNotFoundException(
                     'Account with given username does not exist.')
             raise
-        except NotJsonResponse:
+        except InstagramNotJsonResponse:
             raise InstagramException()
 
         try:

@@ -2,7 +2,7 @@ from enum import Enum
 
 from aiovk.exceptions import VkAPIError
 
-from worker.parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import AccessApiException
 
 
 class VKErrorType(Enum):
@@ -17,7 +17,7 @@ class VKErrorType(Enum):
     GROUP_AUTHORIZATION_FAILED = 27
 
 
-class VKError(ParserRealError):
+class VKError(AccessApiException):
 
     def __init__(self, error: VkAPIError):
         self._error = error

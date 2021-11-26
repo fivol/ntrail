@@ -12,14 +12,22 @@ class ServiceName:
 class AccessStatus:
     unknown = 'UNKNOWN'
     active = 'ACTIVE'
-    denied = 'DENIED'
     waiting = 'WAITING'
+    suspicious_activity = 'SUSPICIOUS'
+    auth_error = 'AUTH'
+    login_redirect = 'LOGIN'
+    # Some unknown error happened
+    unknown_error = 'ERROR'
 
 
 class AccountStatus:
     unknown = 'UNKNOWN'
     alive = 'ALIVE'
     banned = 'BANNED'
+    # Словил подозрительную активность
+    suspicious = 'SUSPICIOUS'
+    # Выкинуло на логин
+    login = 'LOGIN'
     absent = 'ABSENT'
 
 

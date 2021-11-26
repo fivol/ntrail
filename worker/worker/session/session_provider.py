@@ -15,10 +15,13 @@ class SessionProvider:
     async def __aenter__(self):
         return self._session.session
 
+    async def _return_session(self):
+        await self._manager.return_session(self._session)
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._manager.notify_return(self._session)
         if exc_type == asyncio.CancelledError:
-            await self._manager.return_session(self._session)
+            await self._return_session()
             return False
         if exc_type:
             try:
@@ -28,8 +31,10 @@ class SessionProvider:
                 await self._manager.return_session(self._session, action=action)
                 raise TokenAuthFailed()
             except Exception:
-                await self._manager.return_session(self._session)
+                await self._return_session()
                 raise
+            await self._manager.return_session(self._session)
+            return True
 
-        await self._manager.return_session(self._session)
+        await self._return_session()
         return False

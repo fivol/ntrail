@@ -2,6 +2,7 @@ import asyncio
 import logging
 from functools import wraps
 
+from worker.parsers.exceptions import AccessFactoryException
 from worker.parsers.utils import RichList
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed
 
@@ -70,11 +71,11 @@ def reliable_call(method):
     """Reply request if rps limit exceeded or tokens ended"""
 
     @wraps(method)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(cls, *args, **kwargs):
         wait_time = 0.01
         while True:
             try:
-                return await method(*args, **kwargs)
+                return await method(cls, *args, **kwargs)
             except RpsLimitException:
                 if wait_time > 2:
                     logger.debug('RPS wait: %s', wait_time)
@@ -84,7 +85,6 @@ def reliable_call(method):
             except TokenAuthFailed:
                 continue
             except NoTokenAvailableException:
-                # TODO Think hard
-                raise
+                raise AccessFactoryException(f'Have no available tokens: {cls.__name__}')
 
     return wrapper

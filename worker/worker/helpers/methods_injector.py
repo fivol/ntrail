@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 
-from worker.parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import AccessApiException
 
 
 class MethodWrapper:
@@ -43,7 +43,7 @@ class MakeSynced:
         loop = asyncio.get_event_loop()
         try:
             return loop.run_until_complete(self._method(*args, **kwargs))
-        except ParserRealError as e:
+        except AccessApiException as e:
             return e
 
     async def map(self, items, **kwargs):

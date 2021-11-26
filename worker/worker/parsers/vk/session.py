@@ -5,9 +5,10 @@ from aiovk.exceptions import VkAPIError, VkAuthError
 
 from worker.config import config
 from worker.credentials.access import AccessModel
+from worker.credentials.db import AccessStatus
 from worker.ctx import get_context
 from worker.parsers.vk.exceptions import VKError, VKErrorType
-from worker.session.exceptions import SessionRemove, TokenAccessDenied
+from worker.session.exceptions import SessionRemove
 from worker.session.session_state import SessionState
 
 
@@ -38,10 +39,6 @@ class VkApiSession(SessionState):
         if exc_type == VkAPIError:
             error = VKError(error=exc_val)
             logger.warning('Catch vk api error: %s', error)
-            if error.type == VKErrorType.ACCESS_DENIED:
-                raise TokenAccessDenied()
-            # if error.type == VKErrorType.GROUP_AUTHORIZATION_FAILED:
-            #     raise SessionRemove()
             raise error
         if exc_type == VkAuthError:
-            raise SessionRemove()
+            raise SessionRemove(AccessStatus.auth_error)

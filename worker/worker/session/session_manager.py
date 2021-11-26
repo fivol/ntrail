@@ -107,8 +107,9 @@ class SessionManager:
     async def return_session(self, session: SessionState, action: SessionAction = None):
         if isinstance(action, SessionRemove):
             self._active_sessions.remove(session)
-            await Credentials.return_access([session.key], error=AccessStatus.denied)
+            await Credentials.return_access([session.key], error=action.access_status)
             logger.error('SESSION REMOVING')
+        # TODO SessionWait
 
     async def stop(self):
         logger.info('STOP session manager')
