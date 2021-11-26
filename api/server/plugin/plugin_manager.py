@@ -5,7 +5,7 @@ import typing
 
 from server.exceptions import WrongInputError, ServerError
 from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
-from worker.parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import AccessApiException
 
 logger = logging.getLogger()
 
@@ -59,7 +59,7 @@ class PluginManager:
                             result = await result
                     except WrongInputError:
                         raise
-                    except ParserRealError:
+                    except AccessApiException:
                         raise
                     except Exception:
                         logger.exception('Option method executing')

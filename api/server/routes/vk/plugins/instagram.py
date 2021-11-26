@@ -6,8 +6,7 @@ from collections import Counter, defaultdict
 from core import VKUser, IGUser, IGCommunity
 from server.plugin.plugin import BasePlugin
 from server.routes.vk.plugins.user import UserDescribePlugin
-from worker.instagramscraper.exception.instagram_exception import InstagramException
-from worker.instagramscraper.exception.instagram_not_found_exception import InstagramNotFoundException
+from worker.instagramscraper.exceptions import *
 
 logger = logging.getLogger(__name__)
 
