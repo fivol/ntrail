@@ -9,7 +9,7 @@ from core.modules.vk.vkgroups import VKGroups
 from pycommon.decors import cache_method_ignore_args
 from worker.parsers.vk.exceptions import VKErrorType
 
-from worker.parsers.exceptions import ParserRealError
+from worker.parsers.exceptions import AccessApiException
 from worker import VKMethods, VKError
 from core.module.layers import public_object_method
 from core.module.single_entity import SingleEntity
@@ -140,7 +140,7 @@ class VKUser(SingleEntity):
     async def friends(self, include_self=False):
         from .vkcommunity import VKCommunity
         friend_ids = await VKMethods.friends(self.id)
-        if isinstance(friend_ids, ParserRealError):
+        if isinstance(friend_ids, AccessApiException):
             return VKCommunity()
         if include_self:
             friend_ids.append(self.id)
