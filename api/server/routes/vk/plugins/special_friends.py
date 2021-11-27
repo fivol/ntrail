@@ -1,11 +1,9 @@
 import typing
 from collections import defaultdict
-from pprint import pprint
 
 from core import VKUser, VKCommunity
 from server.plugin.plugin import BasePlugin
-from worker import VKMethods
-from server.routes.vk.plugins.representer import UsersRepresentation
+from server.routes.vk.features.representer import UsersRepresentation
 
 
 class ValueScore:

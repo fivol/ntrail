@@ -26,6 +26,10 @@ python-louvain = "^0.15"
 sortedcontainers = "^2.4.0"
 sqlalchemy-mixins = "^1.5"
 asyncpg = "^0.25.0"
+fuzzywuzzy = "^0.18.0"
+python-Levenshtein = "^0.12.2"
+textblob = "^0.17.1"
+langid = "^1.1.6"
 
 [tool.poetry.dev-dependencies]
 

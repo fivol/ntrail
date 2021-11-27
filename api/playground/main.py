@@ -26,11 +26,7 @@ logger = logging.getLogger(__name__)
 
 async def main():
     async with Engine():
-        # 'QVFBbEtiVEUtalRuMm9SWFJadU1nTDI4eEdZcTljUUdaTHRHUTRpbmt5ZHVuR0FJNWVBNjFfRFY3TWhGc1IySmh4ZFo5TGQ0ckFFeWE0QjdybjROV0xFdg=='
-        # 4367352634
-        print(await IGUser(4367352634).followers(count=20))
-        # await IGMethods.followers(4367352634, count=10, end_cursor='QVFBbEtiVEUtalRuMm9SWFJadU1nTDI4eEdZcTljUUdaTHRHUTRpbmt5ZHVuR0FJNWVBNjFfRFY3TWhGc1IySmh4ZFo5TGQ0ckFFeWE0QjdybjROV0xFdg==')
-
+        print(await PluginManager({'user': 'ffboris'}, input_plugins=['user'], options=['']).execute())
 
 if __name__ == '__main__':
     asyncio.run(main())

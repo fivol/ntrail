@@ -4,12 +4,12 @@ import nltk
 from core import VKUser
 from server.helpers.utils import absolute_path
 from server.plugin.plugin import BasePlugin
-from server.routes.vk.plugins.tf_idf import IDFCalculator
+from server.routes.vk.features.tf_idf import IDFCalculator
 from server.routes.vk.plugins.tokenizer import Morphology
 from worker.ctx import get_context
 
 
-interests_filename = 'data/interests.txt'
+interests_filename = '../data/interests.txt'
 
 
 class UserInterestsPlugin(BasePlugin):

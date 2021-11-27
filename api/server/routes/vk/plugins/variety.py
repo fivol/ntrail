@@ -34,7 +34,7 @@ class EntitiesGraphPlugin(BasePlugin):
             plt.legend(handles=color_patches)
 
         if not save_path:
-            save_path = f'data/graph_{int(time())}.svg'
+            save_path = f'../data/graph_{int(time())}.svg'
         plt.savefig(save_path, dpi=1200)
         plt.show()
 
@@ -75,7 +75,7 @@ class EntitiesGraphPlugin(BasePlugin):
             plt.legend(handles=color_patches)
 
         if not save_path:
-            save_path = f'data/weighted_graph_{int(time())}.svg'
+            save_path = f'../data/weighted_graph_{int(time())}.svg'
         plt.savefig(save_path, dpi=1200)
         plt.show()
 

@@ -7,8 +7,8 @@ from server.helpers.tied_value import TiedValue
 from server.helpers.utils import absolute_path
 from server.routes.vk.plugins.tokenizer import ContextTiedValue
 
-words_filename = 'data/russian_words.txt'
-stop_words_filename = 'data/stop_words.txt'
+words_filename = '../data/russian_words.txt'
+stop_words_filename = '../data/stop_words.txt'
 
 
 class IDFCalculator:

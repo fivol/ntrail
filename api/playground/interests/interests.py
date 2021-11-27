@@ -1,28 +1,11 @@
 import asyncio
-import concurrent
 import logging
-import re
-from collections import Counter
-from concurrent.futures.process import ProcessPoolExecutor
-from contextlib import suppress
-from datetime import datetime
 from pprint import pprint
-from time import time
 
-from pymystem3 import Mystem
-from tqdm import tqdm, trange
-
-from core import VKUser, VKCommunity
-from core.modules.vk.vkgroups import VKGroups
-from server.helpers.tied_value import TiedValue
+from core import VKUser
 from server.plugin.register import register_plugins
-from server.plugin.plugin_manager import PluginManager
-from server.routes.vk.plugins.register_date import UserRegistrationDate
-from server.routes.vk.plugins.tf_idf import IDFCalculator
+from server.routes.vk.features import IDFCalculator
 from worker import Engine
-from worker import VKMethods
-import nltk
-import pymorphy2
 
 # http://nlpx.net/archives/57
 register_plugins()

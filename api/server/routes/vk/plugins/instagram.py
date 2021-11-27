@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 
 from core import VKUser, IGUser, IGCommunity
 from server.plugin.plugin import BasePlugin
+from server.routes.vk.features.name_compare import NameComparator
 from server.routes.vk.plugins.user import UserDescribePlugin
 from worker.instagramscraper.exceptions import *
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class FindInstagramPlugin(BasePlugin):
     name = 'find-instagram'
 
-    def __init__(self, user, **kwargs):
+    def __init__(self, user: VKUser, **kwargs):
         super(FindInstagramPlugin, self).__init__(**kwargs)
         self._user = user
 
@@ -26,12 +27,6 @@ class FindInstagramPlugin(BasePlugin):
         except InstagramException:
             # TODO Process inst exception
             return None
-
-    @classmethod
-    async def _url_by_id(cls, account_id):
-        user = IGUser(account_id)
-        await user.data()
-        return user.url
 
     async def response(self) -> list[str]:
         own_instagram = await UserDescribePlugin(self._user).instagram()
@@ -66,20 +61,29 @@ class FindInstagramPlugin(BasePlugin):
                 follower_score[follower].add(user_pool.get(vk_id))
             followers_butch += user_followers.counter()
 
+        # With inter cluster cross selection
         best_followers = Counter({follower: len(clusters) for follower, clusters in follower_score.items()})
         best = best_followers.most_common(1)[0]
-        ids = []
+        target_users = []
         logger.debug("Most common by clusters IG candidate: %s", best)
         if best[1] > 1:
-            ids = [best[0]]
+            target_users = [best[0]]
 
+        # Counting best by name matching
+        await self._user.data()
+        best_by_name = NameComparator.best_match([self._user.screen_name, self._user.first_name, self._user.last_name],
+                                                 [(x[0].username, x[0].full_name, x[0]) for x in
+                                                  followers_butch.most_common()])
+        target_users.append(best_by_name.most_common(1)[0][0][2])
+
+        # Just most commonly come
         max_count = None
         for account_id, count in followers_butch.most_common(1):
             if not max_count or count == max_count:
-                if account_id not in ids:
-                    ids.append(account_id)
+                if account_id not in target_users:
+                    target_users.append(account_id)
                 max_count = count
             else:
                 break
-        logger.debug('Most common iG candidate - count: %s, len: %s', max_count, ids)
-        return list(await asyncio.gather(*[self._url_by_id(id_) for id_ in ids]))
+        logger.debug('Most common iG candidate - count: %s, len: %s', max_count, target_users)
+        return list([user.url for user in target_users])

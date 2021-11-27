@@ -8,7 +8,7 @@ import os
 
 from server.helpers.utils import absolute_path
 
-_map_file_name = 'data/id-date.csv'
+_map_file_name = '../data/id-date.csv'
 
 
 class UserRegistrationDate:

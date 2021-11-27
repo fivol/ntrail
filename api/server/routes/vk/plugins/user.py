@@ -5,8 +5,8 @@ from datetime import datetime
 from core import VKUser
 from core.constants import AccountStatus, NO_AVA_IMG
 from server.plugin.plugin import InputPlugin, BasePlugin
+from server.routes.vk.features.register_date import UserRegistrationDate
 from server.routes.vk.plugins.friends import UserFriendsPlugin
-from server.routes.vk.plugins.register_date import UserRegistrationDate
 
 
 class VKUserInput(InputPlugin):
