@@ -27,14 +27,12 @@ class SessionProvider:
             try:
                 self._session.handle_error(exc_type, exc_val, exc_tb)
             except SessionAction as action:
-                logger.exception('Receive SessionAction: %s', action)
+                logger.error('Receive SessionAction: %s', action)
                 await self._manager.return_session(self._session, action=action)
                 raise TokenAuthFailed()
             except Exception:
                 await self._return_session()
                 raise
-            await self._manager.return_session(self._session)
-            return True
 
         await self._return_session()
         return False

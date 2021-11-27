@@ -83,6 +83,7 @@ def reliable_call(method):
                 await asyncio.sleep(wait_time)
                 continue
             except TokenAuthFailed:
+                logger.error(f'Token auth failed: {cls.__name__}')
                 continue
             except NoTokenAvailableException:
                 raise AccessFactoryException(f'Have no available tokens: {cls.__name__}')

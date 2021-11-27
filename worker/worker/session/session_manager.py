@@ -67,10 +67,11 @@ class SessionManager:
                 return False
             models = await Credentials.get_access(self._key_type, count)
             logger.info('New %s access tokens (count: %s), now have %s', len(models), count, len(self._active_sessions))
+            self._add_new_keys(models)
             if len(models) < count:
                 self._stop_access_acquiring = True
-                logger.warning('Credentials Server give less keys then requested: %s < %s', len(models), count)
-            self._add_new_keys(models)
+                logger.warning('Credentials Server give less keys then requested: %s < %s, have: %s', len(models),
+                               count, len(self._active_sessions))
             return bool(models)
 
     def _can_use_session(self, stat: UsageStat):
@@ -108,7 +109,7 @@ class SessionManager:
         if isinstance(action, SessionRemove):
             self._active_sessions.remove(session)
             await Credentials.return_access([session.key], error=action.access_status)
-            logger.error('SESSION REMOVING')
+            logger.error('SESSION REMOVING, status: %s', action.access_status)
         # TODO SessionWait
 
     async def stop(self):

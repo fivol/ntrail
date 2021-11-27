@@ -17,12 +17,12 @@ def paging_iterator(max_count: int):
             count = kwargs.pop('count', max_count)
             percent_ = kwargs.pop('percent_', None)
             all_ = kwargs.pop('all_', None)
-            end_cursor = kwargs.get('end_cursor', '')
+            end_cursor = kwargs.pop('end_cursor', '')
             if all_:
                 percent_ = 1
             while len(all_items) < count:
                 items: RichList = await method(cls, *args, **kwargs,
-                                               count=min(count - len(all_items), max_count) + 1,
+                                               count=max_count,
                                                end_cursor=end_cursor)
                 all_items = all_items + items
                 logger.info('New items part (%s)', len(items))
@@ -31,10 +31,13 @@ def paging_iterator(max_count: int):
                 if not has_next_page:
                     break
                 if items.count_ and not len(items):
-                    raise AccessUnknownBehaviorExceptions()
+                    logger.warning('IG request return empty result, requested %s items with method %s by %s', max_count,
+                                   method.__name__, args)
+                    # TODO Think Hard
+                    break
                 if percent_:
                     count = int(all_items.count_ * percent_)
-            return all_items
+            return all_items[:count]
 
         return wrapper
 

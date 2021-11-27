@@ -26,9 +26,11 @@ def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors
                 if len(text) <= size:
                     return text
                 return f'{text[:size]}...'
+
             s = str(result)
             response_str = shorty(s, 50)
-            description = f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}>' if len(response_str) > 50 else ''
+            description = f'{type(result).__name__}<size: {len(result)} bytes: {len(s)}>' if len(
+                response_str) > 50 else ''
             return f'{description} {response_str}'
 
         @wraps(method)
@@ -41,7 +43,7 @@ def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors
                     logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
                 return result
             except Exception as e:
-                logger.error('%s(%s)', method.__name__, repr_args(args, kwargs))
+                logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), str(e))
                 raise
 
         return wrapper

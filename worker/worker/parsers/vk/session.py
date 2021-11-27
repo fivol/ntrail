@@ -38,7 +38,6 @@ class VkApiSession(SessionState):
     def handle_error(self, exc_type, exc_val, exc_tb):
         if exc_type == VkAPIError:
             error = VKError(error=exc_val)
-            logger.warning('Catch vk api error: %s', error)
             raise error
         if exc_type == VkAuthError:
             raise SessionRemove(AccessStatus.auth_error)
