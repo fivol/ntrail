@@ -7,7 +7,7 @@ from server.exceptions import WrongInputError, ServerError
 from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
 from worker.parsers.exceptions import AccessApiException
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class PluginManager:
@@ -103,7 +103,9 @@ class PluginManager:
         )
         for option, result in zip(self._options, results):
             if isinstance(result, Exception):
-                logger.exception('Plugin ends with exception: %s', result, exc_info=result)
+                logger.exception('Plugin %s ends with exception: %s', option, result, exc_info=result)
+                if isinstance(result, WrongInputError):
+                    raise result
                 result = None
             response = self._add_result(response, option, result)
 

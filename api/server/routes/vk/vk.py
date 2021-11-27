@@ -12,7 +12,7 @@ from worker import Engine, VKError
 
 router = APIRouter(prefix='/vk')
 
-logger = logging.getLogger('vk-route')
+logger = logging.getLogger(__name__)
 
 
 @router.get('/user/')
