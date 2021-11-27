@@ -29,3 +29,12 @@ def file_extension(filename):
     if len(guess_format) < 5 and guess_format != filename:
         return guess_format
     return None
+
+
+def init_with_result(method):
+    async def wrapper(self, *args, **kwargs):
+        result = await method(self, *args, **kwargs)
+        self._init(result)
+        return result
+
+    return wrapper

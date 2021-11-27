@@ -29,6 +29,9 @@ class AnyEntity(InitializerModel, metaclass=ABCMeta):
         """
         pass
 
+    def is_loaded(self):
+        return getattr(self, '_data', None) is not None
+
     def export(self, filename: str = '', format_: str = 'json',):
         data = self.data()
 

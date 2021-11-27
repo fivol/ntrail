@@ -81,3 +81,6 @@ class IGUser(SingleEntity):
     def status(self):
         pass
 
+    def __repr__(self):
+        return f"IGUser('{self.username or self.id}')"
+

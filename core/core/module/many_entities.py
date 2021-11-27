@@ -25,7 +25,7 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
     @cache_method_ignore_args
     def counter(self) -> Counter:
-        return Counter(self.nodes)
+        return Counter(self.objects())
 
     def objects(self):
         if hasattr(self, '_data'):
@@ -49,6 +49,10 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
     async def data(self) -> list:
         pass
 
+    @cache_method_ignore_args
+    def dict(self):
+        return dict(zip(self.nodes, self.objects()))
+
     def __len__(self):
         return self.size
 
@@ -57,8 +61,7 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
         return self.__class__(self.counter() + other.counter())
 
     def __getitem__(self, key):
-        assert isinstance(key, int), key
-        return self.objects()[key]
+        return self.dict()[key]
 
     def __or__(self, other):
         return self.__class__(list(set(self.nodes) | set(other.nodes)))
@@ -73,4 +76,4 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
         return item in self.nodes
 
     def __iter__(self):
-        return iter(self.nodes)
+        return iter(self.objects())

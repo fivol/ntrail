@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import re
 
+from core.helpers.utils import init_with_result
 from core.modules.vk.vkphoto import VKPhotos
 from core.constants import AccountStatus
 from core.modules.vk.vkpost import VKPosts
@@ -43,6 +44,9 @@ class VKUser(SingleEntity):
         super().__init__()
         self._status = status
         self.id = None
+        self.screen_name = None
+        self.first_name = None
+        self.last_name = None
         if isinstance(user, int):
             self.id = user
         elif isinstance(user, dict):
@@ -123,6 +127,7 @@ class VKUser(SingleEntity):
         return VKCommunity.random(1).objects[0]
 
     @cache_method_ignore_args
+    @init_with_result
     async def data(self) -> dict:
         return (await VKMethods.users([self.id]))[0]
 
