@@ -28,6 +28,8 @@ def paging_iterator(max_count: int):
                 logger.info('New items part (%s)', len(items))
                 end_cursor = items.data['end_cursor']
                 has_next_page = items.data['has_next_page']
+                if all_items.count_:
+                    count = min(count, all_items.count_)
                 if not has_next_page:
                     break
                 if items.count_ and not len(items):
@@ -37,6 +39,9 @@ def paging_iterator(max_count: int):
                     break
                 if percent_:
                     count = int(all_items.count_ * percent_)
+
+            if all_items.count_ >= count > len(all_items):
+                logger.warning('Instagram return less when requests %s < %s (%s)', len(all_items), count, args)
             return all_items[:count]
 
         return wrapper
