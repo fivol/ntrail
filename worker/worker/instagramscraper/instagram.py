@@ -8,6 +8,9 @@ import re
 import json
 import hashlib
 
+from worker.parsers.exceptions import AccessUnknownBehaviorExceptions
+from .helper import replace_exception
+
 from aiohttp import ContentTypeError
 
 from .exceptions import *
@@ -140,7 +143,7 @@ class Instagram:
             if 'confirm' in response.url.path:
                 raise InstagramSuspiciousActivity()
             if response.status != 200:
-                raise InstagramException(response.status)
+                raise InstagramException.default(response.status)
 
             self._update_cookie(response.cookies)
             try:
@@ -940,6 +943,7 @@ class Instagram:
 
         return data
 
+    @replace_exception({KeyError: AccessUnknownBehaviorExceptions})
     async def get_followers(self, account_id, count=20, end_cursor=''):
         # count <= 50
         variables = {
@@ -955,6 +959,7 @@ class Instagram:
             **edges['page_info']
         }
 
+    @replace_exception({KeyError: AccessUnknownBehaviorExceptions})
     async def get_following(self, account_id, count=20, end_cursor=''):
         # count <= 50
         variables = {

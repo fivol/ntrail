@@ -1,7 +1,9 @@
 import asyncio
 import logging
 
+from worker.credentials.db import AccessStatus
 from worker.session.exceptions import SessionAction, SessionRemove, TokenAuthFailed
+from worker.parsers.exceptions import AccessApiException, AccessUnknownBehaviorExceptions
 from worker.session.session_state import SessionState
 
 logger = logging.getLogger(__name__)
@@ -22,6 +24,12 @@ class SessionProvider:
         self._manager.notify_return(self._session)
         if exc_type == asyncio.CancelledError:
             await self._return_session()
+            return False
+        if isinstance(exc_val, AccessApiException):
+            await self._return_session()
+            return False
+        if isinstance(exc_val, AccessUnknownBehaviorExceptions):
+            await self._manager.return_session(self._session, action=SessionRemove(AccessStatus.unknown_error))
             return False
         if exc_type:
             try:

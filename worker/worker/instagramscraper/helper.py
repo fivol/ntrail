@@ -53,3 +53,16 @@ def set_timeout(num, callback):
                 callback()
         return to_do
     return wrap
+
+
+def replace_exception(replace_dict: dict):
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            try:
+                await func(*args, **kwargs)
+            except Exception as e:
+                if e.__class__ in replace_dict:
+                    raise replace_dict[e.__class__]
+                raise
+        return wrapper
+    return decorator

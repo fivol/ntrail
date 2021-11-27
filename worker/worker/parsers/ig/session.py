@@ -34,3 +34,4 @@ class IgApiSession(SessionState):
             raise SessionRemove(AccessStatus.login_redirect)
         if isinstance(exc_val, InstagramAuthException):
             raise SessionRemove(AccessStatus.auth_error)
+        # TODO Think of unknown thrown exception
