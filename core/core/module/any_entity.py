@@ -59,7 +59,10 @@ class AnyEntity(InitializerModel, metaclass=ABCMeta):
 
         exporter(data=data).write(writers[format_](filename=filename))
 
-    async def preload(self):
+    async def preload(self, force=False):
+        if force:
+            if hasattr(self, '_data'):
+                delattr(self, '_data')
         await self.data()
 
     def __hash__(self):

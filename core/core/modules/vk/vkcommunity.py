@@ -4,6 +4,7 @@ from collections import Counter
 
 import networkx as nx
 
+from core.helpers.utils import init_with_result
 from core.module.connected_entities import ConnectedEntities
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods

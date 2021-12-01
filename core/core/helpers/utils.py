@@ -1,3 +1,6 @@
+from functools import wraps
+
+
 def dicts_keys(dicts):
     keys = set()
     for d in dicts:
@@ -32,6 +35,7 @@ def file_extension(filename):
 
 
 def init_with_result(method):
+    @wraps(method)
     async def wrapper(self, *args, **kwargs):
         result = await method(self, *args, **kwargs)
         self._init(result)

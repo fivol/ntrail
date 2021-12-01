@@ -41,16 +41,18 @@ class VKUser(SingleEntity):
         return cls(user=user_id, status=status)
 
     def __init__(self, user, status=None, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self._status = status
         self.id = None
         self.screen_name = None
         self.first_name = None
         self.last_name = None
+        self.sex = None
         if isinstance(user, int):
             self.id = user
         elif isinstance(user, dict):
             self.id = user['id']
+            self._init(user)
             self._data = user
         elif user is not None:
             raise TypeError('Unknown user type', type(user))
@@ -137,6 +139,10 @@ class VKUser(SingleEntity):
 
     async def name(self):
         return f"{(await self.data())['first_name']} {(await self.data())['last_name']}"
+
+    @property
+    def full_name(self):
+        return f'{self.first_name} {self.last_name}'
 
     @property
     def url(self):
