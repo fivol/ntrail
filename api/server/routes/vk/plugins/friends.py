@@ -32,7 +32,7 @@ class UserFriendsPlugin(BasePlugin):
 
     def age(self):
         age = self._processed['age']
-        return age['commonMean']
+        return age.get('commonMean')
 
     async def response(self) -> dict:
         return {

@@ -49,6 +49,6 @@ logging:
     pymorphy2.opencorpora_dict:
       level: WARNING
   root:
-    level: WARNING
+    level: DEBUG
     handlers: [default]
 

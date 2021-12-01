@@ -2,6 +2,7 @@ from server.plugin.plugin_manager import PluginManager
 from server.routes.vk.plugins.friends import UserFriendsPlugin
 from server.routes.vk.plugins.instagram import FindInstagramPlugin
 from server.routes.vk.plugins.interests import UserInterestsPlugin
+from server.routes.vk.plugins.relatives import RelativesPlugin
 from server.routes.vk.plugins.special_friends import SpecialFriendsPlugin
 
 from server.routes.vk.plugins.user import *
@@ -13,7 +14,7 @@ from server.routes.vk.plugins.fans import *
 from server.routes.vk.plugins.groups import *
 from worker.helpers.tools import assert_imported_once
 
-_plugins = {VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin,
+_plugins = {VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin, RelativesPlugin,
             VKFriendsInput, UserInterestsPlugin, VkFriendsLonersPlugin, UserFriendsPlugin,
             VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin, UserDescribePlugin, FindInstagramPlugin}
 
