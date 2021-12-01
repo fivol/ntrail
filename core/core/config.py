@@ -6,6 +6,9 @@ from bestconfig import Config
 warnings.simplefilter("ignore")
 config = Config()
 
-logging.config.dictConfig(config.logging.to_dict())
-logger = logging.getLogger(__name__)
+log_config = config.logging.to_dict()
+if not config.bool('DEBUG'):
+    log_config['root']['level'] = 'WARNING'
 
+logging.config.dictConfig(log_config)
+logging.getLogger(__name__)
