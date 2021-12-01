@@ -6,5 +6,8 @@ import logging
 config = Config(exclude=['env_file'])
 config.assert_contains('DEBUG')
 
-logging.config.dictConfig(config.logging.to_dict())
-os.environ['LOGGING_CONFIGURED'] = 'true'
+log_config = config.logging.to_dict()
+if not config.bool('DEBUG'):
+    log_config['root']['level'] = 'WARNING'
+
+logging.config.dictConfig(log_config)
