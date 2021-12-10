@@ -39,19 +39,87 @@ class VKGroupsInput(InputPlugin):
         }
 
 
-class VKUserData(BasePlugin):
+class VKUserPlugin(BasePlugin):
     name = 'user'
 
     def __init__(self, user: VKUser, **kwargs):
         super().__init__(**kwargs)
         self._user = user
+        self._data = None
+
+    async def init(self):
+        self._data = await self._user.data()
 
     def registration(self):
         return UserRegistrationDate.date(self._user.id).isoformat()
 
-    def is_fake(self):
-        # TODO AAAAAAA
-        return (datetime.now() - UserRegistrationDate.date(self._user.id)).days < 365 * 2
+    @classmethod
+    def _try_parse_instagram_str(cls, text, reg):
+        match = re.search(reg, text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return None
+
+    def instagram(self):
+        data = self._data
+        username = data.get('instagram', '').strip()
+        site = data.get('site', '')
+        status = data.get('status', '')
+
+        username_reg = r'([a-z_.-]+)'
+        inst_reg = [
+            fr'instagram.com/{username_reg}',
+            fr'inst:\s*{username_reg}',
+            fr'inst:\s*@\s*{username_reg}',
+            fr'inst\s+{username_reg}',
+            fr'inst\s*-\s*{username_reg}',
+        ]
+        texts = [site, status]
+        for text in texts:
+            if username:
+                break
+            for reg in inst_reg:
+                username = self._try_parse_instagram_str(text, reg)
+                if username:
+                    break
+
+        if username:
+            return f'https://instagram.com/{username}'
+        return None
+
+    def age(self):
+        data = self._data
+        age = data.get('bdate')
+        day = None
+        month = None
+        year = None
+        age_years = None
+        if age:
+            try:
+                full_age = datetime.strptime(age, '%d.%m.%Y')
+                day = full_age.day
+                month = full_age.month
+                year = full_age.year
+                age_years = (datetime.now() - full_age).days / 365
+            except ValueError:
+                pass
+            if not day:
+                age = datetime.strptime(age, '%d.%m')
+                day = age.day
+                month = age.month
+
+        return {
+            'year': year,
+            'month': month,
+            'day': day,
+            'age': age_years
+        }
+
+    def city(self):
+        return self._data.get('city', {}).get('title') or self._data.get('home_town')
+
+    def data(self):
+        return self._user.data()
 
     async def response(self) -> dict:
         user = self._user
@@ -73,10 +141,8 @@ class VKUserData(BasePlugin):
             'username': data.get("screen_name", 'id' + str(user.id)),
             'verified': data.get('verified', False),
             'private': await user.status() == AccountStatus.PRIVATE,
+            'instagram': self.instagram(),
         }
-
-    def data(self):
-        return self._user.data()
 
 
 class UserDescribePlugin(BasePlugin):
@@ -85,76 +151,29 @@ class UserDescribePlugin(BasePlugin):
     def __init__(self, user: VKUser, **kwargs):
         super(UserDescribePlugin, self).__init__(**kwargs)
         self._user = user
-        self._friends = UserFriendsPlugin(self._user)
+        self._user_plugin = VKUserPlugin(user=user)
+        self._friends_plugin = UserFriendsPlugin(self._user)
 
     async def init(self):
-        await self._friends.init()
+        await self._user_plugin.init()
+        await self._friends_plugin.init()
 
-    async def age(self):
-        data = await self._user.data()
-        age = data.get('bdate')
-        day = None
-        month = None
-        year = None
-        age_years = None
-        if age:
-            try:
-                full_age = datetime.strptime(age, '%d.%m.%Y')
-                day = full_age.day
-                month = full_age.month
-                year = full_age.year
-                age_years = (datetime.now() - full_age).days / 365
-            except ValueError:
-                pass
-            if not day:
-                age = datetime.strptime(age, '%d.%m')
-                day = age.day
-                month = age.month
-        if not age_years:
-            age_years = self._friends.age()
+    def is_fake(self):
+        # TODO AAAAAAA
+        return (datetime.now() - UserRegistrationDate.date(self._user.id)).days < 365 * 2
 
-        return {
-            'year': year,
-            'month': month,
-            'day': day,
-            'age': age_years
-        }
+    def age(self):
+        age = self._user_plugin.age()
+        if not age.get('age'):
+            age['age'] = self._friends_plugin.age()
+        return age
 
-    @classmethod
-    def _try_parse_instagram_str(cls, text, reg):
-        match = re.search(reg, text, re.IGNORECASE)
-        if match:
-            return match.group(1)
-        return None
-
-    async def instagram(self):
-        data = await self._user.data()
-        username = data.get('instagram', '')
-        site = data.get('site', '')
-        status = data.get('status', '')
-
-        username_reg = r'([a-z_.-]+)'
-        inst_reg = [
-            fr'instagram.com/{username_reg}',
-            fr'inst:\s*{username_reg}',
-            fr'inst\s+{username_reg}',
-            fr'inst\s*-\s*{username_reg}',
-        ]
-        texts = [site, status]
-        for text in texts:
-            if username:
-                break
-            for reg in inst_reg:
-                if username:
-                    username = self._try_parse_instagram_str(text, reg)
-
-        if username:
-            return f'https://instagram.com/{username}'
-        return None
+    def city(self):
+        return self._user_plugin.city() or self._friends_plugin.city()
 
     async def response(self) -> typing.Union[dict, list]:
-
         return {
-            'age': await self.age(),
-            'instagram': await self.instagram()
+            'age': self.age(),
+            'city': self.city(),
+            'is_fake': self.is_fake()
         }

@@ -4,9 +4,9 @@ import typing
 from collections import Counter, defaultdict
 
 from core import VKUser, IGUser, IGCommunity
-from server.plugin.plugin import BasePlugin
+from server.plugin.plugin import BasePlugin, call_plugin
 from server.routes.vk.features.name_compare import NameComparator
-from server.routes.vk.plugins.user import UserDescribePlugin
+from server.routes.vk.plugins.user import UserDescribePlugin, VKUserPlugin
 from worker.instagramscraper.exceptions import *
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class FindInstagramPlugin(BasePlugin):
             return None
 
     async def response(self) -> list[str]:
-        own_instagram = await UserDescribePlugin(self._user).instagram()
+        own_instagram = await call_plugin(VKUserPlugin(self._user), 'instagram')
         if own_instagram:
             return [own_instagram]
         friends = await self._user.friends()
@@ -43,7 +43,7 @@ class FindInstagramPlugin(BasePlugin):
 
         ig_vk = list(filter(lambda x: isinstance(x[0], str), zip(await asyncio.gather(
             *[
-                UserDescribePlugin(user).instagram()
+                call_plugin(VKUserPlugin(user), 'instagram')
                 for user in users
             ],
             return_exceptions=True

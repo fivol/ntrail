@@ -77,8 +77,9 @@ class PluginManager:
     def _add_result(response: dict, option: str, result):
         items = option.split('.')
         if len(items) == 1:
-            items.append('main')
-        if len(items) == 2:
+            plugin = items[0]
+            response[plugin] = result
+        elif len(items) == 2:
             plugin, attr = items
             if plugin in response:
                 response[plugin][attr] = result

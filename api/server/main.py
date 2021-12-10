@@ -3,7 +3,7 @@ import logging
 import time
 
 import aiohttp
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Response
 from fastapi.responses import RedirectResponse
 from starlette.responses import JSONResponse
 
@@ -53,6 +53,7 @@ async def shutdown_event():
 @app.on_event('startup')
 async def startup_event():
     global engine
+    print('START')
     engine = Engine(caching=config.bool('CACHING'))
     await engine.start()
 
@@ -75,10 +76,10 @@ async def index():
     return RedirectResponse("/version/")
 
 
-@app.get('/version/', response_model=str)
+@app.get('/version/')
 async def version():
     """Текущая версия API"""
-    return config.get('VERSION')
+    return Response(content=config.get('VERSION'))
 
 
 @app.get('/config/', response_model=dict)
@@ -89,13 +90,6 @@ async def get_config():
         'CACHING': config.get('CACHING'),
         'context': repr(ctx)
     }
-
-
-@app.get('/long_query/', response_model=str)
-async def version():
-    await asyncio.sleep(11)
-    """Текущая версия API"""
-    return 'hello'
 
 
 async def alive_check_daemon():

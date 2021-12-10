@@ -16,7 +16,7 @@ from worker.helpers.tools import assert_imported_once
 
 _plugins = {VKGroupsPlugin, VKUserInput, VKGroupsInput, SpecialFriendsPlugin, RelativesPlugin,
             VKFriendsInput, UserInterestsPlugin, VkFriendsLonersPlugin, UserFriendsPlugin,
-            VKUserData, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin, UserDescribePlugin, FindInstagramPlugin}
+            VKUserPlugin, VKCommunityPlugin, UserZodiacPlugin, UserFansPlugin, UserDescribePlugin, FindInstagramPlugin}
 
 assert_imported_once()
 

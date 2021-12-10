@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import inspect
 import typing
 from abc import ABCMeta, abstractmethod
 
@@ -31,6 +33,16 @@ class BasePlugin(Plugin):
 
     def get_plugin(self, name) -> BasePlugin:
         return self.__manager.get_plugin(name)
+
+
+async def call_plugin(plugin: BasePlugin, method=None):
+    await plugin.init()
+    if method:
+        method_func = getattr(plugin, method)
+        if inspect.isawaitable(method_func):
+            return await method_func
+        return method_func()
+    return plugin
 
 
 class InputPlugin(Plugin):

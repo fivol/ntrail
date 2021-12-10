@@ -1,0 +1,38 @@
+import logging
+import typing
+
+from fastapi import HTTPException, status, Query
+
+from server.exceptions import ServerError, WrongInputError
+from server.plugin.plugin_manager import PluginManager
+from server.plugin.plugin_manager import PluginManager
+from server.types import ResponseVerbose
+
+logger = logging.getLogger(__name__)
+
+
+async def common_parameters(token: str = Query(None, title='API токен'),
+                            verbose: ResponseVerbose = Query(ResponseVerbose.simple, title='Детализация ответа'),
+                            options: list[str] = Query(['user'],
+                                                       title='Опиции запроса, список необходимых плагинов'), ):
+    return {
+        'options': options,
+        'verbose': verbose
+    }
+
+
+async def execute_api_request(kwargs, input_plugins, options):
+    try:
+        manager = PluginManager(kwargs=kwargs, input_plugins=input_plugins, options=options)
+        result = await manager.execute()
+        logger.debug('Response: %s', result)
+        return result
+    except ServerError as e:
+        logger.exception('ServerError')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except WrongInputError as e:
+        logger.exception('WrongInputError')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception:
+        logger.exception('Unknown server exception')
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

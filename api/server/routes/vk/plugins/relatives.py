@@ -23,7 +23,7 @@ class RelativesPlugin(BasePlugin):
     async def init(self):
         user = UserDescribePlugin(self._user)
         await user.init()
-        self._age = await user.age() or {}
+        self._age = (await user.age()) or {}
         print('user age', self._age)
 
     @classmethod
