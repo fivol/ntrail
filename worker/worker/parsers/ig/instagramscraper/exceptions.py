@@ -6,6 +6,10 @@ class InstagramException(Exception):
     All exception raised by this lib"""
     code = 500
 
+    def __init__(self, cookies=None, url=None, **kwargs):
+        self.cookies = cookies
+        self.url = url
+
     @classmethod
     def default(cls, code=500):
         return {

@@ -62,7 +62,7 @@ class SessionManager:
     async def _receive_keys(self, count=None) -> bool:
         self._lock._loop = asyncio.get_event_loop()
         async with self._lock:
-            count = count or max(1, len(self._active_sessions))
+            count = count or max(10, len(self._active_sessions))
             if self._stop_access_acquiring:
                 return False
             models = await Credentials.get_access(self._key_type, count)

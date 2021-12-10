@@ -1,9 +1,27 @@
 import logging
+from functools import wraps
 
-from worker.parsers.exceptions import AccessUnknownBehaviorExceptions
+from worker.config import config
+from worker.parsers.ig.instagramscraper.exceptions import InstagramException
 from worker.parsers.utils import RichList
+from worker.selenium.selenium_request import SeleniumRequest
 
 logger = logging.getLogger(__name__)
+
+
+def selenium_debugger(method):
+    if not config.get('DEBUG'):
+        return method
+
+    @wraps(method)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await method(*args, **kwargs)
+        except InstagramException as e:
+            if e.cookies and e.url:
+                SeleniumRequest().block_get(url=e.url, cookies=e.cookies)
+            raise
+    return wrapper
 
 
 def paging_iterator(max_count: int):

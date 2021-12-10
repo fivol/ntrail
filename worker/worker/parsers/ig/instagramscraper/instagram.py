@@ -1,4 +1,3 @@
-import datetime
 import logging
 import time
 import typing
@@ -133,14 +132,16 @@ class Instagram:
             {key: value.value for key, value in cookie.items()}
         )
 
-    async def _get_json(self, *args, **kwargs) -> typing.Optional[dict]:
+    async def _get_json(self, url, *args, **kwargs) -> typing.Optional[dict]:
         logger.info('Instagram request: %s %s', args, kwargs)
-        async with self.__areq.get(*args, **kwargs,
+        async with self.__areq.get(url, *args, **kwargs,
                                    headers=self.generate_headers(self.cookie),
                                    cookies=self.cookie) as response:
             if 'accounts/login' in response.url.path:
                 raise InstagramLoginRedirectException()
             if 'confirm' in response.url.path:
+                raise InstagramSuspiciousActivity()
+            if 'challenge' in response.url.path:
                 raise InstagramSuspiciousActivity()
             if response.status != 200:
                 raise InstagramException.default(response.status)
@@ -149,7 +150,7 @@ class Instagram:
             try:
                 return await response.json()
             except ContentTypeError:
-                raise InstagramException()
+                raise InstagramException(cookies=self.cookie, url=url)
 
     def set_proxies(self, proxy):
         if proxy and isinstance(proxy, dict):
@@ -1153,8 +1154,6 @@ class Instagram:
                 raise InstagramNotFoundException(
                     'Account with given username does not exist.')
             raise
-        except InstagramNotJsonResponse:
-            raise InstagramException()
 
         try:
             return response['graphql']['user']

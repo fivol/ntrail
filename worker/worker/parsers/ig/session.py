@@ -1,6 +1,6 @@
 from worker.credentials.db import AccessStatus
-from worker.instagramscraper.instagram import Instagram
-from worker.instagramscraper.exceptions import *
+from worker.parsers.ig.instagramscraper.instagram import Instagram
+from worker.parsers.ig.instagramscraper.exceptions import *
 import logging
 
 from worker.credentials.access import AccessModel

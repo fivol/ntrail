@@ -22,6 +22,6 @@ class SeleniumRequest:
         while True:
             try:
                 time.sleep(1)
-                driver.title  # noqa
+                self.driver.title  # noqa
             except NoSuchWindowException:
                 break
