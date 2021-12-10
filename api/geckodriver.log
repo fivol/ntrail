@@ -308,3 +308,28 @@ DevTools listening on ws://localhost:65123/devtools/browser/9a5d4cb0-2ce4-384a-b
 Exiting due to channel error.
 Exiting due to channel error.
 Exiting due to channel error.
+1639177451656	geckodriver	INFO	Listening on 127.0.0.1:61201
+1639177452143	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "--remote-debugging-port" "61202" "-foreground" "-no-remote" "-profile" "/var/folders/rs/pdw_18l51tqf9xzgdrvhdpfw0000gn/T/rust_mozprofileq4POa0"
+1639177454198	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at /var/folders/rs/pdw_18l51tqf9xzgdrvhdpfw0000gn/T/rust_mozprofileq4POa0/search.json.mozlz4", (void 0)))
+console.error: BackgroundUpdate: 
+  _reasonsToNotScheduleUpdates: Failed to check for Maintenance Service Registry Key: [Exception... "Component returned failure code: 0x80004001 (NS_ERROR_NOT_IMPLEMENTED) [nsIUpdateProcessor.getServiceRegKeyExists]"  nsresult: "0x80004001 (NS_ERROR_NOT_IMPLEMENTED)"  location: "JS frame :: resource://gre/modules/BackgroundUpdate.jsm :: _reasonsToNotScheduleUpdates :: line 243"  data: no]
+DevTools listening on ws://localhost:61202/devtools/browser/82fdf270-7548-fc4b-8091-c435812aa791
+1639177457260	Marionette	INFO	Listening on port 61211
+1639177457382	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+2021-12-11 02:05:15.079 firefox-bin[56206:2990298] NSVisualEffectView subclass says YES to allowsVibrancy. NSVisualEffectView does not support being vibrantly blended *itself*. This may break in the future.
+1639177625596	geckodriver	INFO	Listening on 127.0.0.1:61354
+1639177626117	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "--remote-debugging-port" "61355" "-foreground" "-no-remote" "-profile" "/var/folders/rs/pdw_18l51tqf9xzgdrvhdpfw0000gn/T/rust_mozprofileBBPERn"
+1639177627928	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at /var/folders/rs/pdw_18l51tqf9xzgdrvhdpfw0000gn/T/rust_mozprofileBBPERn/search.json.mozlz4", (void 0)))
+console.error: BackgroundUpdate: 
+  _reasonsToNotScheduleUpdates: Failed to check for Maintenance Service Registry Key: [Exception... "Component returned failure code: 0x80004001 (NS_ERROR_NOT_IMPLEMENTED) [nsIUpdateProcessor.getServiceRegKeyExists]"  nsresult: "0x80004001 (NS_ERROR_NOT_IMPLEMENTED)"  location: "JS frame :: resource://gre/modules/BackgroundUpdate.jsm :: _reasonsToNotScheduleUpdates :: line 243"  data: no]
+DevTools listening on ws://localhost:61355/devtools/browser/46d2f351-e37e-b442-97b4-b2436ae0a7e0
+1639177631042	Marionette	INFO	Listening on port 61364
+1639177631153	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.log: WebExtensions: reset-default-search: starting.
+console.log: WebExtensions: reset-default-search: No addons in our list are installed.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.

@@ -7,7 +7,7 @@ from core import VKUser, IGUser, IGCommunity
 from server.plugin.plugin import BasePlugin, call_plugin
 from server.routes.vk.features.name_compare import NameComparator
 from server.routes.vk.plugins.user import UserDescribePlugin, VKUserPlugin
-from worker.instagramscraper.exceptions import *
+from worker.parsers.exceptions import AccessApiException
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class VKFindInstagramPlugin(BasePlugin):
         try:
             ig = await IGUser.create(ig_username)
             return await ig.followers()
-        except InstagramException:
+        except AccessApiException:
             # TODO Process inst exception
             return None
 

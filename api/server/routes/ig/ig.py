@@ -19,6 +19,5 @@ async def ig_user(commons: dict = Depends(common_parameters),
     - connections: анализировать связи с друзьями, подписчиками и прочее
     - groups: группы и сообщества человека
     """
-    # TODO Do not initialize all sessions for each request
     kwargs = {'user': user}
-    return await execute_api_request(kwargs=kwargs, input_plugins=['user'], options=commons['options'])
+    return await execute_api_request(kwargs=kwargs, input_plugins=['user'], options=commons['options'], namespace='ig')

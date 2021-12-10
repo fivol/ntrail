@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 
 from server.config import config
 from server.routes.vk import vk
+from server.routes.ig import ig
 from server.routes import auth
 from server.plugin.register import register_plugins
 from worker import Engine
@@ -59,6 +60,7 @@ async def startup_event():
 
 
 app.include_router(vk.router)
+app.include_router(ig.router)
 app.include_router(auth.router)
 
 register_plugins()

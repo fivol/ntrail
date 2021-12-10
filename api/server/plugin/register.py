@@ -1,4 +1,5 @@
 from server.plugin.plugin_manager import PluginManager
+from server.routes.ig.plugins.user import IGUserInput, IGUserPlugin
 from server.routes.vk.plugins.friends import VKUserFriendsPlugin
 from server.routes.vk.plugins.instagram import VKFindInstagramPlugin
 from server.routes.vk.plugins.interests import VKUserInterestsPlugin
@@ -16,7 +17,8 @@ from worker.helpers.tools import assert_imported_once
 
 _plugins = {VKGroupsPlugin, VKUserInput, VKGroupsInput, VKSpecialFriendsPlugin, VKRelativesPlugin,
             VKFriendsInput, VKUserInterestsPlugin, VKFriendsLonersPlugin, VKUserFriendsPlugin,
-            VKUserPlugin, VKCommunityPlugin, VKUserZodiacPlugin, VKUserFansPlugin, UserDescribePlugin, VKFindInstagramPlugin}
+            VKUserPlugin, VKCommunityPlugin, VKUserZodiacPlugin, VKUserFansPlugin, UserDescribePlugin, VKFindInstagramPlugin,
+            IGUserInput, IGUserPlugin}
 
 assert_imported_once()
 
