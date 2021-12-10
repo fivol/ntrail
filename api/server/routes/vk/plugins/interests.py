@@ -5,15 +5,16 @@ from core import VKUser
 from server.helpers.utils import absolute_path
 from server.plugin.plugin import BasePlugin
 from server.routes.vk.features.tf_idf import IDFCalculator
-from server.routes.vk.plugins.tokenizer import Morphology
+from server.routes.vk.features.tokenizer import Morphology
 from worker.ctx import get_context
 
 
 interests_filename = '../data/interests.txt'
 
 
-class UserInterestsPlugin(BasePlugin):
+class VKUserInterestsPlugin(BasePlugin):
     name = 'user-interests'
+    namespace = 'vk'
 
     # Соотетствие названия интереса списку тегов, его характеризующих
     _interests_map: list[tuple[str, set[str]]] = None
@@ -102,4 +103,4 @@ class UserInterestsPlugin(BasePlugin):
 
 ctx = get_context()
 nltk.download('punkt')
-UserInterestsPlugin._read_data()  # noqa
+VKUserInterestsPlugin._read_data()  # noqa

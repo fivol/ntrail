@@ -9,8 +9,9 @@ from worker import VKError
 MAX_SIBLING_AGE_DIFF = 7
 
 
-class RelativesPlugin(BasePlugin):
+class VKRelativesPlugin(BasePlugin):
     name = 'relatives'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
         super().__init__(**kwargs)
@@ -23,8 +24,7 @@ class RelativesPlugin(BasePlugin):
     async def init(self):
         user = UserDescribePlugin(self._user)
         await user.init()
-        self._age = (await user.age()) or {}
-        print('user age', self._age)
+        self._age = user.age() or {}
 
     @classmethod
     def _is_same_surname(cls, s1: str, s2: str):

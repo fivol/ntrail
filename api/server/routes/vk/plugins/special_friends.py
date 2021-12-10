@@ -66,11 +66,12 @@ class ScoredValues:
         return repr(self.ordered_items)
 
 
-class SpecialFriendsPlugin(BasePlugin):
+class VKSpecialFriendsPlugin(BasePlugin):
     name = 'special-friends'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
-        super(SpecialFriendsPlugin, self).__init__(**kwargs)
+        super(VKSpecialFriendsPlugin, self).__init__(**kwargs)
         self._user = user
 
     async def response(self) -> list:

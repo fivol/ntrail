@@ -6,11 +6,12 @@ from server.plugin.plugin import BasePlugin
 from worker import VKError
 
 
-class UserFansPlugin(BasePlugin):
+class VKUserFansPlugin(BasePlugin):
     name = 'user-fans'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
-        super(UserFansPlugin, self).__init__(**kwargs)
+        super(VKUserFansPlugin, self).__init__(**kwargs)
         self._user = user
 
     async def response(self) -> typing.Optional[list]:

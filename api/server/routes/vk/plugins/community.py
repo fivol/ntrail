@@ -65,6 +65,7 @@ class VKCommunityPlugin(BasePlugin):
     """
 
     name = 'community'
+    namespace = 'vk'
     _proxy_attributes = ['name', 'size']
 
     def __init__(self, community: VKCommunity, **kwargs):

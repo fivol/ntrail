@@ -9,6 +9,7 @@ logger = logging.getLogger()
 
 class VKUserFeatures(BasePlugin):
     name = 'user-features'
+    namespace = 'vk'
 
     @staticmethod
     def _get_sites(site_string):

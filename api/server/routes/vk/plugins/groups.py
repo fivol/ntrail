@@ -3,6 +3,7 @@ from server.plugin.plugin import BasePlugin
 
 class VKGroupsPlugin(BasePlugin):
     name = 'groups'
+    namespace = 'vk'
 
     def result(self):
         user = self.get_plugin_result('user')

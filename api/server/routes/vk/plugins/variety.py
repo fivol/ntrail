@@ -5,8 +5,9 @@ import math
 from server.plugin.plugin import BasePlugin
 
 
-class EntitiesGraphPlugin(BasePlugin):
+class VKEntitiesGraphPlugin(BasePlugin):
     name = 'graph'
+    namespace = 'vk'
 
     def connectedness(self):
         trs = nx.triangles(self.graph)

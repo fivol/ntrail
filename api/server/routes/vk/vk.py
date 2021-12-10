@@ -1,10 +1,6 @@
-import asyncio
 import logging
-
 from fastapi import APIRouter, Query, HTTPException, status, Depends
-
 from server.routes.request import execute_api_request, common_parameters
-from server.types import ResponseVerbose
 
 from worker import VKError
 
@@ -26,7 +22,8 @@ async def vk_user(commons: dict = Depends(common_parameters),
     # TODO Do not initialize all sessions for each request
     kwargs = {'user': user}
     try:
-        return await execute_api_request(kwargs=kwargs, input_plugins=['user'], options=commons['options'])
+        return await execute_api_request(kwargs=kwargs, input_plugins=['user'], options=commons['options'],
+                                         namespace='vk')
     except VKError as e:
         raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,
                             detail={'code': e.code, 'type': e.type.name, 'message': e.msg})

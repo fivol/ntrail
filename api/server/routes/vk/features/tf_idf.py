@@ -1,11 +1,8 @@
-import math
 from collections import Counter, defaultdict
-from pprint import pprint
 
 from core.helpers.utils import counter_top
-from server.helpers.tied_value import TiedValue
 from server.helpers.utils import absolute_path
-from server.routes.vk.plugins.tokenizer import ContextTiedValue
+from server.routes.vk.features.tokenizer import ContextTiedValue
 
 words_filename = '../data/russian_words.txt'
 stop_words_filename = '../data/stop_words.txt'

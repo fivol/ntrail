@@ -5,11 +5,12 @@ from server.plugin.plugin import BasePlugin
 from server.routes.vk.plugins.community import VKCommunityPlugin
 
 
-class UserFriendsPlugin(BasePlugin):
+class VKUserFriendsPlugin(BasePlugin):
     name = 'user-friends'
+    namespace = 'vk'
 
     def __init__(self, user, **kwargs):
-        super(UserFriendsPlugin, self).__init__(**kwargs)
+        super(VKUserFriendsPlugin, self).__init__(**kwargs)
         self._user = user
         self._friends: typing.Optional[VKCommunityPlugin] = None
         self._processed = None

@@ -21,9 +21,9 @@ async def common_parameters(token: str = Query(None, title='API токен'),
     }
 
 
-async def execute_api_request(kwargs, input_plugins, options):
+async def execute_api_request(kwargs, input_plugins, options, namespace=None):
     try:
-        manager = PluginManager(kwargs=kwargs, input_plugins=input_plugins, options=options)
+        manager = PluginManager(kwargs=kwargs, input_plugins=input_plugins, options=options, namespace=namespace)
         result = await manager.execute()
         logger.debug('Response: %s', result)
         return result

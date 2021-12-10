@@ -4,11 +4,12 @@ from core import VKUser
 from server.plugin.plugin import BasePlugin
 
 
-class UserZodiacPlugin(BasePlugin):
+class VKUserZodiacPlugin(BasePlugin):
     name = 'user-zodiac'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
-        super(UserZodiacPlugin, self).__init__(**kwargs)
+        super(VKUserZodiacPlugin, self).__init__(**kwargs)
         self._user = user
 
     zodiac_signs = [
@@ -71,4 +72,4 @@ class UserZodiacPlugin(BasePlugin):
             'emoji': emoji
         }
 
-UserZodiacPlugin._calculate_zodiac_dict() # noqa
+VKUserZodiacPlugin._calculate_zodiac_dict() # noqa

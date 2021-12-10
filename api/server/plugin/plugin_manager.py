@@ -13,22 +13,24 @@ logger = logging.getLogger(__name__)
 class PluginManager:
     _plugins_cls: dict[str, type(Plugin)] = {}
 
-    def __init__(self, kwargs: dict, input_plugins: list[str], options: list[str]):
+    def __init__(self, kwargs: dict, input_plugins: list[str], options: list[str], namespace=None):
         self._kwargs = kwargs or {}
         self._options = options
         self._input_plugins = input_plugins
+        self._namespace = namespace
 
         self._responses = {}
 
-    @staticmethod
-    def _plugin_name(plugin):
-        return PluginManager._full_plugin_name(plugin.name, is_input=issubclass(plugin, InputPlugin))
+    @classmethod
+    def _plugin_name(cls, plugin):
+        return cls._full_plugin_name(plugin.name, is_input=issubclass(plugin, InputPlugin), namespace=plugin.namespace)
 
-    @staticmethod
-    def _full_plugin_name(name: str, is_input: bool) -> str:
+    @classmethod
+    def _full_plugin_name(cls, name: str, is_input: bool, namespace) -> str:
+        namespace = namespace or 'none'
         if is_input:
-            return f'input.{name}'
-        return f'plugin.{name}'
+            return f'input.{namespace}{name}'
+        return f'plugin.{namespace}.{name}'
 
     @classmethod
     def register_plugin(cls, plugin: type(Plugin)):
@@ -78,7 +80,10 @@ class PluginManager:
         items = option.split('.')
         if len(items) == 1:
             plugin = items[0]
-            response[plugin] = result
+            if not isinstance(result, dict):
+                response[plugin] = result
+            else:
+                response[plugin] = {**response.get(plugin, {}), **result}
         elif len(items) == 2:
             plugin, attr = items
             if plugin in response:
@@ -120,7 +125,7 @@ class PluginManager:
 
     def get_plugin(self, name, is_input=False):
         try:
-            return self._plugins_cls[self._full_plugin_name(name, is_input)]
+            return self._plugins_cls[self._full_plugin_name(name, is_input, namespace=self._namespace)]
         except KeyError:
             raise WrongInputError(f'Unknown plugin: {name}')
 

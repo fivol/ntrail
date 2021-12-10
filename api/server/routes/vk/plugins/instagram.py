@@ -12,11 +12,12 @@ from worker.instagramscraper.exceptions import *
 logger = logging.getLogger(__name__)
 
 
-class FindInstagramPlugin(BasePlugin):
+class VKFindInstagramPlugin(BasePlugin):
     name = 'find-instagram'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
-        super(FindInstagramPlugin, self).__init__(**kwargs)
+        super(VKFindInstagramPlugin, self).__init__(**kwargs)
         self._user = user
 
     @classmethod

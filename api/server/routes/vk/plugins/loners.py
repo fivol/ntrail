@@ -2,11 +2,12 @@ from core import VKUser, VKCommunity
 from server.plugin.plugin import BasePlugin
 
 
-class VkFriendsLonersPlugin(BasePlugin):
+class VKFriendsLonersPlugin(BasePlugin):
     name = 'friends-loners'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
-        super(VkFriendsLonersPlugin, self).__init__(**kwargs)
+        super(VKFriendsLonersPlugin, self).__init__(**kwargs)
         self._user = user
 
     async def response(self) -> dict:

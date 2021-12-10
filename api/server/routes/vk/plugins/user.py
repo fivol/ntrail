@@ -6,11 +6,12 @@ from core import VKUser
 from core.constants import AccountStatus, NO_AVA_IMG
 from server.plugin.plugin import InputPlugin, BasePlugin
 from server.routes.vk.features.register_date import UserRegistrationDate
-from server.routes.vk.plugins.friends import UserFriendsPlugin
+from server.routes.vk.plugins.friends import VKUserFriendsPlugin
 
 
 class VKUserInput(InputPlugin):
     name = 'user'
+    namespace = 'vk'
 
     @classmethod
     async def read(cls, user: str, **kwargs) -> dict:
@@ -21,6 +22,7 @@ class VKUserInput(InputPlugin):
 
 class VKFriendsInput(InputPlugin):
     name = 'friends'
+    namespace = 'vk'
 
     @classmethod
     async def read(cls, user: VKUser, **kwargs) -> dict:
@@ -31,6 +33,7 @@ class VKFriendsInput(InputPlugin):
 
 class VKGroupsInput(InputPlugin):
     name = 'user-groups'
+    namespace = 'vk'
 
     @classmethod
     def read(cls, user: VKUser, **kwargs) -> dict:
@@ -41,6 +44,7 @@ class VKGroupsInput(InputPlugin):
 
 class VKUserPlugin(BasePlugin):
     name = 'user'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
         super().__init__(**kwargs)
@@ -147,12 +151,13 @@ class VKUserPlugin(BasePlugin):
 
 class UserDescribePlugin(BasePlugin):
     name = 'user-describe'
+    namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
         super(UserDescribePlugin, self).__init__(**kwargs)
         self._user = user
         self._user_plugin = VKUserPlugin(user=user)
-        self._friends_plugin = UserFriendsPlugin(self._user)
+        self._friends_plugin = VKUserFriendsPlugin(self._user)
 
     async def init(self):
         await self._user_plugin.init()

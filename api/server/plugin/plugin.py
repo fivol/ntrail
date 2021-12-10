@@ -8,7 +8,12 @@ from server.types import ResponseVerbose
 
 
 class Plugin:
+    """Base class for all api plugins"""
+
+    """Name of plugin in the same namespace"""
     name: str
+    """Service for example, plugins with different namespace can be accessed by name"""
+    namespace: str
 
 
 class BasePlugin(Plugin):
