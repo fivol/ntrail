@@ -133,7 +133,7 @@ class Instagram:
         )
 
     async def _get_json(self, url, *args, **kwargs) -> typing.Optional[dict]:
-        logger.info('Instagram request: %s %s', args, kwargs)
+        logger.info('Instagram request: %s %s', url, kwargs)
         async with self.__areq.get(url, *args, **kwargs,
                                    headers=self.generate_headers(self.cookie),
                                    cookies=self.cookie) as response:
@@ -235,6 +235,7 @@ class Instagram:
         if self.user_agent is not None:
             headers['user-agent'] = self.user_agent
 
+            # TODO Generate GIS token from variables, see original docs
             if gis_token is not None:
                 headers['x-instagram-gis'] = gis_token
 
@@ -350,16 +351,6 @@ class Instagram:
 
         return hashtags
 
-    def get_medias(self, username, count=20, maxId=''):
-        """
-        :param username: instagram username
-        :param count: the number of how many media you want to get
-        :param maxId: used to paginate
-        :return: list of Media
-        """
-        account = self.get_account(username)
-        return self.get_medias_by_user_id(account.identifier, count, maxId)
-
     def get_medias_by_code(self, media_code):
         """
         :param media_code: media code
@@ -368,67 +359,23 @@ class Instagram:
         url = endpoints.get_media_page_link(media_code)
         return self.get_media_by_url(url)
 
-    def get_medias_by_user_id(self, id, count=12, max_id=''):
-        """
-        :param id: instagram account id
-        :param count: the number of how many media you want to get
-        :param max_id: used to paginate
-        :return: list of Media
-        """
-        index = 0
-        medias = []
-        is_more_available = True
+    @replace_exception({KeyError: AccessUnknownBehaviorExceptions})
+    async def get_medias(self, id, count=12, end_cursor=''):
+        variables = {
+            'id': str(id),
+            'first': str(count),
+            'after': str(end_cursor)
+        }
 
-        while index < count and is_more_available:
+        data = await self._get_json(endpoints.get_account_medias_json_link(variables))
+        data = data['data']['user']['edge_owner_to_timeline_media']
+        page_info = data['page_info']
 
-            variables = {
-                'id': str(id),
-                'first': str(count),
-                'after': str(max_id)
-            }
-
-            headers = self.generate_headers(self.cookie,
-                                            self.__generate_gis_token(
-                                                variables))
-
-            time.sleep(self.sleep_between_requests)
-            response = self.__req.get(
-                endpoints.get_account_medias_json_link(variables),
-                headers=headers)
-
-            if not Instagram.HTTP_OK == response.status_code:
-                raise InstagramException.default(response.text,
-                                                 response.status_code)
-
-            arr = json.loads(response.text)
-
-            try:
-                nodes = arr['data']['user']['edge_owner_to_timeline_media'][
-                    'edges']
-            except KeyError:
-                return {}
-
-            for mediaArray in nodes:
-                if index == count:
-                    return medias
-
-                media = Media(mediaArray['node'])
-                medias.append(media)
-                index += 1
-
-            if not nodes or nodes == '':
-                return medias
-
-            max_id = \
-                arr['data']['user']['edge_owner_to_timeline_media'][
-                    'page_info'][
-                    'end_cursor']
-            is_more_available = \
-                arr['data']['user']['edge_owner_to_timeline_media'][
-                    'page_info'][
-                    'has_next_page']
-
-        return medias
+        return {
+            **page_info,
+            'count': data['count'],
+            'items': list(map(lambda node: node['node'], data['edges']))
+        }
 
     def get_tagged_medias_by_user_id(self, id, count=12, max_id=''):
         """
@@ -876,73 +823,19 @@ class Instagram:
 
         return Location(json_response['graphql']['location'])
 
-    def get_media_likes_by_code(self, code, count=10, max_id=None):
-        """
-        :param code:
-        :param count:
-        :param max_id:
-        :return:
-        """
-
-        remain = count
-        likes = []
-        index = 0
-        has_previous = True
-
-        # TODO: $index < $count (bug index getting to high since max_likes_per_request gets sometimes changed by instagram)
-
-        while (has_previous and index < count):
-            if (remain > self.MAX_LIKES_PER_REQUEST):
-                number_of_likes_to_receive = self.MAX_LIKES_PER_REQUEST
-                remain -= self.MAX_LIKES_PER_REQUEST
-                index += self.MAX_LIKES_PER_REQUEST
-            else:
-                number_of_likes_to_receive = remain
-                index += remain
-                remain = 0
-
-            variables = {
-                "shortcode": str(code),
-                "first": str(number_of_likes_to_receive),
-                "after": '' if not max_id else max_id
-            }
-
-            time.sleep(self.sleep_between_requests)
-
-            response = self.__req.get(
-                endpoints.get_last_likes_by_code(variables),
-                headers=self.generate_headers(self.cookie))
-
-            if not response.status_code == Instagram.HTTP_OK:
-                raise InstagramException.default(response.text, response.status_code)
-
-            jsonResponse = response.json()
-
-            nodes = jsonResponse['data']['shortcode_media']['edge_liked_by']['edges']
-
-            for likesArray in nodes:
-                like = Account(likesArray['node'])
-                likes.append(like)
-
-            has_previous = jsonResponse['data']['shortcode_media']['edge_liked_by']['page_info']['has_next_page']
-            number_of_likes = jsonResponse['data']['shortcode_media']['edge_liked_by']['count']
-            if count > number_of_likes:
-                count = number_of_likes
-
-            if len(nodes) == 0:
-                data = {}
-                data['next_page'] = max_id
-                data['accounts'] = likes
-
-                return data
-
-            max_id = jsonResponse['data']['shortcode_media']['edge_liked_by']['page_info']['end_cursor']
-
-        data = {}
-        data['next_page'] = max_id
-        data['accounts'] = likes
-
-        return data
+    async def get_media_likes(self, code, count=10, end_cursor=''):
+        variables = {
+            "shortcode": str(code),
+            "first": str(count),
+            "after": end_cursor
+        }
+        data = await self._get_json(endpoints.get_last_likes_by_code(variables))
+        data = data['data']['shortcode_media']['edge_liked_by']
+        return {
+            'count': data['count'],
+            **data['page_info'],
+            'items': list(map(lambda node: node['node'], data['edges']))
+        }
 
     @replace_exception({KeyError: AccessUnknownBehaviorExceptions})
     async def get_followers(self, account_id, count=20, end_cursor=''):

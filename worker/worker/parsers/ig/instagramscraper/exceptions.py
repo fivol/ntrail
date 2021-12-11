@@ -6,16 +6,21 @@ class InstagramException(Exception):
     All exception raised by this lib"""
     code = 500
 
-    def __init__(self, cookies=None, url=None, **kwargs):
+    def __init__(self, cookies=None, url=None, code=None, **kwargs):
         self.cookies = cookies
         self.url = url
+        self._code = code
 
     @classmethod
     def default(cls, code=500):
         return {
             404: InstagramNotFoundException,
+            400: InstagramNotFoundException,
             429: InstagramTooManyRequestsException
-        }.get(code, cls)()
+        }.get(code, cls)(code=code)
+
+    def __str__(self):
+        return f'InstagramException.default({self._code or self.code})'
 
 
 class InstagramAuthException(InstagramException):

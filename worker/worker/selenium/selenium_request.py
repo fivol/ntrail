@@ -11,8 +11,7 @@ class SeleniumRequest:
     def __init__(self):
         geckodriver = config.get('selenium.geckodriver')
         self.valid = geckodriver is not None
-        if self.valid:
-            self.driver = webdriver.Firefox(executable_path=geckodriver)
+        self.driver = webdriver.Firefox(executable_path=geckodriver)
 
     def block_get(self, url, cookies):
         self.driver.get(f'https://{urlparse(url).netloc}')

@@ -16,6 +16,7 @@ class UsageStat(BaseModel):
     rps: int
     last_usage: float
     usage_count: int = 0
+    in_use: bool = False
 
     def delay(self):
         return time() - self.last_usage
@@ -66,10 +67,12 @@ class SessionState:
         self._using_times.append(time())
         self.update_rps()
         self._stat.usage_count += 1
+        self._stat.in_use = True
 
     def notify_return(self):
         """Вызывается по возвращении в хранлище (SessionManager)"""
         self._stat.last_usage = time()
+        self._stat.in_use = False
 
     @classmethod
     @abstractmethod

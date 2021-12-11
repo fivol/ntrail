@@ -33,7 +33,8 @@ class AccountStatus:
 
 class AccountsAccess:
     @classmethod
-    async def get_access(cls, service: str, status: AccountStatus, type_=None, count=None, acquire=False):
+    async def get_access(cls, service: str, status: AccountStatus, type_=None, count=None, acquire=False,
+                         ids: list = None):
         async with db.acquire() as conn:
             async with conn.transaction() as tx:
                 where = (DBAccount.service == service) & (DBAccess.status == status)
@@ -41,6 +42,8 @@ class AccountsAccess:
                 where = where & is_free
                 if type_:
                     where = where & (DBAccess.type == type_)
+                if ids:
+                    where = (DBAccess.id.in_(ids))
 
                 query = select([DBAccess.id]).select_from(
                     DBAccess.join(DBAccount)).where(where).order_by(db.text('random()'))

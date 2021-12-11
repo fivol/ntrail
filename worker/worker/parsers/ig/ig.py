@@ -8,13 +8,13 @@ from worker.parsers.layers import items_getter, mapped_method, reliable_call
 from worker.parsers.parser import BaseParser
 from worker.session.session_manager import SessionManager
 
-
 assert_imported_once()
 
 
 @inject_methods_wrappers(method_logger(name=__name__), selenium_debugger, redis_cache, mapped_method)
 class IGMethods(BaseParser):
-    _api = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30)
+    _api = SessionManager(key_type='ig', controller=IgApiSession, requests_delay_min=10, requests_delay_max=30,
+                          exclusive_access=True)
 
     @classmethod
     @ignore_injection
@@ -41,9 +41,21 @@ class IGMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, paging_iterator(100))
-    async def following(cls, account_id, count, end_cursor=''):
+    async def wall(cls, account_id, count, end_cursor=''):
         async with await cls._api.get() as api:
-            return await api.get_following(account_id, count=count, end_cursor=end_cursor)
+            return await api.get_medias(account_id, count=count, end_cursor=end_cursor)
+
+    @classmethod
+    @decorate(reliable_call, items_getter, paging_iterator(100))
+    async def wall(cls, media_id, count, end_cursor=''):
+        async with await cls._api.get() as api:
+            return await api.get_likes(media_id, count=count, end_cursor=end_cursor)
+
+    @classmethod
+    @decorate(reliable_call, items_getter, paging_iterator(100))
+    async def likes(cls, code, count, end_cursor=''):
+        async with await cls._api.get() as api:
+            return await api.get_media_likes(code, count=count, end_cursor=end_cursor)
 
     @classmethod
     async def test(cls, arg):

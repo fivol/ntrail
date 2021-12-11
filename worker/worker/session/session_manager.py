@@ -1,9 +1,6 @@
 import asyncio
 import logging
 import random
-from sortedcontainers import SortedSet
-
-from worker.credentials.db import AccessStatus
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState, UsageStat
@@ -21,7 +18,7 @@ class SessionManager:
     """
 
     def __init__(self, key_type: str, controller: type(SessionState), max_rps=None,
-                 requests_delay_min: float = None, requests_delay_max: float = None):
+                 requests_delay_min: float = None, requests_delay_max: float = None, exclusive_access=False):
         logger.info('INIT session manager')
         self._session_controller = controller
 
@@ -32,6 +29,7 @@ class SessionManager:
         self._max_rps = max_rps
         self._requests_delay_min = requests_delay_min
         self._requests_delay_max = requests_delay_max
+        self._exclusive_access = exclusive_access
         self._stop_called = False
         self._stop_access_acquiring = False
 
@@ -75,6 +73,8 @@ class SessionManager:
             return bool(models)
 
     def _can_use_session(self, stat: UsageStat):
+        if self._exclusive_access and stat.in_use:
+            return False
         if not stat.usage_count:
             return True
         if self._max_rps:
@@ -109,7 +109,7 @@ class SessionManager:
         if isinstance(action, SessionRemove):
             self._active_sessions.remove(session)
             await Credentials.return_access([session.key], error=action.access_status)
-            logger.error('SESSION REMOVING, status: %s', action.access_status)
+            logger.warning('SESSION REMOVING, status: %s', action.access_status)
         # TODO SessionWait
 
     async def stop(self):
