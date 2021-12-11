@@ -36,5 +36,8 @@ class IGUserPlugin(BasePlugin):
 
     def response(self):
         return {
-            'name': self._user.full_name
+            'id': self._user.id,
+            'name': self._user.full_name,
+            'username': self._user.username,
+            'url': self._user.url
         }
