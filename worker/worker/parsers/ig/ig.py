@@ -47,12 +47,6 @@ class IGMethods(BaseParser):
 
     @classmethod
     @decorate(reliable_call, items_getter, paging_iterator(100))
-    async def wall(cls, media_id, count, end_cursor=''):
-        async with await cls._api.get() as api:
-            return await api.get_likes(media_id, count=count, end_cursor=end_cursor)
-
-    @classmethod
-    @decorate(reliable_call, items_getter, paging_iterator(100))
     async def likes(cls, code, count, end_cursor=''):
         async with await cls._api.get() as api:
             return await api.get_media_likes(code, count=count, end_cursor=end_cursor)
