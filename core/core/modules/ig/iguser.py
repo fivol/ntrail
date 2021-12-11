@@ -1,6 +1,8 @@
 import re
 
+from core.helpers.utils import init_object_props
 from core.module.single_entity import SingleEntity
+from core.modules.ig.igpost import IGPost
 from pycommon.decors import cache_method_ignore_args
 from worker import IGMethods
 
@@ -18,18 +20,20 @@ class IGUser(SingleEntity):
 
     def __init__(self, user):
         super().__init__()
+        # Basic
         self.id = None
         self.username = None
         self.full_name = None
         self.profile_pic_url = None
+        self.is_private = False
+        self.is_verified = False
+        # Advanced
         self.profile_pic_url_hd = None
         self.biography = None
         self.external_url = None
         self.follows_count = 0
         self.followed_by_count = 0
         self.media_count = 0
-        self.is_private = False
-        self.is_verified = False
         self.medias = []
         self.blocked_by_viewer = False
         self.country_block = False
@@ -53,7 +57,7 @@ class IGUser(SingleEntity):
         elif isinstance(user, dict):
             # TODO short data and full data
             self._data = user
-            self._init(user)
+            init_object_props(self, user)
         else:
             raise TypeError(f'Wrong user type: {type(user)}, {user}')
 
@@ -64,7 +68,7 @@ class IGUser(SingleEntity):
     @cache_method_ignore_args
     async def data(self) -> dict:
         data = await IGMethods.account(self.id)
-        self._init(data)
+        init_object_props(self, data)
         return data
 
     async def followers(self, count=300):
@@ -74,6 +78,10 @@ class IGUser(SingleEntity):
     async def following(self, count=300):
         from core.modules.ig.igcommunity import IGCommunity
         return IGCommunity(await IGMethods.following(self.id, count=count))
+
+    async def wall(self, count=20) -> list[IGPost]:
+        posts = await IGMethods.wall(self.id, count=count)
+        return [IGPost(post) for post in posts]
 
     async def valid(self):
         pass

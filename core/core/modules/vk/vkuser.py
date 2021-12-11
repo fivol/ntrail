@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import re
 
-from core.helpers.utils import init_with_result
+from core.helpers.utils import init_with_result, init_object_props
 from core.modules.vk.vkphoto import VKPhotos
 from core.constants import AccountStatus
 from core.modules.vk.vkpost import VKPosts
@@ -52,7 +52,7 @@ class VKUser(SingleEntity):
             self.id = user
         elif isinstance(user, dict):
             self.id = user['id']
-            self._init(user)
+            init_object_props(self, user)
             self._data = user
         elif user is not None:
             raise TypeError('Unknown user type', type(user))

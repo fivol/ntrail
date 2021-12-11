@@ -7,10 +7,9 @@ from abc import abstractmethod, ABCMeta
 
 from core.helpers.exporter import JsonWriter, CsvWriter, DictExporter, ListExporter
 from core.helpers.utils import *
-from core.module.initializer_model import InitializerModel
 
 
-class AnyEntity(InitializerModel, metaclass=ABCMeta):
+class AnyEntity(metaclass=ABCMeta):
 
     @property
     @abstractmethod

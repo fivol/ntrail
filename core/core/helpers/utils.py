@@ -38,7 +38,15 @@ def init_with_result(method):
     @wraps(method)
     async def wrapper(self, *args, **kwargs):
         result = await method(self, *args, **kwargs)
-        self._init(result)
+        init_object_props(self, result)
         return result
 
     return wrapper
+
+
+def init_object_props(self, props):
+    for key, value in props.items():
+        if key.startswith('_'):
+            continue
+        if hasattr(self, key) and getattr(self, key) is None:
+            setattr(self, key, value)
