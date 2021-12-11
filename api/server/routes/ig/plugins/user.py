@@ -1,5 +1,7 @@
 from core import IGUser
+from server.exceptions import WrongInputError
 from server.plugin.plugin import InputPlugin, BasePlugin
+from worker.parsers.exceptions import AccessApiException
 
 
 class IGUserInput(InputPlugin):
@@ -8,9 +10,12 @@ class IGUserInput(InputPlugin):
 
     @classmethod
     async def read(cls, user: str, **kwargs) -> dict:
-        return {
-            'user': await IGUser.create(user)
-        }
+        try:
+            return {
+                'user': await IGUser.create(user)
+            }
+        except AccessApiException:
+            raise WrongInputError('Such user does not exists')
 
 
 class IGUserPlugin(BasePlugin):

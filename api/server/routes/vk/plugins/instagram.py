@@ -8,6 +8,7 @@ from server.plugin.plugin import BasePlugin, call_plugin
 from server.routes.vk.features.name_compare import NameComparator
 from server.routes.vk.plugins.user import UserDescribePlugin, VKUserPlugin
 from worker.parsers.exceptions import AccessApiException
+from worker.parsers.ig.instagramscraper.exceptions import InstagramException
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ class VKFindInstagramPlugin(BasePlugin):
 
         followers = list(filter(lambda x: bool(x[0]), followers))
         logger.debug('Parse %s instagram accounts to grep follower', len(followers))
+        if not followers:
+            logger.warning('Accounts not found')
+            return []
         followers_butch = Counter()
         follower_score = defaultdict(set)
         for user_followers, vk_id in followers:

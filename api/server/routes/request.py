@@ -31,7 +31,7 @@ async def execute_api_request(kwargs, input_plugins, options, namespace=None):
         logger.exception('ServerError')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     except WrongInputError as e:
-        logger.exception('WrongInputError')
+        logger.info('WrongInputError')
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:
         logger.exception('Unknown server exception')
