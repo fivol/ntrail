@@ -12,8 +12,28 @@ from pycommon.decors import cache_method_ignore_args
 class ManyEntities(AnyEntity, metaclass=ABCMeta):
     _single_media_cls = None
 
-    def __init__(self, *args, **kwargs):
-        self.nodes: list = []
+    def __init__(self, items=None, *args, **kwargs):
+        self.nodes = []
+        if not items:
+            return
+        if isinstance(items, Counter):
+            # TODO This line just affect counter() call
+            self._counter = items
+            items = list(items.keys())
+
+        if items:
+            first = items[0]
+            if isinstance(first, int) or isinstance(first, str):
+                self.nodes = items
+            elif isinstance(first, dict):
+                self.nodes = [item['id'] for item in items]
+                self._data = items
+            elif isinstance(first, self._single_media_cls):
+                self.nodes = [item.id for item in items]
+                if hasattr(first, '_data'):
+                    self._data = [item._data for item in items]
+            else:
+                raise ValueError
 
     @property
     def size(self):
@@ -35,11 +55,6 @@ class ManyEntities(AnyEntity, metaclass=ABCMeta):
 
     def select(self, count=None, break_point=None, shuffle=False):
         assert count or break_point
-        if shuffle and count:
-            nodes = self.nodes
-            random.shuffle(nodes)
-            nodes = self.nodes[:count]
-            return self.__class__(nodes)
 
         if not count:
             return self.__class__(Counter(dict(counter_top(self.counter().most_common(), break_point))))

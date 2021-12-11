@@ -41,21 +41,14 @@ class VKUser(SingleEntity):
         return cls(user=user_id, status=status)
 
     def __init__(self, user, status=None, **kwargs):
-        super().__init__(**kwargs)
+
         self._status = status
         self.id = None
         self.screen_name = None
         self.first_name = None
         self.last_name = None
         self.sex = None
-        if isinstance(user, int):
-            self.id = user
-        elif isinstance(user, dict):
-            self.id = user['id']
-            init_object_props(self, user)
-            self._data = user
-        elif user is not None:
-            raise TypeError('Unknown user type', type(user))
+        super().__init__(user)
 
     @staticmethod
     def _extract_username(url):

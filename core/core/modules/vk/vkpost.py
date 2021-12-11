@@ -9,11 +9,10 @@ from worker import VKMethods
 
 class VKPost(MediaObject):
     def __init__(self, post):
-        super().__init__()
         self.type = 'post'
+        super().__init__(post)
         if isinstance(post, dict):
             self.id = f'{post["owner_id"]}_{post["id"]}'
-            self._data = post
         elif isinstance(post, str):
             self.id = post
         else:
@@ -65,31 +64,11 @@ class VKPosts(ManyEntities):
     _single_media_cls = VKPost
 
     def __init__(self, posts):
-        super().__init__()
-        assert isinstance(posts, list)
-        self.nodes = []
-        if not posts:
-            self.nodes = []
-        else:
-            if isinstance(posts[0], str):
-                self.nodes = posts
-            elif isinstance(posts[0], VKPost):
-                self.nodes = [post.id for post in posts]
-            elif isinstance(posts[0], dict):
-                self.posts_dicts = posts
-                self.nodes = [VKPost(post).id for post in posts]
-            else:
-                raise TypeError('Wrong posts type', type(posts))
-
-    def name(self):
-        return ''
+        super().__init__(posts)
 
     @cache
     def data(self, force=False, full=True) -> list:
         return VKMethods.posts_ids.sync_map(self.nodes)
-
-    def summary(self) -> dict:
-        return {}
 
     def connections(self, **kwargs) -> dict[list]:
         pass

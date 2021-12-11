@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import hashlib
 
+from core.helpers.utils import init_object_props
 from core.module.any_entity import AnyEntity
 
 
@@ -11,8 +12,19 @@ class SingleEntity(AnyEntity):
     It must be real class to construct it
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, item, *args, **kwargs):
         self.id = None
+        if isinstance(item, int) or isinstance(item, str) and item.isnumeric():
+            self.id = item
+        elif isinstance(item, dict):
+            # TODO short data and full data
+            self._data = item
+            init_object_props(self, item)
+        elif isinstance(item, self.__class__):
+            self._data = item._data
+            init_object_props(self, item._data)
+        else:
+            raise TypeError(f'Wrong user type: {type(item)}, {item}')
 
     @property
     @abstractmethod

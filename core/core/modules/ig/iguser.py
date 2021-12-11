@@ -19,7 +19,6 @@ class IGUser(SingleEntity):
             return cls(user)
 
     def __init__(self, user):
-        super().__init__()
         # Basic
         self.id = None
         self.username = None
@@ -52,14 +51,7 @@ class IGUser(SingleEntity):
         self.requested_by_viewer = False
         self.connected_fb_page = None
 
-        if isinstance(user, int) or isinstance(user, str) and user.isnumeric():
-            self.id = user
-        elif isinstance(user, dict):
-            # TODO short data and full data
-            self._data = user
-            init_object_props(self, user)
-        else:
-            raise TypeError(f'Wrong user type: {type(user)}, {user}')
+        super().__init__(user)
 
     @property
     def url(self):
@@ -84,7 +76,7 @@ class IGUser(SingleEntity):
         return [IGPost(post) for post in posts]
 
     async def valid(self):
-        pass
+        return isinstance(self.username, str) and self.username
 
     def status(self):
         pass
