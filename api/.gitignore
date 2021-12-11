@@ -11,3 +11,4 @@ venv/
 *.png
 .DS_Store
 .*.json
+*.log
