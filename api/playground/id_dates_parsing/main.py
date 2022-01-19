@@ -54,6 +54,8 @@ async def main():
 
     bunch_size = 500
     for i in trange(start_from, max_id, step * bunch_size):
+        await asyncio.sleep(0.01)
+        continue
         dates = await get_pages_dates(list(range(i, i + bunch_size * step, step)))
         if not dates:
             continue
