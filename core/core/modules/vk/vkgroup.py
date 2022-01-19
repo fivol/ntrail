@@ -3,7 +3,6 @@ import re
 import typing
 
 from core.constants import GroupStatus
-from core.module.layers import public_object_method
 from core.module.single_entity import SingleEntity
 from worker import VKMethods
 
@@ -13,7 +12,6 @@ logger = logging.getLogger()
 class VKGroup(SingleEntity):
 
     def __init__(self, group, **kwargs):
-        super().__init__()
         self.id = None
         if isinstance(group, int):
             self.id = group
@@ -22,6 +20,7 @@ class VKGroup(SingleEntity):
             self._data = group
         elif group is not None:
             raise TypeError('VKGroup wrong type', type(group))
+        super().__init__(group, **kwargs)
 
     @classmethod
     async def create(cls, group):

@@ -5,7 +5,6 @@ from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
 from core.module.many_entities import ManyEntities
 from core.modules.vk.media_object import MediaObject
-from core.module.layers import public_object_method
 
 logger = logging.getLogger('vk-photo')
 
@@ -34,10 +33,6 @@ class VKAlbum(MediaObject):
     @property
     def valid(self):
         return True
-
-    @property
-    def name(self):
-        return f'size: {align_string(self.full_data["size"], 4)} {self.full_data["title"]}'
 
 
 class VKAlbums(ManyEntities):
@@ -91,7 +86,6 @@ class VKPhoto(MediaObject):
         return 'https://vk.com/photo' + self.id
 
     @property
-    @public_object_method
     def source(self):
         return None
         # return (await self.data())['sizes'][-1]['url']

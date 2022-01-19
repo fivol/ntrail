@@ -12,7 +12,6 @@ from worker.parsers.vk.exceptions import VKErrorType
 
 from worker.parsers.exceptions import AccessApiException
 from worker import VKMethods, VKError
-from core.module.layers import public_object_method
 from core.module.single_entity import SingleEntity
 
 logger = logging.getLogger('vk-user')
@@ -126,7 +125,6 @@ class VKUser(SingleEntity):
     async def data(self) -> dict:
         return (await VKMethods.users([self.id]))[0]
 
-    @public_object_method
     async def posts(self, all_=False) -> VKPosts:
         return VKPosts(await VKMethods.posts(self.id, all_=all_))
 

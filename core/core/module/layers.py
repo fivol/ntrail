@@ -1,28 +1,17 @@
 import logging
 from functools import wraps
 
+from core.helpers.utils import init_object_props
+from pycommon.decors import cache_method_ignore_args
+
 logger = logging.getLogger()
 
 
-def public_object_method(method):
-    """Method valid and public"""
+def data_method_decorator(method):
+    @cache_method_ignore_args
     @wraps(method)
-    async def wrapper(obj, *args, **kwargs):
-        if not await obj.valid():
-            logger.warning("This object isn't accessible (maybe private), %s.%s",
-                           obj.__class__.__name__, method.__name__)
-            raise AssertionError('Object is not public')
-        return await method(obj, *args, **kwargs)
-
-    return wrapper
-
-
-def valid_object_method(method):
-    @wraps(method)
-    async def wrapper(obj, *args, **kwargs):
-        if not obj.valid:
-            logger.warning("This object isn't valid! -> method %s in class %s can't be used.",
-                           obj.__class__.__name__, method.__name__)
-            raise AssertionError('Object is not valid')
-        return await method(obj, *args, **kwargs)
+    async def wrapper(self):
+        result = await method(self)
+        init_object_props(self, result)
+        return result
     return wrapper

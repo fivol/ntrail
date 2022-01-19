@@ -1,6 +1,7 @@
 import re
 
 from core.helpers.utils import init_object_props
+from core.module.layers import data_method_decorator
 from core.module.single_entity import SingleEntity
 from core.modules.ig.igpost import IGPost
 from pycommon.decors import cache_method_ignore_args
@@ -57,11 +58,9 @@ class IGUser(SingleEntity):
     def url(self):
         return f'https://instagram.com/{self.username}/'
 
-    @cache_method_ignore_args
+    @data_method_decorator
     async def data(self) -> dict:
-        data = await IGMethods.account(self.id)
-        init_object_props(self, data)
-        return data
+        return await IGMethods.account(self.id)
 
     async def followers(self, count=300):
         from core.modules.ig.igcommunity import IGCommunity
