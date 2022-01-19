@@ -69,6 +69,7 @@ class VKUser(SingleEntity):
     async def wall_photos(self):
         return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='wall', all_=True))
 
+    @cache_method_ignore_args
     async def status(self):
         if self._status:
             return self._status

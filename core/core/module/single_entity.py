@@ -14,6 +14,7 @@ class SingleEntity(AnyEntity):
     id = None
 
     def __init__(self, item, *args, **kwargs):
+        self._status = kwargs.get('status')
         if isinstance(item, int) or isinstance(item, str) and item.isnumeric():
             self.id = item
         elif isinstance(item, dict):

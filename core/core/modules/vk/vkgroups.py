@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from core.helpers.utils import init_with_result
 from core.modules.vk.vkgroup import VKGroup
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
@@ -19,25 +20,7 @@ class VKGroups(ConnectedEntities):
     _single_media_cls = VKGroup
 
     def __init__(self, groups=None, target=None, source=None, **kwargs):
-        super().__init__()
-        self._target = target
-        self._source = source
-        self._main = None
-
-        if isinstance(groups, Counter):
-            self._counter = groups
-            self.nodes = list(groups)
-        elif isinstance(groups, list) or isinstance(groups, set):
-            groups = list(unique_everseen(groups))
-            if not groups:
-                return
-            if isinstance(groups[0], int):
-                self.nodes = groups
-            else:
-                raise ValueError('Unknown nodes type for groups')
-
-        else:
-            raise TypeError('Unknown group init type')
+        super().__init__(groups, **kwargs)
 
     def split_components(self):
         return sorted([VKGroups(comp) for comp in nx.connected_components(self.graph)],
@@ -54,6 +37,7 @@ class VKGroups(ConnectedEntities):
         from .vkcommunity import VKCommunity
         return VKCommunity(members_ids, target='members', main=self.objects()[0])
 
+    @cache_method_ignore_args
     async def data(self) -> list:
         return await VKMethods.groups_ids(self.nodes)
 
