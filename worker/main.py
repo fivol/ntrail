@@ -22,7 +22,9 @@ async def main():
         # 5749832861
         # me 12638820603
         # nikita 8368846410
-        await IGMethods.wall(12638820603)
+        # pprint(await VKMethods.posts(-172053584, count=1))
+        # pprint(await VKMethods.poll(owner_id=-172053584, poll_id=669155401))
+        pprint(await VKMethods.poll_votes(owner_id=-172053584, poll_id=669155401, answer_ids=[1913821986, 1913821987]))
 
 if __name__ == '__main__':
     asyncio.run(main())

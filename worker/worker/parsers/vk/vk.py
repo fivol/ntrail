@@ -1,3 +1,8 @@
+from collections import defaultdict
+
+from aiovk.exceptions import VkAPIError
+
+from worker.parsers.vk.exceptions import VKError
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
 from worker.parsers.layers import items_getter, mapped_method, reliable_call
@@ -51,39 +56,47 @@ class VKMethods(BaseParser):
     # To call any available api for example
 
     @classmethod
-    async def _call_api(cls, method, kwargs, apis):
+    async def _call_api(cls, method, kwargs, apis, runner=None):
+        if not runner:
+            async def runner(session_, method_, kwargs_):
+                return await session_(method_, **kwargs_, lang='ru')
         for i, api in enumerate(apis):
             try:
                 async with await api.get() as session:
-                    result = await session(method, **kwargs, lang='ru')
-                return result
+                    return await runner(session, method, kwargs)
+
             except RpsLimitException:
                 if i == len(apis) - 1:
                     raise
                 continue
 
     @classmethod
+    def _prepare_kwargs(cls, kwargs):
+        def handle_value(value):
+            if isinstance(value, list):
+                return ','.join(map(str, value))
+            return value
+
+        return {key: handle_value(value) for key, value in kwargs.items() if value}
+
+    @classmethod
     async def _run_query(cls, method, kwargs, apis, executable=False,
-                         only_user_access=False, **other):
+                         only_user_access=False, runner=None, **other):
         """
         Runs vk query.
         Tried to group queries to execute it in single vk api execute commands
         If not enough commands, do is without execute, just with calling api
         """
 
-        def handle_value(value):
-            if isinstance(value, list):
-                return ','.join(map(str, value))
-            return value
         kwargs.update({key: value for key, value in other.items() if not key.startswith('_') and not key.endswith('_')})
-        kwargs = {key: handle_value(value) for key, value in kwargs.items() if value}
+        kwargs = cls._prepare_kwargs(kwargs)
 
         if not executable or True:
-            response = await cls._call_api(method, kwargs, apis)
+            response = await cls._call_api(method, kwargs, apis, runner=runner)
         else:
             response = await cls._execute_pool.try_use_execute(method, kwargs, only_user_access)
             if response is None:
-                response = await cls._call_api(method, kwargs, apis)
+                response = await cls._call_api(method, kwargs, apis, runner=runner)
 
         return response
 
@@ -248,5 +261,50 @@ class VKMethods(BaseParser):
             'wall.getComments',
             {'owner_id': owner_id, 'post_id': post_id},
             [cls._app_api, cls._user_api],
+            executable=True, **kwargs
+        )
+
+    @classmethod
+    @decorate(reliable_call)
+    async def poll_votes(cls, owner_id: int, poll_id: int, answer_ids: list[int], **kwargs):
+        # https://dev.vk.com/method/polls.getVoters
+
+        async def runner(session, method, kwargs_):
+            offset = 0
+            count = 1000
+            votes = defaultdict(list)
+            while True:
+                try:
+                    res = await session(method, offset=offset, count=count, **kwargs_)
+                    will_offset = False
+                    for item in res:
+                        votes[item['answer_id']] += item['users']['items']
+                        if len(item['users']['items']) < item['users']['count']:
+                            will_offset = True
+                    if will_offset:
+                        offset += count
+                        continue
+                    return votes
+                except VkAPIError as e:
+                    if e.error_code == 253:
+                        await session('polls.addVote', owner_id=owner_id, poll_id=poll_id, answer_ids=str(answer_ids[0]))
+                        continue
+                    raise
+
+        result = await cls._run_query(
+            'polls.getVoters',
+            {'owner_id': owner_id, 'poll_id': poll_id, 'answer_ids': answer_ids},
+            [cls._user_api], **kwargs, executable=False, runner=runner)
+
+        return [{'answer_id': key, 'users': value} for key, value in result.items()]
+
+    @classmethod
+    @decorate(reliable_call)
+    async def poll(cls, owner_id: int, poll_id: int, **kwargs):
+        # https://dev.vk.com/method/polls.getById
+        return await cls._run_query(
+            'polls.getById',
+            {'owner_id': owner_id, 'poll_id': poll_id},
+            [cls._user_api],
             executable=True, **kwargs
         )
