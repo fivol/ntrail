@@ -64,7 +64,7 @@ class DB:
                         entity=entity
                     ).on_conflict_ignore().execute()
                 else:
-                    logger.warning('Too long key: %s size: %s', key, len(key))
+                    logger.warning('Too long key: {} size: {}', key, len(key))
 
     @classmethod
     def get_features_values(cls, target, names, size=None, count=200):

@@ -17,9 +17,9 @@ def get_items(func):
 
 def log_query(func):
     def wrapper(*args, **kwargs):
-        logger.info('Function: %s, %s %s', func.__name__, args, kwargs)
+        logger.info('Function: {}, {} {}', func.__name__, args, kwargs)
         result = func(*args, **kwargs)
-        logger.info('Result of %s is %s ', func.__name__, result)
+        logger.info('Result of {} is {} ', func.__name__, result)
         return result
     return wrapper
 
@@ -258,7 +258,7 @@ class VkCommon:
 
     @classmethod
     def search(cls, string, offset=0, limit=100, filters=''):
-        logger.debug('Search %s', string)
+        logger.debug('Search {}', string)
         params = {
             'offset': offset,
             'limit': limit,
@@ -272,7 +272,7 @@ class VkCommon:
         assert count > 0
         query_count = 1000
         queries_count = (count - 1) // query_count + 1
-        logger.debug('Get groups members %s', group_id)
+        logger.debug('Get groups members {}', group_id)
         assert isinstance(group_id, int)
         queries = APIQueries()
         group_id = str(group_id)

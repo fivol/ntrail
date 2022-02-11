@@ -13,8 +13,7 @@ from worker.parsers.vk.exceptions import VKErrorType
 from worker.parsers.exceptions import AccessApiException
 from worker import VKMethods, VKError
 from core.module.single_entity import SingleEntity
-
-logger = logging.getLogger('vk-user')
+from loguru import logger
 
 
 class VKUser(SingleEntity):
@@ -30,18 +29,19 @@ class VKUser(SingleEntity):
                 username = VKUser._extract_username(user)
                 user_dict = await VKMethods.resolve(username)
                 if not isinstance(user_dict, dict):
-                    logger.info('VKUser username does not exist "%s"', username)
+                    logger.info('VKUser username does not exist "{}"', username)
                     status = AccountStatus.ABSENT
                 elif user_dict.get('type') == 'user':
                     user_id = user_dict.get('object_id')
                 else:
-                    logger.info('VKUser username type is "%s"', user_dict.get('type'))
+                    logger.info('VKUser username type is "{}"', user_dict.get('type'))
                     status = AccountStatus.ABSENT
         return cls(user=user_id, status=status)
 
     def __init__(self, user, status=None, **kwargs):
-
-        self._status = status
+        logger.info('Construct user: {}, {}', user, status)
+        if status:
+            self._status = status
         self.id = None
         self.screen_name = None
         self.first_name = None
@@ -71,13 +71,15 @@ class VKUser(SingleEntity):
 
     @cache_method_ignore_args
     async def status(self):
-        if self._status:
-            return self._status
+        logger.debug('Calculating status')
         data = await self.data()
         # TODO Error handling
         if isinstance(data, VKError):
             if data.type == VKErrorType.UNKNOWN_USER:
                 self._status = AccountStatus.ABSENT
+            else:
+                self._status = AccountStatus.ABSENT
+                logger.warning('User status get error: {}', data)
         elif isinstance(data, dict):
             if 'deactivated' in data:
                 deactivated_status = data['deactivated']
@@ -86,7 +88,7 @@ class VKUser(SingleEntity):
                 elif deactivated_status == 'banned':
                     self._status = AccountStatus.BANNED
                 else:
-                    logger.warning('Unknown reason for user account deactivation: %s', deactivated_status)
+                    logger.warning('Unknown reason for user account deactivation: {}', deactivated_status)
                     self._status = AccountStatus.DELETED
             elif data.get('is_closed', False):
                 self._status = AccountStatus.PRIVATE
@@ -124,7 +126,9 @@ class VKUser(SingleEntity):
     @cache_method_ignore_args
     @init_with_result
     async def data(self) -> dict:
-        return (await VKMethods.users([self.id]))[0]
+        data = (await VKMethods.users([self.id]))[0]
+        logger.debug('Get data: {}', data)
+        return data
 
     async def posts(self, all_=False) -> VKPosts:
         return VKPosts(await VKMethods.posts(self.id, all_=all_))

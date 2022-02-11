@@ -30,12 +30,12 @@ class VKGroup(SingleEntity):
                 username = group
             group_resolved = await VKMethods.resolve(username)
             if not isinstance(group_resolved, dict):
-                logger.info('VKUser username does not exist "%s"', username)
+                logger.info('VKUser username does not exist "{}"', username)
                 status = GroupStatus.ABSENT
             elif group_resolved.get('type') in ['page', 'group', 'public']:
                 id_ = group_resolved.get('object_id')
             else:
-                logger.info('VKGroup username type is "%s"', group_resolved.get('type'))
+                logger.info('VKGroup username type is "{}"', group_resolved.get('type'))
                 status = GroupStatus.ABSENT
             group = VKGroup(id_, type_=group_resolved.get('type'), status=status)
             return group

@@ -18,7 +18,7 @@ def clear_list(list_obj, unique=True):
 
 def name_to_gent(name):
     if not name:
-        logger.warning('Name type: %s, %s in name_to_gent', type(name), name)
+        logger.warning('Name type: {}, {} in name_to_gent', type(name), name)
         return str(name)
     word = morph.parse(name)[0]
     try:
