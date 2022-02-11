@@ -6,8 +6,8 @@ from worker.credentials.models import bind
 from worker.parsers.vk.vk import VKMethods
 from worker.ctx import get_context
 from worker.helpers import caching
+from loguru import logger
 
-logger = logging.getLogger(__name__)
 
 parsers = [VKMethods, IGMethods]
 

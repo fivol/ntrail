@@ -25,7 +25,7 @@ def partition_split(segment_size):
             if len(items) <= segment_size:
                 return await method(cls, items, **kwargs)
             items_parts = split_list(items, segment_size=segment_size)
-            logger.debug('Split query into %s parts', len(items_parts))
+            logger.debug('Split query into {} parts', len(items_parts))
             results_parts = await asyncio.gather(*[
                 method(cls, partition, **kwargs) for partition in items_parts
             ])

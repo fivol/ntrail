@@ -2,7 +2,6 @@ from collections import defaultdict
 
 from aiovk.exceptions import VkAPIError
 
-from worker.parsers.vk.exceptions import VKError
 from worker.helpers.layers import method_logger
 from worker.helpers.caching import redis_cache
 from worker.parsers.layers import items_getter, mapped_method, reliable_call
@@ -11,14 +10,13 @@ from worker.parsers.vk.data import *
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.parsers.vk.session import VkApiSession
-from worker.session.exceptions import SessionManagerException, RpsLimitException
+from worker.session.exceptions import RpsLimitException
 from worker.session.session_manager import SessionManager
 
 from worker.helpers.tools import assert_imported_once, decorate
 from worker.config import config
 from worker.helpers.methods_injector import inject_methods_wrappers, ignore_injection
 
-logger = logging.getLogger(__name__)
 
 # 10 секунд - ограничение на время выполнения запроса к API
 VK_API_TIMEOUT = 10

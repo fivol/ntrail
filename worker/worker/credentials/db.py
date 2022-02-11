@@ -72,7 +72,7 @@ class AccountsAccess:
 
     @classmethod
     async def create_access(cls, account: DBAccount, data: dict, token=None):
-        logger.info('CREATE ACCESS: %s', token)
+        logger.info('CREATE ACCESS: {}', token)
         async with db.transaction() as tx:
             await DBAccess.create(
                 account_id=account.id,
@@ -80,7 +80,7 @@ class AccountsAccess:
                 status=AccessStatus.active,
                 token=token
             )
-            logger.info('Create new access: %s', account)
+            logger.info('Create new access: {}', account)
             await DBAccount.update.values(status=AccountStatus.alive).where(DBAccount.id == account.id).gino.status()
 
     @classmethod

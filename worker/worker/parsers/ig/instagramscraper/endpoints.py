@@ -7,7 +7,7 @@ STORIES = '17873473675158481'
 
 BASE_URL = 'https://www.instagram.com'
 LOGIN_URL = 'https://www.instagram.com/accounts/login/ajax/'
-ACCOUNT_PAGE = 'https://www.instagram.com/%s'
+ACCOUNT_PAGE = 'https://www.instagram.com/{}'
 MEDIA_LINK = 'https://www.instagram.com/p/%s'
 ACCOUNT_MEDIAS = 'https://www.instagram.com/graphql/query/?query_hash=bfa387b2992c3a52dcbe447467b4b771&variables=%s'
 ACCOUNT_TAGGED_MEDIAS = 'https://www.instagram.com/graphql/query/?query_hash=ff260833edf142911047af6024eb634a&variables=%s'

@@ -3,7 +3,6 @@ import pytest
 from worker.credentials.models import bind, db
 from worker.parsers.ig.ig import IgApiSession
 from worker.session.session_manager import SessionManager
-from worker.credentials.credentials import Credentials, AccessModel
 
 
 @pytest.fixture()

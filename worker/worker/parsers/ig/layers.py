@@ -43,7 +43,7 @@ def paging_iterator(max_count: int):
                                                count=max_count,
                                                end_cursor=end_cursor)
                 all_items = all_items + items
-                logger.info('New items part (%s)', len(items))
+                logger.info('New items part ({})', len(items))
                 end_cursor = items.data['end_cursor']
                 has_next_page = items.data['has_next_page']
                 if all_items.count_:
@@ -51,7 +51,7 @@ def paging_iterator(max_count: int):
                 if not has_next_page:
                     break
                 if items.count_ and not len(items):
-                    logger.warning('IG request return empty result, requested %s items with method %s by %s', max_count,
+                    logger.warning('IG request return empty result, requested {} items with method {} by {}', max_count,
                                    method.__name__, args)
                     # TODO Think Hard
                     break

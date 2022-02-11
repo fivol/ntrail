@@ -1,11 +1,11 @@
 import inspect
 import logging
 from functools import wraps
+from loguru import logger
 
 
-def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors=False):
+def method_logger(level: str = 'DEBUG', name='', enabled=True, only_errors=False):
     """Decorator to method or function. Prints arguments and results"""
-    logger = logging.getLogger(name)
 
     def decorator(method):
         def repr_args(args, kwargs) -> str:
@@ -40,10 +40,10 @@ def method_logger(level: int = logging.DEBUG, name='', enabled=True, only_errors
             try:
                 result = await method(*args, **kwargs)
                 if not only_errors:
-                    logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), repr_result(result))
+                    logger.log(level, '{}({}) -> {}', method.__name__, repr_args(args, kwargs), repr_result(result))
                 return result
             except Exception as e:
-                logger.log(level, '%s(%s) -> %s', method.__name__, repr_args(args, kwargs), str(e))
+                logger.log(level, '{}({}) -> {}', method.__name__, repr_args(args, kwargs), str(e))
                 raise
 
         return wrapper

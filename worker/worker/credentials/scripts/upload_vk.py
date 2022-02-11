@@ -26,7 +26,7 @@ async def upload(type_):
     ]
     await bind()
     default_account_id = await check_default_account('vk')
-    logger.info('default_account_id %s', default_account_id)
+    logger.info('default_account_id {}', default_account_id)
     for token in tokens:
         try:
             await DBAccess.create(token=token, account_id=default_account_id, type=type_)

@@ -23,7 +23,7 @@ async def main():
             item.split('=', 1)
             for item in cookie.split(';')
         ])
-        logger.debug('Account: %s: %s', login, password)
+        logger.debug('Account: {}: {}', login, password)
         try:
             await DBAccount.create(
                 login=login,

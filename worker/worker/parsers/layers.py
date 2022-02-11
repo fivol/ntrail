@@ -78,7 +78,7 @@ def reliable_call(method):
                 return await method(cls, *args, **kwargs)
             except RpsLimitException:
                 if wait_time > 2:
-                    logger.debug('RPS wait: %s', wait_time)
+                    logger.debug('RPS wait: {}', wait_time)
                 wait_time *= 1.1
                 await asyncio.sleep(wait_time)
                 continue

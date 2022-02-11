@@ -1,14 +1,13 @@
 import asyncio
-import logging
 import random
+from loguru import logger
+
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, SessionAction, SessionRemove
 from worker.session.session_provider import SessionProvider
 from worker.session.session_state import SessionState, UsageStat
 
 from worker.credentials.credentials import Credentials
 from worker.credentials.access import AccessModel
-
-logger = logging.getLogger(__name__)
 
 
 class SessionManager:
@@ -64,11 +63,11 @@ class SessionManager:
             if self._stop_access_acquiring:
                 return False
             models = await Credentials.get_access(self._key_type, count)
-            logger.info('New %s access tokens (count: %s), now have %s', len(models), count, len(self._active_sessions))
+            logger.info('New {} access tokens (count: {}), now have {}', len(models), count, len(self._active_sessions))
             self._add_new_keys(models)
             if len(models) < count:
                 self._stop_access_acquiring = True
-                logger.warning('Credentials Server give less keys then requested: %s < %s, have: %s', len(models),
+                logger.warning('Credentials Server give less keys then requested: {} < {}, have: {}', len(models),
                                count, len(self._active_sessions))
             return bool(models)
 
@@ -93,7 +92,7 @@ class SessionManager:
                 if await self._receive_keys():
                     continue
                 if not self._active_sessions:
-                    logger.error('THROW NoTokenAvailableException, type: %s', self._key_type)
+                    logger.error('THROW NoTokenAvailableException, type: {}', self._key_type)
                     raise NoTokenAvailableException()
             session: SessionState = self._active_sessions.pop()
             session.update_rps()

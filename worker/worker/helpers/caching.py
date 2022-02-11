@@ -4,15 +4,14 @@ import json
 
 from worker.config import config
 from worker.ctx import get_context
+from loguru import logger
 
-
-logger = logging.getLogger(__name__)
 
 ctx = get_context()
 
 
 def get_redis():
-    logger.info('Cache url: %s', config.redis_url)
+    logger.info('Cache url: {}', config.redis_url)
     return aioredis.from_url(
         config.redis_url, encoding="utf-8", decode_responses=True
     )

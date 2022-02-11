@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 
 from worker.credentials.access import AccessModel
 from worker.credentials.adapter import AdapterBase
@@ -8,8 +8,6 @@ from worker.credentials.adapters.vk import VKAdapter
 from worker.credentials.db import AccessStatus, AccountsAccess
 from worker.credentials.models import DBAccess
 
-
-logger = logging.getLogger(__name__)
 
 adapters = {
     'vk': VKAdapter,
@@ -40,12 +38,12 @@ class Credentials:
         else:
             service, type_ = key_type, None
         models = await cls._get_adapter(service).get_access(type_=type_, max_count=count, ids=ids)
-        logger.info('Acquire %s keys', len(models))
+        logger.info('Acquire {} keys', len(models))
         return list(map(cls._create_model, models))
 
     @classmethod
     async def update_access(cls, models: list[DBAccess]):
-        logger.info('Update access (%s)', len(models))
+        logger.info('Update access ({})', len(models))
         await AccountsAccess.update_access(models)
 
     @classmethod
@@ -54,7 +52,7 @@ class Credentials:
         if not models:
             return
         if error:
-            logger.error('Return access with error: %s', error)
+            logger.error('Return access with error: {}', error)
             for key in models:
                 await AccountsAccess.set_access_status(key, error)
             return
