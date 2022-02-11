@@ -11,6 +11,10 @@ services:
       - redis
     env_file:
       - env_file
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "tcp://0.0.0.0:12201"
 
   redis:
     build: redis

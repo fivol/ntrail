@@ -569,7 +569,7 @@ class VKCommunityPlugin(BasePlugin):
             value_dict['value'] = value_
             value_dict['type'] = 'str'
         else:
-            logger.warning('Unknown property value type %s %s', type(value_), value_)
+            logger.warning('Unknown property value type {} {}', type(value_), value_)
             return None
 
         if ids and len(ids) > 1:

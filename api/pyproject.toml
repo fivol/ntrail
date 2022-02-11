@@ -32,6 +32,7 @@ textblob = "^0.17.1"
 langid = "^1.1.6"
 pytest = "^6.2.5"
 selenium = "^4.1.0"
+loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 

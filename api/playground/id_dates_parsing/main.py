@@ -2,19 +2,15 @@ import asyncio
 import logging
 from contextlib import suppress
 from datetime import datetime
-from pprint import pprint
 
-from tqdm import tqdm, trange
+from tqdm import trange
 
-from core import VKUser, VKCommunity
+from core import VKUser
 from server.plugin.register import register_plugins
-from server.plugin.plugin_manager import PluginManager
 from worker import Engine
-from worker import VKMethods
+from loguru import logger
 
 register_plugins()
-
-logger = logging.getLogger()
 
 
 async def first_date(user_id) -> datetime:

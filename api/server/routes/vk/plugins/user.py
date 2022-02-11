@@ -2,6 +2,8 @@ import re
 import typing
 from datetime import datetime
 
+from loguru import logger
+
 from core import VKUser
 from core.constants import AccountStatus, NO_AVA_IMG
 from server.plugin.plugin import InputPlugin, BasePlugin
@@ -47,6 +49,7 @@ class VKUserPlugin(BasePlugin):
     namespace = 'vk'
 
     def __init__(self, user: VKUser, **kwargs):
+        logger.debug('User plugin: user-{}', user)
         super().__init__(**kwargs)
         self._user = user
         self._data = None
@@ -133,6 +136,7 @@ class VKUserPlugin(BasePlugin):
             'img': 'https://vk.com/images/deactivated_100.png?ava=1',
             'name': 'Пользователь не валиден',
         }
+        logger.info('User plugin result: {}', result)
         if not await self._user.valid():
             return result
         data = await self.data()

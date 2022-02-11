@@ -6,8 +6,7 @@ import typing
 from server.exceptions import WrongInputError, ServerError
 from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
 from worker.parsers.exceptions import AccessApiException
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class PluginManager:
@@ -132,6 +131,7 @@ class PluginManager:
     async def _run_input_plugin(self, name: str):
         try:
             kwargs = await self.get_plugin(name, is_input=True).read(**self._kwargs)
+            logger.debug('Read plugin result: {}', kwargs)
             self._kwargs.update(kwargs)
         except TypeError as e:
             raise WrongInputError(f'Incorrect input: {e}')

@@ -1,13 +1,11 @@
-import os
+import sys
 
 from bestconfig import Config
-from logging.config import dictConfig
+from loguru import logger
 
 config = Config(exclude=['env_file'])
 config.assert_contains('DEBUG')
 
-log_config = config.logging.to_dict()
-if not config.bool('DEBUG'):
-    log_config['root']['level'] = 'WARNING'
 
-dictConfig(log_config)
+logger.remove()
+logger.add(sys.stdout, serialize=not config.bool('DEBUG'))
