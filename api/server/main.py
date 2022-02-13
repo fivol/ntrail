@@ -14,8 +14,8 @@ from server.routes import auth
 from server.plugin.register import register_plugins
 from worker import Engine
 from worker.ctx import get_context
+from loguru import logger
 
-logger = logging.getLogger()
 
 app = FastAPI(
     debug=config.DEBUG,
@@ -110,3 +110,4 @@ async def alive_check_daemon():
         except:
             logger.exception('SERVER CHECK TIMEOUT EXCEEDED')
             exit(2)
+

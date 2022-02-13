@@ -1,5 +1,6 @@
 import sys
 
+import json_logging
 from bestconfig import Config
 from loguru import logger
 
@@ -8,4 +9,5 @@ config.assert_contains('DEBUG')
 
 
 logger.remove()
-logger.add(sys.stdout, serialize=not config.bool('DEBUG'))
+logger.add(sys.stdout, serialize=True)
+logger.disable('')
