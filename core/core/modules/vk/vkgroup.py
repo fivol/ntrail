@@ -47,9 +47,9 @@ class VKGroup(SingleEntity):
     async def data(self) -> dict:
         return (await VKMethods.groups_ids([self.id]))[0]
 
-    async def members(self, count=None):
+    async def members(self, count=None, **kwargs):
         from core.modules.vk.vkcommunity import VKCommunity
-        members = await VKMethods.members(self.id, count=count)
+        members = await VKMethods.members(self.id, count=count, **kwargs)
         return VKCommunity(members)
 
     async def posts(self):

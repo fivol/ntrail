@@ -60,11 +60,13 @@ class VKUser(SingleEntity):
             return None
         return usernames[0]
 
-    async def photos(self):
-        return VKPhotos(await VKMethods.photos_all(owner_id=self.id, all=True))
+    async def photos(self, **kwargs):
+        kwargs['all_'] = kwargs.get('all_', True)
+        return VKPhotos(await VKMethods.photos_all(owner_id=self.id, **kwargs))
 
-    async def profile_photos(self):
-        return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='profile', all_=True))
+    async def profile_photos(self, **kwargs):
+        kwargs['all_'] = kwargs.get('all_', True)
+        return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='profile', **kwargs))
 
     async def wall_photos(self):
         return VKPhotos(await VKMethods.photos(owner_id=self.id, album_id='wall', all_=True))
