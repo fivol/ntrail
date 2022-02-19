@@ -165,7 +165,9 @@ class VKMethods(BaseParser):
         return await cls._run_query(
             'groups.getMembers',
             {'group_id': group_id},
-            [cls._app_api, cls._comm_api, cls._user_api],
+            # TODO check if community token can fit
+            # https://dev.vk.com/method/groups.getMembers
+            [cls._user_api],
             executable=True, only_user_access=True,
             **kwargs
         )

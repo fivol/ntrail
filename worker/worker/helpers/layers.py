@@ -4,7 +4,7 @@ from functools import wraps
 from loguru import logger
 
 
-def method_logger(level: str = 'DEBUG', name='', enabled=True, only_errors=False):
+def method_logger(level: str = 'DEBUG', name='', only_errors=False):
     """Decorator to method or function. Prints arguments and results"""
 
     def decorator(method):
@@ -35,9 +35,8 @@ def method_logger(level: str = 'DEBUG', name='', enabled=True, only_errors=False
 
         @wraps(method)
         async def wrapper(*args, **kwargs):
-            if not enabled:
-                return await method(*args, **kwargs)
             try:
+                logger.log(level, 'Call {}({})', method.__name__, repr_args(args, kwargs))
                 result = await method(*args, **kwargs)
                 if not only_errors:
                     logger.log(level, '{}({}) -> {}', method.__name__, repr_args(args, kwargs), repr_result(result))
