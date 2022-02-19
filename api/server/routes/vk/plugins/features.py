@@ -1,15 +1,16 @@
-import logging
 import re
+from loguru import logger
 
 from server.plugin.plugin import BasePlugin
-
-
-logger = logging.getLogger()
 
 
 class VKUserFeatures(BasePlugin):
     name = 'user-features'
     namespace = 'vk'
+
+    def __init__(self, user=None, **kwargs):
+        super(VKUserFeatures, self).__init__(**kwargs)
+        self._user = user
 
     @staticmethod
     def _get_sites(site_string):
@@ -43,12 +44,12 @@ class VKUserFeatures(BasePlugin):
                 host_name = host.split('/')[0].split('.')[-2]
                 sites.append((host_name, site))
             except:
-                logger.exception('Fail to parse site: %s', site)
+                logger.exception('Fail to parse site: {}', site)
 
         return sites
 
     def _get_key_words(self):
-        user = self.get_plugin_result('user')
+        user = self._user
         data = user.data()
         site_string = ' '.join([str(item) for key, item in data if not key.startswith('photo')])
         sites = self._get_sites(site_string)
@@ -61,7 +62,7 @@ class VKUserFeatures(BasePlugin):
                 if len(path_items) >= 2:
                     sites_username.append(path_items[-1])
             except:
-                logger.exception('Fail to get username from site: %s', site)
+                logger.exception('Fail to get username from site: {}', site)
 
         key_words = [
             self.name,
