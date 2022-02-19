@@ -125,8 +125,12 @@ class VKUserPlugin(BasePlugin):
     def city(self):
         return self._data.get('city', {}).get('title') or self._data.get('home_town')
 
-    def data(self):
-        return self._user.data()
+    async def data(self):
+        return await self._user.data()
+
+    async def groups(self):
+        groups = await self._user.groups()
+        return await groups.data()
 
     async def response(self) -> dict:
         user = self._user

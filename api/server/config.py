@@ -9,5 +9,4 @@ config.assert_contains('DEBUG')
 
 
 logger.remove()
-logger.add(sys.stdout, serialize=True)
-logger.disable('')
+logger.add(sys.stdout, serialize=False)
