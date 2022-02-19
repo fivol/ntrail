@@ -1,12 +1,10 @@
-import logging
 from functools import wraps
+from loguru import logger
 
 from worker.config import config
 from worker.parsers.ig.instagramscraper.exceptions import InstagramException
 from worker.parsers.utils import RichList
 from worker.selenium.selenium_request import SeleniumRequest
-
-logger = logging.getLogger(__name__)
 
 
 def selenium_debugger(method):
@@ -59,7 +57,7 @@ def paging_iterator(max_count: int):
                     count = int(all_items.count_ * percent_)
 
             if all_items.count_ >= count > len(all_items):
-                logger.warning('Instagram return less when requests %s < %s (%s)', len(all_items), count, args)
+                logger.warning('Instagram return less when requests {} < {} ({})', len(all_items), count, args)
             return all_items[:count]
 
         return wrapper
