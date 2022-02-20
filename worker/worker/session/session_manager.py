@@ -9,6 +9,9 @@ from worker.session.session_state import SessionState, UsageStat
 from worker.credentials.credentials import Credentials
 from worker.credentials.access import AccessModel
 from worker.config import config
+from worker.ctx import get_context
+
+ctx = get_context()
 
 
 class SessionManager:
@@ -63,9 +66,12 @@ class SessionManager:
             count = count or max(10, len(self._active_sessions))
             if self._stop_access_acquiring:
                 return False
-            safe_mode = config.get('access_factory.save_mode', True)
+            safe_mode = ctx.get('access_safe_mode', True)
+            logger.info('Mutex mode: {}', safe_mode)
             if not safe_mode:
                 logger.info('Using unsafe mode')
+            else:
+                logger.info('Using safe mode')
             models = await Credentials.get_access(self._key_type, count, mutex_mode=safe_mode)
             logger.info('New {} access tokens (count: {}), now have {}', len(models), count, len(self._active_sessions))
             self._add_new_keys(models)
@@ -123,7 +129,8 @@ class SessionManager:
         while len(self._active_sessions):
             session = self._active_sessions.pop()
             await session.single_close()
-        await Credentials.return_access(accesses)
+        if ctx.get('access_safe_mode', True):
+            await Credentials.return_access(accesses)
 
     def __del__(self):
         # TODO make cool

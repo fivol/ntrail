@@ -33,7 +33,7 @@ class IGAdapter(AdapterBase):
 # ME 12638820603
 async def main():
     await bind()
-    print(await IGAdapter.get_access(max_count=2))
+    await IGAdapter.get_access(max_count=2)
 
 
 if __name__ == '__main__':

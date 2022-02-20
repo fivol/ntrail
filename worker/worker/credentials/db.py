@@ -52,7 +52,7 @@ class AccountsAccess:
                 if count:
                     query = query.limit(count)
 
-                if acquire:
+                if acquire and mutex_mode:
                     result = await update(DBAccess).values(last_acquire=datetime.now(), free=False). \
                         where(DBAccess.id.in_(query)). \
                         returning(

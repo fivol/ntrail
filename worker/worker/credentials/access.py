@@ -21,9 +21,9 @@ class AccessModel:
 
 
 if __name__ == '__main__':
-    print({AccessModel({'id': 2, 'type': 'app', 'data': {},
+    {AccessModel({'id': 2, 'type': 'app', 'data': {},
                         'token': '2c575b732c575b732c575b73b62c3822f022c572c575b7372603a3335071351c65615ca',
                         'service': 'vk'}),
            AccessModel({'id': 2, 'type': 'app', 'data': {},
                         'token': '2c575b732c575b732c575b73b62c3822f022c572c575b7372603a3335071351c65615ca',
-                        'service': 'vk'})})
+                        'service': 'vk'})}
