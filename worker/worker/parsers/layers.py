@@ -1,13 +1,10 @@
 import asyncio
-import logging
+from loguru import logger
 from functools import wraps
 
 from worker.parsers.exceptions import AccessFactoryException
 from worker.parsers.utils import RichList
 from worker.session.exceptions import NoTokenAvailableException, RpsLimitException, TokenAuthFailed
-
-
-logger = logging.getLogger(__name__)
 
 
 def items_getter(method):

@@ -1,6 +1,7 @@
 import logging
 import time
 import typing
+from loguru import logger
 
 import aiohttp
 import re
@@ -15,8 +16,6 @@ from aiohttp import ContentTypeError
 from .exceptions import *
 from . import endpoints
 from .two_step_verification.console_verification import ConsoleVerification
-
-logger = logging.getLogger(__name__)
 
 
 class Instagram:
@@ -60,7 +59,7 @@ class Instagram:
         :return: headers dict
         """
         # TODO
-        logger.info('TRY LOGIN INTO ACCOUNT: %s', username)
+        logger.info('TRY LOGIN INTO ACCOUNT: {}', username)
         if two_step_verificator:
             two_step_verificator = ConsoleVerification()
 
@@ -114,7 +113,7 @@ class Instagram:
             self._update_cookie(response.cookies)
 
     async def auth(self, username=None, password=None, cookie=None):
-        logger.info('TRY AUTH ACCOUNT: %s', username)
+        logger.info('TRY AUTH ACCOUNT: {}', username)
         self.cookie = cookie
         if self.cookie:
             try:
@@ -133,7 +132,7 @@ class Instagram:
         )
 
     async def _get_json(self, url, *args, **kwargs) -> typing.Optional[dict]:
-        logger.info('Instagram request: %s %s', url, kwargs)
+        logger.info('Instagram request: {} {}', url, kwargs)
         async with self.__areq.get(url, *args, **kwargs,
                                    headers=self.generate_headers(self.cookie),
                                    cookies=self.cookie) as response:

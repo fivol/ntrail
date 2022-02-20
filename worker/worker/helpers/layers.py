@@ -1,5 +1,4 @@
 import inspect
-import logging
 from functools import wraps
 from loguru import logger
 

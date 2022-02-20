@@ -34,12 +34,13 @@ class AccountStatus:
 class AccountsAccess:
     @classmethod
     async def get_access(cls, service: str, status: AccountStatus, type_=None, count=None, acquire=False,
-                         ids: list = None):
+                         ids: list = None, mutex_mode=True):
         async with db.acquire() as conn:
             async with conn.transaction() as tx:
                 where = (DBAccount.service == service) & (DBAccess.status == status)
-                is_free = DBAccess.free == True
-                where = where & is_free
+                if mutex_mode:
+                    is_free = DBAccess.free == True
+                    where = where & is_free
                 if type_:
                     where = where & (DBAccess.type == type_)
                 if ids:

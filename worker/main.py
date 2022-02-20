@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from pprint import pprint
 
 from worker import Engine, IGMethods, VKMethods
@@ -7,8 +6,6 @@ from worker.credentials.credentials import Credentials
 from worker.parsers.ig.instagramscraper.instagram import Instagram
 from worker.parsers.ig.session import IgApiSession
 from worker.selenium.selenium_request import SeleniumRequest
-
-logger = logging.getLogger(__name__)
 
 
 # async def open_instagram_selenium(id):

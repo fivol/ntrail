@@ -1,12 +1,9 @@
 import asyncio
-import logging
-import time
 from functools import wraps
+from loguru import logger
 
 from worker.parsers.utils import RichList
 from worker.helpers.tools import split_list
-
-logger = logging.getLogger()
 
 
 def partition_split(segment_size):

@@ -1,10 +1,8 @@
 import asyncio
 import json
-import logging
+from loguru import logger
 
 from worker.config import config
-
-logger = logging.getLogger('execute')
 
 
 class ExecuteRequestPool:
@@ -55,7 +53,7 @@ class ExecuteRequestPool:
         cmd_length = len(json.dumps((method, kwargs)))
 
         if cmd_length > config.vk.EXECUTE_MAX_LENGTH:
-            logger.warning('Too long command to use execute command: %s', cmd_length)
+            logger.warning('Too long command to use execute command: {}', cmd_length)
             # TODO Test removing this line
             # self._reset_pool()
             return None

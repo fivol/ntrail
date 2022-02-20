@@ -22,6 +22,7 @@ class Credentials:
         2. Хранение для быстрого доступа
         3. Возврат credentials-server с указанием причины
     """
+    _all_access_models = set()
 
     @classmethod
     def _get_adapter(cls, name: str) -> type(AdapterBase):
@@ -32,14 +33,17 @@ class Credentials:
         return AccessModel(model)
 
     @classmethod
-    async def get_access(cls, key_type: str, count: int = None, ids=None) -> list[AccessModel]:
+    async def get_access(cls, key_type: str, count: int = None, ids=None, **kwargs) -> list[AccessModel]:
         if '.' in key_type:
             service, type_ = key_type.split('.', 1)
         else:
             service, type_ = key_type, None
-        models = await cls._get_adapter(service).get_access(type_=type_, max_count=count, ids=ids)
+        models = await cls._get_adapter(service).get_access(type_=type_, max_count=count, ids=ids, **kwargs)
         logger.info('Acquire {} keys', len(models))
-        return list(map(cls._create_model, models))
+        models = list(map(cls._create_model, models))
+        new_models = set(models).difference(cls._all_access_models)
+        cls._all_access_models.update(new_models)
+        return list(new_models)
 
     @classmethod
     async def update_access(cls, models: list[DBAccess]):

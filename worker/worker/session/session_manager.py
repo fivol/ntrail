@@ -8,6 +8,7 @@ from worker.session.session_state import SessionState, UsageStat
 
 from worker.credentials.credentials import Credentials
 from worker.credentials.access import AccessModel
+from worker.config import config
 
 
 class SessionManager:
@@ -62,7 +63,10 @@ class SessionManager:
             count = count or max(10, len(self._active_sessions))
             if self._stop_access_acquiring:
                 return False
-            models = await Credentials.get_access(self._key_type, count)
+            safe_mode = config.get('access_factory.save_mode', True)
+            if not safe_mode:
+                logger.info('Using unsafe mode')
+            models = await Credentials.get_access(self._key_type, count, mutex_mode=safe_mode)
             logger.info('New {} access tokens (count: {}), now have {}', len(models), count, len(self._active_sessions))
             self._add_new_keys(models)
             if len(models) < count:
@@ -108,7 +112,7 @@ class SessionManager:
         if isinstance(action, SessionRemove):
             self._active_sessions.remove(session)
             await Credentials.return_access([session.key], error=action.access_status)
-            logger.warning('SESSION REMOVING, status: %s', action.access_status)
+            logger.warning('SESSION REMOVING, status: {}', action.access_status)
         # TODO SessionWait
 
     async def stop(self):

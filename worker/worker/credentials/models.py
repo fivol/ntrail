@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 
 from gino import Gino
 from sqlalchemy.dialects.postgresql import JSONB
@@ -7,8 +7,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy_mixins.timestamp import TimestampsMixin
 from worker.config import config
 
-
-logger = logging.getLogger(__name__)
 
 db = Gino()
 

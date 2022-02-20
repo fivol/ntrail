@@ -1,12 +1,9 @@
 import asyncio
-import logging
 
 from worker.parsers.vk.session import VkApiSession
 from worker.credentials.adapter import AdapterBase
 from worker.credentials.models import bind
 from worker.credentials.db import AccountsAccess, AccessStatus
-
-logger = logging.getLogger(__name__)
 
 
 class VKAdapter(AdapterBase):

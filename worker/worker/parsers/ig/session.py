@@ -1,15 +1,14 @@
+from loguru import logger
+
 from worker.credentials.db import AccessStatus
 from worker.parsers.ig.instagramscraper.instagram import Instagram
 from worker.parsers.ig.instagramscraper.exceptions import *
-import logging
 
 from worker.credentials.access import AccessModel
 from worker.ctx import get_context
 from worker.session.exceptions import SessionRemove, SessionWait
 from worker.session.session_state import SessionState
 ctx = get_context()
-
-logger = logging.getLogger(__name__)
 
 
 class IgApiSession(SessionState):

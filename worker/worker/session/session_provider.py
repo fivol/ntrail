@@ -5,8 +5,7 @@ from worker.credentials.db import AccessStatus
 from worker.session.exceptions import SessionAction, SessionRemove, TokenAuthFailed
 from worker.parsers.exceptions import AccessApiException, AccessUnknownBehaviorExceptions
 from worker.session.session_state import SessionState
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class SessionProvider:

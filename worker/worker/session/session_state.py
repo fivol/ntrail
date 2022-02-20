@@ -1,14 +1,12 @@
 from __future__ import annotations
-import logging
 from functools import total_ordering
 from time import time
 from abc import abstractmethod
 from collections import deque
 from pydantic import BaseModel
+from loguru import logger
 
 from worker.credentials.access import AccessModel
-
-logger = logging.getLogger(__name__)
 
 
 @total_ordering

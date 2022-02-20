@@ -1,5 +1,3 @@
-import logging
-
 from aiovk import TokenSession, API
 from aiovk.exceptions import VkAPIError, VkAuthError
 
@@ -7,7 +5,7 @@ from worker.config import config
 from worker.credentials.access import AccessModel
 from worker.credentials.db import AccessStatus
 from worker.ctx import get_context
-from worker.parsers.vk.exceptions import VKError, VKErrorType
+from worker.parsers.vk.exceptions import VKError
 from worker.session.exceptions import SessionRemove
 from worker.session.session_state import SessionState
 
@@ -16,8 +14,6 @@ VK_API_VERSION = '5.103'
 VK_API_LANG = 'ru'
 
 ctx = get_context()
-
-logger = logging.getLogger(__name__)
 
 
 class VkApiSession(SessionState):
