@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, HTTPException, status, Depends
 from server.routes.request import execute_api_request, common_parameters
 
 from worker import VKError
+from worker.parsers.exceptions import AccessFactoryException
 
 router = APIRouter(prefix='/vk')
 
@@ -24,3 +25,4 @@ async def vk_user(commons: dict = Depends(common_parameters),
     except VKError as e:
         raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY,
                             detail={'code': e.code, 'type': e.type.name, 'message': e.msg})
+

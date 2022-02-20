@@ -53,9 +53,9 @@ async def shutdown_event():
 
 @app.on_event('startup')
 async def startup_event():
+    logger.info('Server started')
     global engine
-    print('START')
-    engine = Engine(caching=config.bool('CACHING'))
+    engine = Engine(caching=config.bool('CACHING'), access_safe_mode=config.get('access_factory.safe_mode', True))
     await engine.start()
 
 

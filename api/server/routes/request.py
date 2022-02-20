@@ -2,7 +2,7 @@ from loguru import logger
 
 from fastapi import HTTPException, status, Query
 
-from server.exceptions import ServerError, WrongInputError
+from server.exceptions import NtrailServerError, NtrailWrongInputError
 from server.plugin.plugin_manager import PluginManager
 from server.types import ResponseVerbose
 
@@ -23,10 +23,10 @@ async def execute_api_request(kwargs, input_plugins, options, namespace=None):
         result = await manager.execute()
         logger.debug('Response: {}', result)
         return result
-    except ServerError as e:
+    except NtrailServerError as e:
         logger.exception('ServerError')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    except WrongInputError as e:
+    except NtrailWrongInputError as e:
         logger.info('WrongInputError')
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception:

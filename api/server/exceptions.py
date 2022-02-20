@@ -1,11 +1,11 @@
 
-class ApiBaseException(Exception):
+class NtrailBaseException(Exception):
     pass
 
 
-class WrongInputError(ApiBaseException):
+class NtrailWrongInputError(NtrailBaseException):
     pass
 
 
-class ServerError(ApiBaseException):
+class NtrailServerError(NtrailBaseException):
     pass

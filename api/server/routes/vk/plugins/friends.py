@@ -1,5 +1,4 @@
 import typing
-from pprint import pprint
 
 from server.plugin.plugin import BasePlugin
 from server.routes.vk.plugins.community import VKCommunityPlugin
@@ -37,7 +36,6 @@ class VKUserFriendsPlugin(BasePlugin):
         return age.get('commonMean')
 
     def city(self):
-        pprint(self._processed)
         city = self._processed.get('city', {}).get('source_list')
         if city:
             return city[0][0].value

@@ -3,9 +3,9 @@ import inspect
 import logging
 import typing
 
-from server.exceptions import WrongInputError, ServerError
+from server.exceptions import NtrailWrongInputError, NtrailServerError, NtrailBaseException
 from server.plugin.plugin import Plugin, BasePlugin, InputPlugin
-from worker.parsers.exceptions import AccessApiException
+from worker.parsers.exceptions import AccessApiException, AccessFactoryException
 from loguru import logger
 
 
@@ -38,15 +38,15 @@ class PluginManager:
     async def call_plugin(self, option) -> typing.Optional[dict]:
         path_items = option.split('.')
         if len(path_items) > 2:
-            raise WrongInputError(f'Incorrect option (too many dots): {option}')
+            raise NtrailWrongInputError(f'Incorrect option (too many dots): {option}')
         if not path_items:
-            raise WrongInputError('Empty option')
+            raise NtrailWrongInputError('Empty option')
         result = await self._create_plugin(path_items[0])
         if result.broken:
             return None
         for path in path_items[1:]:
             if path.startswith('_'):
-                raise WrongInputError("Can't access private method")
+                raise NtrailWrongInputError("Can't access private method")
             if result is None:
                 break
             if isinstance(result, dict):
@@ -58,15 +58,15 @@ class PluginManager:
                         result = result()
                         if inspect.isawaitable(result):
                             result = await result
-                    except WrongInputError:
+                    except NtrailBaseException:
                         raise
                     except AccessApiException:
                         raise
                     except Exception:
                         logger.exception('Option method executing')
-                        raise ServerError(f'Method running error: {path}')
+                        raise NtrailServerError(f'Method running error: {path}')
             else:
-                raise WrongInputError(f'Unknown path: {path} in option: {option}')
+                raise NtrailWrongInputError(f'Unknown path: {path} in option: {option}')
 
         if isinstance(result, BasePlugin):
             result = result.response()
@@ -92,27 +92,33 @@ class PluginManager:
                     attr: result
                 }
         else:
-            raise WrongInputError('Incorrect option format')
+            raise NtrailWrongInputError('Incorrect option format')
         return response
 
     async def execute(self) -> dict:
         response = {}
-        for plugin in self._input_plugins:
-            await self._run_input_plugin(plugin)
+        try:
+            for plugin in self._input_plugins:
+                await self._run_input_plugin(plugin)
 
-        results = await asyncio.gather(
-            *[
-                self.call_plugin(option)
-                for option in self._options
-            ], return_exceptions=True
-        )
-        for option, result in zip(self._options, results):
-            if isinstance(result, Exception):
-                logger.exception('Plugin {} ends with exception: {}', option, result, exc_info=result)
-                if isinstance(result, WrongInputError):
-                    raise result
-                result = None
-            response = self._add_result(response, option, result)
+            results = await asyncio.gather(
+                *[
+                    self.call_plugin(option)
+                    for option in self._options
+                ], return_exceptions=True
+            )
+            for option, result in zip(self._options, results):
+                if isinstance(result, Exception):
+                    logger.exception('Plugin {} ends with exception: {}', option, result, exc_info=result)
+                    if isinstance(result, NtrailBaseException):
+                        raise result
+                    result = None
+                response = self._add_result(response, option, result)
+
+        except NtrailBaseException:
+            raise
+        except AccessFactoryException as e:
+            raise NtrailServerError(str(e))
 
         return response
 
@@ -126,7 +132,7 @@ class PluginManager:
         try:
             return self._plugins_cls[self._full_plugin_name(name, is_input, namespace=self._namespace)]
         except KeyError:
-            raise WrongInputError(f'Unknown plugin: {name}')
+            raise NtrailWrongInputError(f'Unknown plugin: {name}')
 
     async def _run_input_plugin(self, name: str):
         try:
@@ -134,4 +140,4 @@ class PluginManager:
             logger.debug('Read plugin result: {}', kwargs)
             self._kwargs.update(kwargs)
         except TypeError as e:
-            raise WrongInputError(f'Incorrect input: {e}')
+            raise NtrailWrongInputError(f'Incorrect input: {e}')

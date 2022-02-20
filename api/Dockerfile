@@ -6,8 +6,7 @@ COPY poetry.lock poetry.lock
 COPY pyproject.toml pyproject.toml
 RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 
-COPY . .
-
+COPY prepare.sh prepare.sh
 RUN ./prepare.sh
 
-CMD [ "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+CMD [ "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]

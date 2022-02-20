@@ -1,7 +1,9 @@
 from collections import Counter
 import nltk
+from loguru import logger
 
 from core import VKUser
+from pycommon.utils import time_limit, TimeoutException
 from server.helpers.utils import absolute_path
 from server.plugin.plugin import BasePlugin
 from server.routes.vk.features.tf_idf import IDFCalculator
@@ -102,5 +104,5 @@ class VKUserInterestsPlugin(BasePlugin):
 
 
 ctx = get_context()
-nltk.download('punkt')
+
 VKUserInterestsPlugin._read_data()  # noqa

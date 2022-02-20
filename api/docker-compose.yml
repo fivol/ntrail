@@ -9,10 +9,13 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
+#    depends_on:
+#      - redis
     env_file:
       - env_file
+    volumes:
+      - "./nltk_data:/root/nltk_data"
+      - ".:/app"
     logging:
       driver: gelf
       options:

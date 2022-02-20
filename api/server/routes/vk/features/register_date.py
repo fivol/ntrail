@@ -43,7 +43,6 @@ class UserRegistrationDate:
 
         cls._ids = np.array(ids)
         cls._dates = dates
-        print()
 
 
 with suppress(Exception):

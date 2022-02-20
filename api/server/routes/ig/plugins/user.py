@@ -1,5 +1,5 @@
 from core import IGUser
-from server.exceptions import WrongInputError
+from server.exceptions import NtrailWrongInputError
 from server.plugin.plugin import InputPlugin, BasePlugin
 from worker.parsers.exceptions import AccessApiException
 
@@ -15,7 +15,7 @@ class IGUserInput(InputPlugin):
                 'user': await IGUser.create(user)
             }
         except AccessApiException:
-            raise WrongInputError('Such user does not exists')
+            raise NtrailWrongInputError('Such user does not exists')
 
 
 class IGUserPlugin(BasePlugin):
