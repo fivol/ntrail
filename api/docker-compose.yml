@@ -17,6 +17,8 @@ services:
       driver: gelf
       options:
         gelf-address: "udp://0.0.0.0:12201"
+    environment:
+      BASE_URL: http://0.0.0.0:8000
 
   redis:
     build: redis

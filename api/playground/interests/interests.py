@@ -1,16 +1,12 @@
 import asyncio
-import logging
 from pprint import pprint
 
 from core import VKUser
 from server.plugin.register import register_plugins
-from server.routes.vk.features import IDFCalculator
 from worker import Engine
 
 # http://nlpx.net/archives/57
 register_plugins()
-
-logger = logging.getLogger()
 
 
 async def main():

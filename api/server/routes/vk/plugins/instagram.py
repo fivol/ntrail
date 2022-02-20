@@ -1,16 +1,13 @@
 import asyncio
-import logging
 import typing
 from collections import Counter, defaultdict
+from loguru import logger
 
-from core import VKUser, IGUser, IGCommunity
+from core import VKUser, IGUser
 from server.plugin.plugin import BasePlugin, call_plugin
 from server.routes.vk.features.name_compare import NameComparator
-from server.routes.vk.plugins.user import UserDescribePlugin, VKUserPlugin
+from server.routes.vk.plugins.user import VKUserPlugin
 from worker.parsers.exceptions import AccessApiException
-from worker.parsers.ig.instagramscraper.exceptions import InstagramException
-
-logger = logging.getLogger(__name__)
 
 
 class VKFindInstagramPlugin(BasePlugin):
@@ -55,7 +52,7 @@ class VKFindInstagramPlugin(BasePlugin):
         ]), map(lambda x: x[1], ig_vk))
 
         followers = list(filter(lambda x: bool(x[0]), followers))
-        logger.debug('Parse %s instagram accounts to grep follower', len(followers))
+        logger.debug('Parse {} instagram accounts to grep follower', len(followers))
         if not followers:
             logger.warning('Accounts not found')
             return []
@@ -70,7 +67,7 @@ class VKFindInstagramPlugin(BasePlugin):
         best_followers = Counter({follower: len(clusters) for follower, clusters in follower_score.items()})
         best = best_followers.most_common(1)[0]
         target_users = []
-        logger.debug("Most common by clusters IG candidate: %s", best)
+        logger.debug("Most common by clusters IG candidate: {}", best)
         if best[1] > 1:
             target_users = [best[0]]
 
@@ -90,5 +87,5 @@ class VKFindInstagramPlugin(BasePlugin):
                 max_count = count
             else:
                 break
-        logger.debug('Most common iG candidate - count: %s, len: %s', max_count, target_users)
+        logger.debug('Most common iG candidate - count: {}, len: {}', max_count, target_users)
         return list([user.url for user in target_users])

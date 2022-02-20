@@ -1,14 +1,10 @@
-import logging
-import typing
+from loguru import logger
 
 from fastapi import HTTPException, status, Query
 
 from server.exceptions import ServerError, WrongInputError
 from server.plugin.plugin_manager import PluginManager
-from server.plugin.plugin_manager import PluginManager
 from server.types import ResponseVerbose
-
-logger = logging.getLogger(__name__)
 
 
 async def common_parameters(token: str = Query(None, title='API токен'),
@@ -25,7 +21,7 @@ async def execute_api_request(kwargs, input_plugins, options, namespace=None):
     try:
         manager = PluginManager(kwargs=kwargs, input_plugins=input_plugins, options=options, namespace=namespace)
         result = await manager.execute()
-        logger.debug('Response: %s', result)
+        logger.debug('Response: {}', result)
         return result
     except ServerError as e:
         logger.exception('ServerError')

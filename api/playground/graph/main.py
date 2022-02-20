@@ -8,8 +8,6 @@ from worker import Engine
 
 register_plugins()
 
-logger = logging.getLogger()
-
 
 async def main():
     res = await PluginManager({'user': 'https://vk.com/aido4kas'}, input_plugins=['user'], options=['user-fans']).execute()

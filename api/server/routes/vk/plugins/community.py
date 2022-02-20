@@ -21,8 +21,7 @@ from pycommon.decors import cache_method_ignore_args
 from server.helpers.types import PlotType
 from server.plugin.plugin import BasePlugin
 from core import VKCommunity
-
-logger = logging.getLogger()
+from loguru import logger
 
 
 class PropertyValue:

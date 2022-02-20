@@ -97,7 +97,7 @@ async def get_config():
 async def alive_check_daemon():
     while True:
         await asyncio.sleep(config.check_alive_interval)
-        print('CHECK ALIVE')
+        logger.debug('CHECK ALIVE')
         timeout = aiohttp.ClientTimeout(total=config.check_alive_limit_timeout)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -105,9 +105,7 @@ async def alive_check_daemon():
                     status_code = response.status
                     if int(status_code / 100) != 2:
                         logger.error('It seems server failed')
-                        exit(1)
-                    print('SERVER ALIVE')
+                    logger.debug('SERVER ALIVE')
         except:
             logger.exception('SERVER CHECK TIMEOUT EXCEEDED')
-            exit(2)
 

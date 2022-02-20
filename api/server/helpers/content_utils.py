@@ -1,7 +1,7 @@
 
 
 import difflib
-import logging
+from loguru import logger
 import math
 import pickle
 import random
@@ -19,8 +19,6 @@ import transliterate
 from core.data import most_frequent_english_words, most_frequent_russian_words, extra_ignore_words
 from server.helpers.tied_counter import TiedCounter
 from server.helpers.tied_value import TiedValue
-
-logger = logging.getLogger('tools')
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -166,7 +164,7 @@ class MemoryCache:
             cls.save_memory()
         default = {}
         if name not in cls.stored_data:
-            # logger.warning('ITEM %s not in stored_data', name)
+            # logger.warning('ITEM {} not in stored_data', name)
             cls.stored_data[name] = default
 
         return cls.stored_data[name]
@@ -251,7 +249,7 @@ def make_json_serializable(obj):
         return float(obj)
     except:
         if not isinstance(obj, str):
-            logger.warning('Strange object type in json %s %s', type(obj), obj)
+            logger.warning('Strange object type in json {} {}', type(obj), obj)
         return str(obj)
 
 
@@ -284,7 +282,7 @@ def is_good_username(username):
     bad_characters = re.sub('[a-zA-Z0-9_\-.]', '', username)
     if bad_characters == '':
         return True
-    # logger.debug('Find bad username: %s', username)
+    # logger.debug('Find bad username: {}', username)
     return False
 
 

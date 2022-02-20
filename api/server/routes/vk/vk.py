@@ -1,12 +1,9 @@
-import logging
 from fastapi import APIRouter, Query, HTTPException, status, Depends
 from server.routes.request import execute_api_request, common_parameters
 
 from worker import VKError
 
 router = APIRouter(prefix='/vk')
-
-logger = logging.getLogger(__name__)
 
 
 @router.get('/user/')

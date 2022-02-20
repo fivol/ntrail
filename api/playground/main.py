@@ -21,8 +21,6 @@ from worker import Engine, IGMethods
 
 register_plugins()
 
-logger = logging.getLogger(__name__)
-
 
 async def main():
     async with Engine():
