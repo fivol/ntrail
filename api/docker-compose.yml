@@ -15,7 +15,7 @@ services:
       - env_file
     volumes:
       - "./nltk_data:/root/nltk_data"
-      - ".:/app"
+#      - ".:/app"
     logging:
       driver: gelf
       options:
