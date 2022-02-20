@@ -1,3 +1,5 @@
+from loguru import logger
+
 from fastapi import APIRouter, Query, HTTPException, status, Depends
 from server.routes.request import execute_api_request, common_parameters
 
@@ -19,6 +21,7 @@ async def vk_user(commons: dict = Depends(common_parameters),
     """
     # TODO Do not initialize all sessions for each request
     kwargs = {'user': user}
+    logger.info('Vk user request, user: {}', user)
     try:
         return await execute_api_request(kwargs=kwargs, input_plugins=['user'], options=commons['options'],
                                          namespace='vk')
