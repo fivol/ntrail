@@ -1,8 +1,5 @@
-import logging
 import math
-from core.helpers.utils import list_from_dicts
-
-logger = logging.getLogger('vk-api-module')
+from loguru import logger
 
 
 def get_items(func):
@@ -68,62 +65,12 @@ class VkCommon:
         return list(set(items))[:items_count]
 
     @classmethod
-    def get_users_friends(cls, user_ids):
-        assert isinstance(user_ids, list)
-        if not user_ids:
-            return []
-        assert isinstance(user_ids[0], int)
-        user_ids = [str(vkid) for vkid in user_ids]
-        res = APIQueries().many(service, 'friends', user_ids)
-        assert len(res) == len(user_ids)
-        result = []
-        for friends in res:
-            if isinstance(friends, dict):
-                result.append(friends['items'])
-            else:
-                result.append([])
-
-        return result
-
-    @classmethod
-    @get_items
-    def get_user_followers(cls, user_id):
-        assert isinstance(user_id, int)
-        return APIQueries().one(service, 'followers', str(user_id))
-
-    @classmethod
-    @get_items
-    def get_user_subscriptions(cls, user_id):
-        assert isinstance(user_id, int)
-        res = APIQueries().one(service, 'subscriptions', str(user_id))
-        if isinstance(res, dict):
-            return res['users']
-        return []
-
-    @classmethod
     def get_user_friends(cls, vkid):
         res = cls.get_users_friends([vkid])[0]
         if isinstance(res, str):
             return []
         assert isinstance(res, list), res
         return res
-
-    @classmethod
-    def get_users_groups(cls, user_ids):
-        user_ids = [str(vkid) for vkid in user_ids]
-        res = APIQueries().many(service, 'groups', user_ids)
-        assert isinstance(res, list)
-        return [group['items'] for group in res if isinstance(group, dict)]
-
-    @classmethod
-    def get_user_groups(cls, vkid, count=None):
-        params = {}
-        if count:
-            params['count'] = count
-
-        res = APIQueries().one(service, 'groups', str(vkid), params=params)
-        assert isinstance(res, dict)
-        return res.get('items', [])
 
     @classmethod
     def resolve_screen_names(cls, screen_names):

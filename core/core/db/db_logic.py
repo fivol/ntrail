@@ -1,14 +1,11 @@
-import logging
-
 import peewee
 import hashlib
 
-from core.helpers.utils import make_json_serializable
 from collections import defaultdict
 from core.models import UserModel, db, EntityModel, FeatureModel
+from loguru import logger
 
-
-logger = logging.getLogger('db')
+from server.helpers.content_utils import make_json_serializable
 
 
 class DB:

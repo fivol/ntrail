@@ -1,19 +1,15 @@
 import asyncio
-import logging
+from loguru import logger
 
-from core.helpers.utils import init_with_result
 from core.modules.vk.vkgroup import VKGroup
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
-from more_itertools import unique_everseen
 
 from collections import Counter
 import networkx as nx
 import math
 
 from core.module.connected_entities import ConnectedEntities
-
-logger = logging.getLogger()
 
 
 class VKGroups(ConnectedEntities):

@@ -1,12 +1,10 @@
-import logging
 import typing
+from loguru import logger
 
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
 from core.module.many_entities import ManyEntities
 from core.modules.vk.media_object import MediaObject
-
-logger = logging.getLogger('vk-photo')
 
 
 class VKAlbum(MediaObject):

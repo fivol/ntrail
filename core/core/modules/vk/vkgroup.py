@@ -1,14 +1,11 @@
-import logging
+from loguru import logger
 import re
-import typing
 
 from core.constants import GroupStatus
 from core.helpers.utils import init_with_result
 from core.module.single_entity import SingleEntity
 from pycommon.decors import cache_method_ignore_args
 from worker import VKMethods
-
-logger = logging.getLogger()
 
 
 class VKGroup(SingleEntity):

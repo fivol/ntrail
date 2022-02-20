@@ -1,10 +1,7 @@
-import logging
 from functools import wraps
 
 from core.helpers.utils import init_object_props
 from pycommon.decors import cache_method_ignore_args
-
-logger = logging.getLogger()
 
 
 def data_method_decorator(method):
