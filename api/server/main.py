@@ -68,7 +68,7 @@ register_plugins()
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(alive_check_daemon())
+    # asyncio.create_task(alive_check_daemon())
     pass
     # await db.set_bind(db_url)
 

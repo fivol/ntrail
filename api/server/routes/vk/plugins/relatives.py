@@ -45,7 +45,7 @@ class VKRelativesPlugin(BasePlugin):
             with suppress(VKError):
                 user_desc = UserDescribePlugin(user)
                 await user_desc.init()
-                age = await user_desc.age()
+                age = user_desc.age()
                 if age.get('age') and self._age.get('age'):
                     if abs(age['age'] - self._age['age']) <= MAX_SIBLING_AGE_DIFF:
                         type_ = 'sibling'
