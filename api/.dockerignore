@@ -1,2 +1,7 @@
 .venv/
 .data/
+.pytest_cache/
+docs/
+ntrail-core/
+ntrail-worker/
+playground/
