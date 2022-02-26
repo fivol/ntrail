@@ -1,0 +1,9 @@
+version: "3.3"
+
+services:
+  api:
+    image: ntrail-api:lastest
+    ports:
+      - "8001:8000"
+    environment:
+      BASE_URL: http://0.0.0.0:8001
