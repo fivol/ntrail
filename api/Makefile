@@ -1,9 +1,14 @@
 git_last_tag = `git describe --tags --abbrev=0`
 git_last_commit = `git rev-parse --short HEAD`
-commit_status = `if [ -z "\`git status -s\`" ]; then echo ""; else echo "-raw-\`openssl rand -hex 3\`"; fi`
+commit_status := `if [ -z "\`git status -s\`" ]; then echo ""; else echo "-uncommited"; fi`
 
 
-version = $(git_last_tag)-$(git_last_commit)$(commit_status)
+version_name := $(git_last_tag)-$(git_last_commit)$(commit_status)
+SERVICE ?= unknown
+image_name := `make image`
+
+service:
+	@echo $(SERVICE)
 
 increment:
 	@~/Dev/git-version-increment.sh >/dev/null 2>/dev/null
@@ -13,12 +18,18 @@ version:
 	@echo $(version)
 
 image:
-	@echo $(SERVICE):`make version`
+	@`make increment`
+	@echo $(SERVICE):$(version_name)
+	@echo $(SERVICE):$(version_name)
+	@printf $(SERVICE):$(version) | pbcopy
 
 build:
-	@docker build . -t `make image`
-	@echo `make image`
-	@printf `make image` | pbcopy
+	@docker build . -t $(image_name)
+	@echo $(image_name)
+	@printf $(image_name) | pbcopy
 
-pwd:
-	@pwd
+deploy-test:
+	@docker stack deploy -c docker-stack.yml -c docker-stack.test.yml ntrail-test
+
+test:
+	@docker stack services ntrail-test

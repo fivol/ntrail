@@ -2,6 +2,7 @@
 .data/
 .pytest_cache/
 docs/
-ntrail-core/
-ntrail-worker/
 playground/
+tests/
+.gits
+.idea

@@ -1,6 +1,22 @@
 
 Документация по [fastapi](https://fastapi.tiangolo.com/)
 
+## Запуск докер стека
+```shell
+docker build redis -t redis-api
+```
+
+## Обновляем тестовый контур
+
+### Повышаем версию тега гитхаба и билдим
+```shell
+make SERVICE=ntrail-api build
+```
+Вставляем новый image в `docker-stack.test.yml`
+```shell
+make deploy-test
+```
+
 ## Инициализация репозитория
 ```shell
 git clone git@github.com:fivol/ntrail-api.git
