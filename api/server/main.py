@@ -3,6 +3,7 @@ import logging
 import time
 
 import aiohttp
+import json_logging
 from fastapi import FastAPI, Request, status, Response
 from fastapi.responses import RedirectResponse
 from starlette.responses import JSONResponse
@@ -15,6 +16,8 @@ from server.plugin.register import register_plugins
 from worker import Engine
 from worker.ctx import get_context
 from loguru import logger
+
+json_logging.init_fastapi(enable_json=True)
 
 
 app = FastAPI(
