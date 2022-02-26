@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import re
 
+from core.exceptions import NotValidInputException
 from core.helpers.utils import init_with_result, init_object_props
 from core.modules.vk.vkphoto import VKPhotos
 from core.constants import AccountStatus
@@ -24,7 +25,7 @@ class VKUser(SingleEntity):
         user_id = None
         if isinstance(user, str):
             if not user:
-                status = AccountStatus.ABSENT
+                raise NotValidInputException()
             else:
                 username = VKUser._extract_username(user)
                 user_dict = await VKMethods.resolve(username)
