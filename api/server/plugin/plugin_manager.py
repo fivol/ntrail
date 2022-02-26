@@ -117,6 +117,8 @@ class PluginManager:
 
         except NtrailBaseException:
             raise
+        except AccessApiException:
+            raise
         except AccessFactoryException as e:
             raise NtrailServerError(str(e))
 
@@ -139,5 +141,5 @@ class PluginManager:
             kwargs = await self.get_plugin(name, is_input=True).read(**self._kwargs)
             logger.debug('Read plugin result: {}', kwargs)
             self._kwargs.update(kwargs)
-        except TypeError as e:
+        except Exception as e:
             raise NtrailWrongInputError(f'Incorrect input: {e}')
