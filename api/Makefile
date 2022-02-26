@@ -20,7 +20,6 @@ version:
 image:
 	@`make increment`
 	@echo $(SERVICE):$(version_name)
-	@echo $(SERVICE):$(version_name)
 	@printf $(SERVICE):$(version) | pbcopy
 
 build:
