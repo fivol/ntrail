@@ -87,6 +87,14 @@ async def version():
     return Response(content=config.get('VERSION'))
 
 
+@app.get('/error/')
+async def error(text: str):
+    logger.error(text)
+    return {
+        'message': f'Produced error with text: {text}'
+    }
+
+
 @app.get('/config/', response_model=dict)
 async def get_config():
     ctx = get_context()

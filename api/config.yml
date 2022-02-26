@@ -1,5 +1,7 @@
 VERSION: 1.5.0
 BASE_URL: 'http://localhost:8000'
+
+ALARMER_KEY: 31b5a0-d75e1c-ee8b18
 access_factory:
   safe_mode: false
 VK_APP:
