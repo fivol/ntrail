@@ -7,6 +7,7 @@ from worker.helpers.caching import redis_cache
 from worker.parsers.layers import items_getter, mapped_method, reliable_call
 from worker.parsers.parser import BaseParser
 from worker.parsers.vk.data import *
+from worker.parsers.vk.exceptions import VKErrorType, VKError
 from worker.parsers.vk.execute_pool import ExecuteRequestPool
 from worker.parsers.vk.layers import *
 from worker.parsers.vk.session import VkApiSession
@@ -121,12 +122,15 @@ class VKMethods(BaseParser):
     @classmethod
     @decorate(reliable_call)
     async def resolve(cls, screen_name, **kwargs) -> dict:
-        return await cls._run_query(
+        response = await cls._run_query(
             'utils.resolveScreenName',
             {'screen_name': screen_name},
             [cls._app_api, cls._comm_api, cls._user_api],
             executable=True
         )
+        if not response:
+            raise VKError(code=VKErrorType.UNKNOWN_USER.value, msg='Unknown user')
+        return response
 
     @classmethod
     @decorate(reliable_call, items_getter, count_offset_iterator(5000))

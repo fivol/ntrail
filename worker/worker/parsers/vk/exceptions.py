@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from aiovk.exceptions import VkAPIError
 
@@ -19,16 +20,18 @@ class VKErrorType(Enum):
 
 class VKError(AccessApiException):
 
-    def __init__(self, error: VkAPIError):
+    def __init__(self, error: VkAPIError = None, code=None, msg=None):
+        self._msg = msg
+        self._code = code
         self._error = error
 
     @property
     def code(self):
-        return self._error.error_code
+        return self._code or self._error.error_code
 
     @property
     def msg(self):
-        return self._error.error_msg
+        return self._msg or self._error.error_msg
 
     @property
     def type(self):
