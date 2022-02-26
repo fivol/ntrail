@@ -109,7 +109,7 @@ class PluginManager:
             )
             for option, result in zip(self._options, results):
                 if isinstance(result, Exception):
-                    logger.exception('Plugin {} ends with exception: {}', option, result, exc_info=result)
+                    logger.opt(exception=result).error('Plugin {} ends with exception: {}', option, result)
                     if isinstance(result, NtrailBaseException):
                         raise result
                     result = None
