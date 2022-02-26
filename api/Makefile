@@ -32,3 +32,10 @@ deploy-test:
 
 test:
 	@docker stack services ntrail-test
+
+
+deploy-dev:
+	@docker stack deploy -c docker-stack.yml -c docker-stack.dev.yml ntrail-dev
+
+dev:
+	@docker stack services ntrail-dev

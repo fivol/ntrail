@@ -11,8 +11,6 @@ services:
         condition: on-failure
     env_file:
       - env_file
-    volumes:
-      - "./nltk_data:/root/nltk_data"
     logging:
       driver: gelf
       options:

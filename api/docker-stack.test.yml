@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   api:
-    image: ntrail-api:0.0.5-9e45716
+    image: ntrail-api:0.0.6-36d59a5
     ports:
       - "8001:8000"
     environment:
