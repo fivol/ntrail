@@ -4,6 +4,10 @@ description: >-
   публичной информации пользователей интернес ресурсов
 ---
 
+> **Note:** the screenshots that illustrated this page were removed before the
+> repository was made public — they showed real profiles, names and photos of
+> people who never agreed to appear in a portfolio. The text is unchanged.
+
 # NTrail. Первичное знакомство
 
 **Проект находится в разработке, данная документация, как и сам ресурс периодически обновляется**
@@ -16,7 +20,6 @@ description: >-
 
 Чтобы самостоятельно разобраться, вставте ссылку на профиль человека в ВК в поисковую строку \(самая верхняя\)
 
-![&#x41F;&#x43E;&#x438;&#x441;&#x43A;&#x43E;&#x432;&#x430;&#x44F; &#x441;&#x442;&#x440;&#x43E;&#x43A;&#x430;](.gitbook/assets/image%20%2815%29.png)
 
 Если разбираться вручную не хочется, можно прочитать подробное описание интерфейса на странице [Интерфейс](interfeis.md) и ознакомиться с примерами [Первый пример](example1.md) и [Второй пример](example2.md)
 

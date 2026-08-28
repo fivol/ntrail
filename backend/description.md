@@ -5,6 +5,10 @@ description: >-
   методов машинного обучения
 ---
 
+> **Note:** the screenshots that illustrated this page were removed before the
+> repository was made public — they showed real profiles, names and photos of
+> people who never agreed to appear in a portfolio. The text is unchanged.
+
 # Подробное описание
 
 _Это описание проекта в целом. Если вам интересно его использование, то читайте предыдущие разделы_
