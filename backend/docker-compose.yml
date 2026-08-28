@@ -1,0 +1,37 @@
+version: "3.4"
+
+volumes:
+  db:
+
+services:
+  db:
+    image: postgres
+    restart: always
+    env_file:
+      - env_file
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  web:
+    build: ./app
+    container_name: ntrail
+    restart: always
+    env_file:
+      - env_file
+    ports:
+      - 5000:5000
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - "./nginx/certs:/etc/nginx/certs"
+      - ./nginx/data:/var/www
+    depends_on:
+      - web
