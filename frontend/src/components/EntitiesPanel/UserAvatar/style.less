@@ -1,0 +1,61 @@
+@import '../../../_variables.less';
+
+.avatar {
+  //display: flex;
+  //border-radius: 50%;
+  width: 70%;
+  margin-bottom: 5px;
+  //margin-left: 11%;
+  margin-top: 5%;
+  border-style: solid;
+  border-width: 1px;
+  //padding: 2px;
+}
+.userName {
+  text-align: center;
+  color: black;
+  text-decoration: none;
+}
+.userName:hover {
+  text-decoration: underline;
+  color: rgb(90, 90, 255);
+}
+.userContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 85px;
+  margin-left: 20px;
+  margin-bottom: 20px;
+  //float: left;
+  text-decoration: none;
+  border-radius: @itemBorderRadius;
+  color: black;
+  position: relative;
+  border: @itemsBorder;
+}
+.userContainer:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.choosed {
+  background-color: @selectedItemColor;
+}
+.choosed:hover {
+  background-color: rgba(0, 0, 0, 0.233);
+}
+.lock {
+  width: 30px;
+  height: 30px;
+  opacity: 0.6;
+  position: absolute;
+  right: 4px;
+  bottom: 35px;
+}
+.verified {
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+}
