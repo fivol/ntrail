@@ -1,0 +1,8 @@
+venv/
+.idea/
+.data/
+*.pyc
+*.db
+*.cache
+*.json
+*.csv

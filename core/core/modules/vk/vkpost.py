@@ -1,0 +1,74 @@
+from functools import cache
+
+from pycommon.decors import cache_method_ignore_args
+from .media_object import MediaObject
+from collections import defaultdict
+from core.module.many_entities import ManyEntities
+from worker import VKMethods
+
+
+class VKPost(MediaObject):
+    def __init__(self, post):
+        self.type = 'post'
+        super().__init__(post)
+        if isinstance(post, dict):
+            self.id = f'{post["owner_id"]}_{post["id"]}'
+        elif isinstance(post, str):
+            self.id = post
+        else:
+            raise TypeError('Wrong post type', type(post))
+
+    @cache_method_ignore_args
+    async def data(self) -> dict:
+        return (await VKMethods.posts_ids([self.id]))[0]
+
+    @property
+    async def text(self):
+        return (await self.data()).get('text', '')
+
+    @property
+    def photos(self):
+        return self.attachments().get('photo', [])
+
+    @property
+    def views(self):
+        return self.data().get('views', {}).get('count', None)
+
+    def attachments(self):
+        atts = self.data().get('attachments', [])
+        attachments = defaultdict(list)
+        for attachment in atts:
+            attachments[attachment['type']].append(
+                attachment[attachment['type']]
+            )
+        return dict(attachments)
+
+    def comments(self):
+        # TODO
+        return []
+
+    @property
+    def valid(self):
+        return bool(self.id)
+
+    @property
+    def status(self):
+        return None
+
+    @property
+    def url(self):
+        return f'https://vk.com/wall{self.id}'
+
+
+class VKPosts(ManyEntities):
+    _single_media_cls = VKPost
+
+    def __init__(self, posts):
+        super().__init__(posts)
+
+    @cache
+    def data(self, force=False, full=True) -> list:
+        return VKMethods.posts_ids.sync_map(self.nodes)
+
+    def connections(self, **kwargs) -> dict[list]:
+        pass
