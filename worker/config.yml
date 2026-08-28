@@ -1,0 +1,39 @@
+
+# If "true" all loggers level sets to ERROR
+DEBUG: true
+redis_url: "redis://0.0.0.0:6379"
+PG_URL: "postgresql://postgres:REMOVED@194.169.160.225:5432/ntrail-credentials"
+vk:
+  # 25 request in execute query, do not change!
+  EXECUTE_QUERIES_BUNCH_COUNT: 25
+  # TODO This is random value, must be specified
+  EXECUTE_MAX_LENGTH: 15000
+  timeout: 1
+
+  rps:
+    # RPS limit to each of token types
+    # https://vk.com/dev/api_requests
+    user: 3 # Can be increased to 5-7
+    community: 3
+    app: 5 # Can be increased to 20
+
+selenium:
+  geckodriver: '/Users/fiobond/Downloads/geckodriver'
+
+logging:
+  version: 1
+  formatters:
+    default:
+      format: '%(asctime)s %(levelname)-8s %(name)-30s %(message)s'
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      formatter: default
+      stream: ext://sys.stdout
+  loggers:
+    root:
+      level: DEBUG
+      handlers: [ console ]
+    worker:
+      level: DEBUG
