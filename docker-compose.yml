@@ -1,0 +1,21 @@
+# Local stack: PostgreSQL + the Flask backend.
+# The frontend is built separately (see frontend/), or with the `web` profile.
+volumes:
+  db:
+
+services:
+  db:
+    image: postgres:14
+    restart: always
+    env_file: .env
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend/app
+    restart: always
+    env_file: .env
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      - db
