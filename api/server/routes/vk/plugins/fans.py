@@ -1,0 +1,42 @@
+import asyncio
+import typing
+
+from core import VKUser, VKCommunity
+from server.plugin.plugin import BasePlugin
+from worker import VKError
+
+
+class VKUserFansPlugin(BasePlugin):
+    name = 'user-fans'
+    namespace = 'vk'
+
+    def __init__(self, user: VKUser, **kwargs):
+        super(VKUserFansPlugin, self).__init__(**kwargs)
+        self._user = user
+
+    async def response(self) -> typing.Optional[list]:
+        try:
+            if not await self._user.valid():
+                return None
+            my_sex = (await self._user.data()).get('sex')
+            posts = await self._user.posts(all_=False)
+            likes = await asyncio.gather(*[post.likes() for post in posts.objects()], return_exceptions=True)
+            likes = filter(lambda x: not isinstance(x, Exception), likes)
+            likes = sum(likes, start=VKCommunity())
+            top_likes = likes.select(count=10, break_point=1)
+            # top_likes = await top_likes.only_valid()
+            counter = top_likes.counter()
+            users = await top_likes.data()
+            users = [{**user, 'weight': counter[user['id']]} for user in users]
+            other_sex = filter(lambda user: user['sex'] != my_sex, users)
+            return [
+                {
+                    'id': user['id'],
+                    'url': VKUser(user['id']).url,
+                    'name': await VKUser(user).name(),
+                    'weight': user['weight']
+                }
+                for user in other_sex
+            ]
+        except VKError:
+            return None

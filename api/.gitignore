@@ -1,0 +1,15 @@
+venv/
+.idea/
+.venv/
+*.pyc
+*.env
+*.db
+*.cache
+*.db-*
+.git/
+*.data/
+*.png
+.DS_Store
+.*.json
+*.log
+local-config.yml

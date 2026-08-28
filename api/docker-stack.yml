@@ -1,0 +1,24 @@
+version: "3.3"
+volumes:
+    postgres:
+    redis:
+
+services:
+  api:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    env_file:
+      - env_file
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://0.0.0.0:12201"
+
+  redis:
+    image: redis-api
+    restart: always
+    volumes:
+      - redis:/usr/local/etc/redis
+      - redis:/data

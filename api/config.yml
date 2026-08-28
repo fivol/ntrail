@@ -1,0 +1,39 @@
+VERSION: 1.5.0
+BASE_URL: 'http://localhost:8000'
+
+ALARMER_KEY: 31b5a0-d75e1c-ee8b18
+access_factory:
+  safe_mode: false
+VK_APP:
+  CLIENT_ID: 7898476
+  SECRET: VOlOMVKWwkCMxP6PrEBQ
+
+CACHING: true
+redis_url: "redis://0.0.0.0:6379"
+check_alive_interval: 120
+check_alive_limit_timeout: 5
+
+selenium:
+  geckodriver: '/Users/fiobond/Downloads/geckodriver'
+
+# If "true" all loggers level sets to ERROR
+# Rewrite in env_file
+DEBUG: true
+PG_URL: "postgresql://postgres:REMOVED@194.169.160.225:5432/ntrail-credentials"
+# Stop any query after this amount of seconds
+REQUESTS_TIMEOUT: 80
+
+vk:
+  # 25 request in execute query, do not change!
+  EXECUTE_QUERIES_BUNCH_COUNT: 25
+  # TODO This is random value, must be specified
+  EXECUTE_MAX_LENGTH: 30000
+  timeout: 5
+
+  rps:
+    # RPS limit to each of token types
+    # https://vk.com/dev/api_requests
+    user: 3 # Can be increased to 5-7
+    community: 3
+    # 5 in docs
+    app: 5 # Can be increased to 20

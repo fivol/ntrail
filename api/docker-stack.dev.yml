@@ -1,0 +1,20 @@
+version: "3.3"
+
+services:
+  api:
+    image: ntrail-api:0.0.6-36d59a5
+    ports:
+      - "8000:8000"
+    environment:
+      BASE_URL: http://0.0.0.0:8000
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  bot:
+    image: bot-stalker:0.0.4-51e8ae0
+    environment:
+      GROUP_ID: 207956070
+      VK_TOKEN: 6564c4e0d209090cc04482143ffd2f4989538e805c8ba1cb154e34e2c724802af4233b32a04360fd8823f
+      NTRAIL_API_HOST: http://api:8000
